@@ -62,10 +62,8 @@ unit ShowGraphic;
 interface
 
 uses
-{$IFDEF DirectX}
   DirectX,
   DXUtil,
-{$ENDIF}
   System.SysUtils,
   System.IOUtils,
   System.Classes,

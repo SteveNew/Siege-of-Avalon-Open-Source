@@ -69,10 +69,8 @@ uses
   AniDec30,
   SoAOS.Types,
   Vcl.Graphics,
-{$IFDEF DirectX}
   DirectX,
   DXEffects,
-{$ENDIF}
   SoAOS.Graphics.Types,
   DFX,
   Resource;
@@ -359,13 +357,7 @@ type
     ActivateCount : Integer;
     CollideCount : Integer;
     MsgDuration : Integer;
-{$IFDEF DirectX}
     MsgImage : IDirectDrawSurface;
-{$ENDIF}
-{$IFNDEF DirectX}
-    MsgImage : HBITMAP;
-    MsgMask : HBITMAP;
-{$ENDIF}
     MsgWidth : Integer;
     MsgHeight : Integer;
     function GetFacingString : string;
@@ -1100,9 +1092,7 @@ implementation
 
 uses
   System.SysUtils,
-{$IFDEF DirectX}
   DXUtil,
-{$ENDIF}
   SoAOS.Graphics.Draw,
   LogFile,
   Engine,
@@ -10259,11 +10249,9 @@ var
   R : Integer;
   X1, Y1, X2, Y2 : Integer;
   DstX1, DstY1 : Integer;
-{$IFDEF DirectX}
   ddsd : TDDSurfaceDesc;
   Bits : BITPLANE;
   RFactor, GFactor, BFactor : integer;
-{$ENDIF}
 const
   FailName : string = 'TArrow.Render';
 begin
@@ -10802,17 +10790,8 @@ begin
 {$ENDIF}
   try
 
-{$IFDEF DirectX}
     if Assigned( MsgImage ) then
       MsgImage := nil;
-{$ENDIF}
-{$IFNDEF DirectX}
-    if MsgImage > 0 then
-    begin
-      DeleteObject( MsgMask );
-      DeleteObject( MsgImage );
-    end;
-{$ENDIF}
     inherited;
 
   except
@@ -11168,7 +11147,6 @@ begin
     if Msg = '' then
     begin
       MsgDuration := 0;
-{$IFDEF DirectX}
       if MsgDuration = 0 then
       begin
         MsgImage := nil;
@@ -11176,19 +11154,6 @@ begin
         if i >= 0 then
           SayList.Delete( i );
       end;
-{$ENDIF}
-{$IFNDEF DirectX}
-      if MsgDuration = 0 then
-      begin
-        DeleteObject( MsgMask );
-        MsgMask := 0;
-        DeleteObject( MsgImage );
-        MsgImage := 0;
-        i := SayList.IndexOf( self );
-        if i >= 0 then
-          SayList.Delete( i );
-      end;
-{$ENDIF}
       exit;
     end;
     MsgDuration := 100;
@@ -11203,16 +11168,7 @@ begin
     SetBkMode( BM.Canvas.Handle, TRANSPARENT );
     PatBlt( BM.Canvas.Handle, 0, 0, MsgWidth, MsgHeight, BLACKNESS );
     DrawText( BM.Canvas.Handle, PChar( Msg ), -1, R, DT_CENTER or DT_NOCLIP or DT_NOPREFIX or DT_WORDBREAK );
-{$IFDEF DirectX}
     MsgImage := SoAOS_DX_SurfaceFromBMP( BM, clBlack );
-{$ENDIF}
-{$IFNDEF DirectX}
-    BM.TransparentMode := tmFixed;
-    BM.TransparentColor := clBlack;
-    BM.TRANSPARENT := True;
-    MsgMask := BM.ReleaseMaskHandle;
-    MsgImage := BM.ReleaseHandle;
-{$ENDIF}
     BM.Free;
     SayList.Insert( 0, self );
 
@@ -11239,23 +11195,11 @@ begin
     if MsgDuration > 0 then
     begin
       X0 := PosX + CenterX - MsgWidth div 2;
-{$IFDEF DirectX}
 	   //Windows 8/10 Fix, Crash at Mapedges appearently - from gondur branch
       DrawAlpha(lpddsback, rect(X0, PosY - MsgHeight, X0 + MsgWidth, PosY), rect( 0, 0, MsgWidth, MsgHeight ), MsgImage, True, 255);
 //      pr := Rect( 0, 0, MsgWidth, MsgHeight );
 //      lpDDSBack.BltFast( X0, PosY - MsgHeight, MsgImage, @pr, DDBLTFAST_SRCCOLORKEY or DDBLTFAST_WAIT );
-{$ENDIF}
-{$IFNDEF DirectX}
-      SelectObject( Game.TempDC, MsgMask );
-      BitBlt( Game.FrameBuffer.Canvas.Handle, X0, PosY - MsgHeight, MsgWidth, MsgHeight,
-        Game.TempDC, 0, 0, SRCAND );
-      SelectObject( Game.TempDC, MsgImage );
-      BitBlt( Game.FrameBuffer.Canvas.Handle, X0, PosY - MsgHeight, MsgWidth, MsgHeight,
-        Game.TempDC, 0, 0, SRCPAINT );
-      SelectObject( Game.TempDC, Game.OldTempBitmap );
-{$ENDIF}
       Dec( MsgDuration );
-{$IFDEF DirectX}
       if MsgDuration = 0 then
       begin
         MsgImage := nil;
@@ -11263,16 +11207,6 @@ begin
         if i >= 0 then
           SayList.Delete( i );
       end;
-{$ENDIF}
-{$IFNDEF DirectX}
-      if MsgDuration = 0 then
-      begin
-        DeleteObject( MsgMask );
-        MsgMask := 0;
-        DeleteObject( MsgImage );
-        MsgImage := 0;
-      end;
-{$ENDIF}
     end;
 
   except
@@ -11492,11 +11426,6 @@ begin
       TArrow( NewProjectile ).BM.Height := NewProjectile.Height;
       TArrow( NewProjectile ).RLE := TRLESprite.create;
       TArrow( NewProjectile ).Draw( X1, Y1, X2, Y2, R, SinT, CosT );
-{$IFNDEF DirectX}
-      TArrow( NewProjectile ).BM.TransparentMode := tmFixed;
-      TArrow( NewProjectile ).BM.TransparentColor := clBlack;
-      TArrow( NewProjectile ).BM.TRANSPARENT := True;
-{$ENDIF}
       if length( TQuiver( Source.FEquipment[ slBelt ] ).StrikeLeatherSounds ) > 0 then
         TArrow( NewProjectile ).StrikeLeatherSound := TQuiver( Source.FEquipment[ slBelt ] ).
           StrikeLeatherSounds[ random( Length( TQuiver( Source.FEquipment[ slBelt ] ).StrikeLeatherSounds ) ) ];

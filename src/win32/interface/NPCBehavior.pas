@@ -62,11 +62,9 @@ unit NPCBehavior;
 interface
 
 uses
-{$IFDEF DirectX}
   DirectX,
   DXUtil,
   DXEffects,
-{$ENDIF}
   Winapi.Windows,
   System.Types,
   System.Classes,

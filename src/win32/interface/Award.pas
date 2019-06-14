@@ -62,11 +62,9 @@ unit Award;
 interface
 
 uses
-{$IFDEF DirectX}
   DirectX,
   DXUtil,
   DXEffects,
-{$ENDIF}
   System.SysUtils,
   System.Classes,
   System.Types,

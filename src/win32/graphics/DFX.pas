@@ -211,7 +211,6 @@ begin
   dfx_hnd := digifxLoadDriver( driverinfo, dfx_pixelformat );
   if ( dfx_hnd <> 0 ) then
   begin
-{$IFDEF DirectX}
     if dfx_pixelformat = PIXFMT_555 then
     begin
       if SoAOS_DX_ColorMatch( lpDDSBack, clWhite ) <= 32767 then
@@ -222,13 +221,6 @@ begin
       if SoAOS_DX_ColorMatch( lpDDSBack, clWhite ) > 32767 then
         exit;
     end
-{$ENDIF}
-{$IFNDEF DirectX}
-      if ( DFXCheckSupport( ) ) then
-      begin
-        Exit;
-      end;
-{$ENDIF}
   end;
 
   digifxFreeDriver( dfx_hnd );

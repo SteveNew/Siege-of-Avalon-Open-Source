@@ -62,10 +62,8 @@ unit Scroll;
 interface
 
 uses
-{$IFDEF DirectX}
   DirectX,
   DXUtil,
-{$ENDIF}
   Vcl.Forms,
   System.Classes,
   System.Types,

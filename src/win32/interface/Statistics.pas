@@ -62,9 +62,7 @@ unit Statistics;
 interface
 
 uses
-{$IFDEF DirectX}
   DirectX,
-{$ENDIF}
   System.Types,
   System.Classes,
   Vcl.Controls,
@@ -130,10 +128,8 @@ uses
   SoAOS.Types,
   SoAOS.Graphics.Draw,
   AniDemo,
-{$IFDEF DirectX}
   DXUtil,
   DXEffects,
-{$ENDIF}
   System.SysUtils,
   GameText,
   Engine,
@@ -210,7 +206,6 @@ begin
     LoadBaseValues;
 
   //Load the Background Bitmap and plot it
-{$IFDEF DirectX}
     DXRightArrow := SoAOS_DX_LoadBMP( InterfacePath + 'staRightArrow.bmp', cInvisColor );
     DXLeftArrow := SoAOS_DX_LoadBMP( InterfacePath + 'staLeftArrow.bmp', cInvisColor );
     DXBackToGame := SoAOS_DX_LoadBMP( InterfacePath + 'staBackToGame.bmp', cInvisColor );
@@ -238,7 +233,6 @@ begin
     ShowStats;
   //Whew! Now we flip it all to the screen
     SoAOS_DX_BltFront;
-{$ENDIF}
   except
     on E : Exception do
       Log.log( FailName + E.Message );

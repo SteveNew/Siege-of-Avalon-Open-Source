@@ -67,16 +67,13 @@ uses
   System.SysUtils,
   System.IOUtils,
   System.UITypes,
-//  Vcl.Graphics,
   SoAOS.Types,
   Anigrp30,
   AniDec30,
   System.IniFiles,
-{$IFDEF DirectX}
   DirectX,
   DXUtil,
   DXEffects,
-{$ENDIF}
   DFX,
   SoAOS.Graphics.Types,
   LogFile;
@@ -233,22 +230,12 @@ type
   TStaticResource = class( TResource )
   private
     Data : AnsiString;
-{$IFDEF DirectX}
     function GetImage( ImageIndex : Integer ) : IDirectDrawSurface;
     procedure GetImage1( ImageIndex : Integer; Surface : IDirectDrawSurface; W : integer );
-{$ENDIF}
-{$IFNDEF DirectX}
-    function GetImage( ImageIndex : Integer ) : TBitmap;
-{$ENDIF}
   public
     procedure LoadData( INI : TStringINIFile ); override;
     function Define( Map : TAniMap; Zone : byte; Index : word ) : integer; virtual;
-{$IFDEF DirectX}
     property Image[ ImageIndex : Integer ] : IDirectDrawSurface read GetImage;
-{$ENDIF}
-{$IFNDEF DirectX}
-    property Image[ ImageIndex : Integer ] : TBitmap read GetImage;
-{$ENDIF}
   end;
 
   TDoorResource = class( TStaticResource )
@@ -2124,14 +2111,9 @@ var
   MultiImage : boolean;
   INI : TStringINIFile;
   ImageIndex : integer;
-{$IFDEF DirectX}
   BM : IDirectDrawSurface;
   ddck : TDDCOLORKEY;
   BltFx : TDDBLTFX;
-{$ENDIF}
-{$IFNDEF DirectX}
-  BM : TBitmap;
-{$ENDIF}
   W : integer;
   ColorMatch : integer;
   pr : TRect;
@@ -2226,12 +2208,7 @@ begin
       LightPoints := nil;
     end;
     INI.free;
-{$IFDEF DirectX}
     BM := nil;
-{$ENDIF}
-{$IFNDEF DirectX}
-    BM.free;
-{$ENDIF}
     result := Index;
 
   except
@@ -2259,14 +2236,9 @@ var
   Slope, Angle : Single;
   AutoTransparent : Boolean;
   ImageIndex : integer;
-{$IFDEF DirectX}
   BM : IDirectDrawSurface;
   ddck : TDDCOLORKEY;
   BltFx : TDDBLTFX;
-{$ENDIF}
-{$IFNDEF DirectX}
-  BM : TBitmap;
-{$ENDIF}
   INI : TStringINIFile;
   MultiImage : boolean;
   W : integer;
@@ -2369,12 +2341,7 @@ begin
       LightPoints := nil;
     end;
     INI.free;
-{$IFDEF DirectX}
     BM := nil;
-{$ENDIF}
-{$IFNDEF DirectX}
-    BM.free;
-{$ENDIF}
     result := Index;
 
   except
@@ -2416,8 +2383,6 @@ begin
       Log.log( FailName, E.Message, [ ] );
   end;
 end;
-
-{$IFDEF DirectX}
 
 function TStaticResource.GetImage( ImageIndex : Integer ) : IDirectDrawSurface;
 var
@@ -2462,28 +2427,6 @@ begin
       Log.log( FailName, E.Message, [ ] );
   end;
 end;
-{$ENDIF}
-{$IFNDEF DirectX}
-
-function TStaticResource.GetImage( ImageIndex : Integer ) : TBitmap;
-var
-  Bits : TBitPlane;
-  W : integer;
-begin
-  if ( FrameWidth mod 4 ) = 0 then
-    W := FrameWidth
-  else
-    W := FrameWidth + 4 - ( FrameWidth mod 4 );
-  Bits := TBitPlane.Create( W, FrameHeight );
-  result := TBitmap.create;
-  result.Width := W;
-  result.Height := FrameHeight;
-  Bits.Fill( clFuchsia );
-  RLE.Draw( ImageIndex, 0, 0, Bits.Bits );
-  Bits.DrawToDC( result.canvas.handle, 0, 0 );
-  Bits.free;
-end;
-{$ENDIF}
 
 procedure TStaticResource.LoadData( INI : TStringINIFile );
 var
@@ -2546,14 +2489,9 @@ end;
 
 function TTileResource.Define( Map : TAniMap; Zone : byte; Index : word ) : integer;
 var
-{$IFDEF DirectX}
   TileBM : IDirectDrawSurface;
   ddck : TDDCOLORKEY;
   BltFx : TDDBLTFX;
-{$ENDIF}
-{$IFNDEF DirectX}
-  TileBM : TBitmap;
-{$ENDIF}
   i : Integer;
   W : integer;
   ColorMatch : integer;
@@ -2592,12 +2530,7 @@ begin
       GetImage1( i, TileBM, W );
       Map.DefineTile( Zone, Index + i, TileBM );
     end;
-{$IFDEF DirectX}
     TileBM := nil;
-{$ENDIF}
-{$IFNDEF DirectX}
-    TileBM.Free;
-{$ENDIF}
 
   except
     on E : Exception do

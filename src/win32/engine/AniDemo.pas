@@ -74,11 +74,9 @@ uses
   System.IniFiles,
   LogFile,
   Spells,
-{$IFDEF DirectX}
   DirectX,
   DXUtil,
   DXEffects,
-{$ENDIF}
   SoAOS.Types,
   Anigrp30,
   AniDec30,
@@ -205,7 +203,6 @@ type
     SoundOK : Boolean;
     Spinner : Integer;
     NewGame : Boolean;
-{$IFDEF DirectX}
     OverlayB : IDirectDrawSurface;
     OverlayR : IDirectDrawSurface;
     ManaEmpty : IDirectDrawSurface;
@@ -215,7 +212,6 @@ type
     NoSpellIcon : IDirectDrawSurface;
     HelpBox : IDirectDrawSurface;
     PauseImage : IDirectDrawSurface;
-{$ENDIF}
     FCurrentTheme : string;
     ScreenShot : TBitmap;
     imgGlow : TBitmap;
@@ -951,15 +947,8 @@ begin
     Log.flush;
     Game.SetBounds( 0, 0, ScreenMetrics.GameWidth, ScreenMetrics.GameHeight ); // 703, 511
 
-{$IFDEF DirectX}
     Log.Log( 'Mode=DX' );
     Log.flush;
-{$ENDIF}
-{$IFNDEF DirectX}
-    Log.Log( 'Mode=GDI' );
-    Log.flush;
-    GameMap.UseLighting := False;
-{$ENDIF}
 
     Log.Log( 'Read Settings' );
     Log.flush;
@@ -2440,7 +2429,6 @@ begin
     for i := SayList.Count - 1 downto 0 do
       TSpriteObject( SayList.Items[ i ] ).UpdateSay;
 
-{$IFDEF DirectX}
     if SpellBarActive then
     begin
       pr := Rect( 0, 0, ScreenMetrics.ScreenWidth, 114 );
@@ -2477,8 +2465,6 @@ begin
 
     if Assigned( Popup ) then
       Popup.Draw;
-
-{$ENDIF}
 
   except
     on E : Exception do
@@ -3083,7 +3069,6 @@ begin
 
     FreeSpells;
 
-{$IFDEF DirectX}
     Log.Log( 'Freeing console' );
     OverlayB := nil;
     OverlayR := nil;
@@ -3097,7 +3082,6 @@ begin
     PauseImage := nil;
     Game.AutoTransparentMask := nil;
     GlowImage.Free;
-{$ENDIF}
 
     Popup.Free;
     MouseCursor.Free;

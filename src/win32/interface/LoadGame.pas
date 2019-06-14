@@ -62,11 +62,9 @@ unit LoadGame;
 interface
 
 uses
-{$IFDEF DirectX}
   DirectX,
   DXUtil,
   DXEffects,
-{$ENDIF}
   System.SysUtils,
   System.Types,
   System.Classes,

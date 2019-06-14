@@ -62,11 +62,9 @@ unit GameText;
 interface
 
 uses
-{$IFDEF DirectX}
   DirectX,
   DXUtil,
   DXEffects,
-{$ENDIF}
   System.Types,
   System.Classes,
   System.SysUtils,

@@ -62,10 +62,8 @@ unit Journal;
 interface
 
 uses
-{$IFDEF DirectX}
   DirectX,
   DXUtil,
-{$ENDIF}
   System.SysUtils,
   System.IOUtils,
   System.Types,

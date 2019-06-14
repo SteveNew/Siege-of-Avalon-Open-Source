@@ -62,10 +62,8 @@ unit Intro;
 interface
 
 uses
-{$IFDEF DirectX}
   DirectX,
   DXUtil,
-{$ENDIF}
   Winapi.Windows,
   System.SysUtils,
   System.Types,

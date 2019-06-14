@@ -62,11 +62,9 @@ unit ObjInventory;
 interface
 
 uses
-{$IFDEF DirectX}
   DirectX,
   DXUtil,
   DXEffects,
-{$ENDIF}
   Winapi.Windows,
   System.SysUtils,
   System.Types,
@@ -107,7 +105,6 @@ type
     pInventoryItem : pTempItems; //The temporary inventory and equipment items combined
     CurrentSelectedItem : Integer; //Current Item being dragged about
     Tx, Ty : Integer; // x and y locs used with the offset of the dragged item
-{$IFDEF DirectX}
     DXBack : IDirectDrawSurface; //DD surface that holds the inventory screen before blit
     DxDirty : IDirectDrawSurface; //DD for cleanup when dragging items
     DXLeftArrow : IDirectDrawSurface; //Inventory left arrow
@@ -116,7 +113,6 @@ type
     DXLeftAll : IDirectDrawSurface; //Move all from left to right arrow
     DXRightAll : IDirectDrawSurface; //Move all form right ot left arrow
     DXBrown : IDirectDrawSurface;
-{$ENDIF}
     GroundOrderList : TList; //used to keep track of the order of items on the ground
     TopGroundIndex : Integer; //Index of the current top ground item
     Alpha : integer;
@@ -359,7 +355,6 @@ begin
   //Create the DirectRect fix surface
     DXDirty := DDGetSurface( lpDD, GreatestWidth, GreatestHeight, cInvisColor, true );
 
-{$IFDEF DirectX}
   //Now plot all of the items on the grid
     for i := 0 to ItemList.Count - 1 do
     begin
@@ -378,7 +373,6 @@ begin
     end;
   //Whew! Now we flip it all to the screen
     SoAOS_DX_BltFront;
-{$ENDIF}
   except
     on E : Exception do
       Log.log( FailName + E.Message );
