@@ -1,54 +1,36 @@
-# Siege of Avalon : Open Source #
+# Siege of Avalon : Open Source and re-released #
 
 _"Siege of Avalon : Open Source is an attempt to keep this great isometric RPG game alive by continuing development on it."_
 
 ![Siege of Avalon in HD with room for party of 4.](SoAOS_HD.png)Siege of Avalon in HD with room for party of 4.
 
-## Latest feature added!! ##
-Startup launch dialog enable choice of Original/HD/FullHD resolutions and language - if any available - also on old retail releases.
+## We made it happen!! ##
 
-Tested with "Siege of Avalon Anthology - Chapters 1-6" build 1.1.2001.1104 from 2001 - just copy Siege.exe and DDraw.dll found under releases - and the game can be played in higher resolutions.
+Siege of Avalon is now back and available on GOG.com and Steam - thanks to Game Publisher Sneg, Game Developing Studio General Arcade, this humble fork of the code and me.
 
-Also now testing German chapters 1-6 with the SoAmigos Patch v0.7 applied. Since that patch does contain missing translations among other things. Was only relevant for German version.
+And the released versions engine source code can be found here: https://github.com/SNEG-DEV/siege-of-avalon
+
+And just to quote their readme:
+
+“Siege of Avalon: Anthology” Remastered : Open Source is our huge “thank you” to the community that was keeping this great isometric RPG alive from 2003 till 2021 by adding constant updates and modifications to it. Our goal is to ensure that fans can develop the game further the way they envision it and use all the work and love we’ve put into it already.
+
+Release Date: 8 April 2021
+
+Game available on Steam: https://store.steampowered.com/app/1558990/Siege_of_Avalon_Anthology/
+
+Game available on GOG.com: https://www.gog.com/game/siege_of_avalon_anthology
+
+## Changing focus and what is happening here ##
+
+My original focus was to make a DTMain1.exe plugin replaceable Siege.exe - but since the game now is back for the wider audience in a fixable form, I will pull back the changes we did on the re-release of the project - and then add more experimental things and just continue with cleaning up the code.
+
+Maybe some of the stuff can flow back into the Steam/GOG release - if is makes sense and is wanted.
+
+I hope also to get more time for tooling.
 
 ## How to complie ##
 Install Delphi 10.3.3 or newer - the free Community Edition found at https://www.embarcadero.com/products/delphi/starter will do fine.  
 Open the Siege.dpr project file and compile.
-
-## Installing ##
-
-Copy or download Siege.exe together with ddraw.dll from the latest releases - and copy into the games install folder.
-
-To play the game your need additional files in the game/install folder:
-- soundlib.dll
-- fmod.dll
-- DFX_P5S.DLL
-- DFX_P6S.DLL
-
-all found in the original free playable 1. chapter/demo - http://soaos.sourceforge.net/FreePage.htm
-
-The newest ddraw.dll from [**DDrawCompat**](https://github.com/narzoul/DDrawCompat) - binary can be downloaded under his repos releases.
-
-## Playing ##
-
-You launch the game by running Siege.exe that is build into the game folder.
-
-## New Settings added ##
-
-Unlike the original game, it is now possible - based on the work of Rucksacksepp from the SOAmigos forum - in the Options dialog to select either Original, HD or FullHD screen resolutions. The game runs only full screen.  
-Also added are improvements in how hit point are distributed to the party of companions and their AI behaviour - these are found in the siege.ini file:
-
-- AdjustedPartyHitPoints (defaults to false)
-- AdjustedCompanionAI (defaults to true)
-
-As mentioned there is also:
-
-- ScreenResolution (defaults to 600) - possible other values are 720 and 1080
-
-There is also a language path that was not surfaced in the Options dialog of the released code - but assets where available in the release - english, spanish and german are available currently. The released assets are now found under releases - and has been removed from the repo since they do not a such belong to the engine and makes testing various game releases cumbersome.
-
-- LanguagePath (defaults to english) 
-
 
 ## Focus and origin ##
 
