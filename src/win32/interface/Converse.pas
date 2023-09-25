@@ -46,9 +46,10 @@ uses
   DirectX,
   System.Types,
   System.Classes,
+  System.Generics.Collections,
   Vcl.Controls,
   Character,
-  Display,
+  SoAOS.Intrface.Dialogs,
   SoAOS.Animation,
   System.IniFiles,
   SoAOS.StrUtils;
@@ -60,9 +61,9 @@ type
     Text : string;
   end;
 
-  TConverseBox = class( TDisplay )
+  TConverseBox = class( TDialog )
   private
-    Responses : TList;
+    Responses : TList<TTextRect>;
     HLText : Integer;
     ReEntry : Boolean;
     bTraining : boolean;
@@ -141,7 +142,7 @@ begin
   Log.DebugLog( FailName );
   try
     inherited;
-    Responses := TList.Create;
+    Responses := TList<TTextRect>.Create;
     slResponse := TStringList.Create;
   except
     on E : Exception do
@@ -178,12 +179,23 @@ begin
   try
     inherited;
 
-    Image := SoAOS_DX_LoadBMP( InterfacePath + 'DialogueBox.bmp', cTransparent, width, height );
+    Image := SoAOS_DX_LoadBMP( InterfacePath + 'DialogueBox.bmp', cTransparent, DlgWidth, DlgHeight );
     ReEntry := True;
-    X1 := 65;
-    Y1 := 40;
-    X2 := X1 + width;
-    Y2 := Y1 + height;
+
+    if ScreenMetrics.ScreenWidth>800 then
+    begin
+      X1 := 0;
+      Y1 := 0;
+      X2 := DlgWidth;
+      Y2 := DlgHeight;
+    end
+    else
+    begin
+      X1 := 65;
+      Y1 := 40;
+      X2 := X1 + DlgWidth;
+      Y2 := Y1 + DlgHeight;
+    end;
 
     HLText := -1;
     pText.LoadFontGraphic( 'Inventory' );
@@ -195,15 +207,15 @@ begin
       Close;
       exit;
     end;
-    Filename := ResourcePath + 'conversations\' + Filename + '.cnv';
-    INI := TMemINIFile.Create( Filename );
+    Filename := ResourcePath + 'conversations\' + Language + '\' + Filename + '.cnv';
+    INI := TMemINIFile.Create( Filename, TEncoding.ANSI ); // Due to the BitMap font mapping
 
     LoadConversation;
 
   //DrawShadow
     Shadow := SoAOS_DX_LoadBMP( InterfacePath + 'DialogueBoxshadowmap.bmp', cTransparent, width, height );
     try
-      DrawSub( lpDDSBack, Rect( X1, Y1, X2, Y2 ), Rect( 0, 0, width, height ), Shadow, true, 170 );
+      DrawSub( lpDDSBack, ApplyOffset( Rect( X1, Y1, X2, Y2 ) ), Rect( 0, 0, width, height ), Shadow, true, 170 );
     finally
       Shadow := nil;
     end;
@@ -226,8 +238,9 @@ const
   FailName : string = 'TConverseBox.MouseDown';
 begin
   try
-    inherited;
-    if InBound then
+//    inherited;
+//    if InBound then
+    if ptInRect( ApplyOffset( Rect( X1, Y1, X2, X2 ) ), point( x, y ) ) then
     begin
       if Responses.count = 0 then
       begin
@@ -277,22 +290,21 @@ const
   FailName : string = 'TConverseBox.MouseMove';
 begin
   try
-    inherited;
-    if InBound then
+//    inherited;
+//    if InBound then
+    if ptInRect( ApplyOffset( Rect( X1, Y1, X2, X2 ) ), point( x, y ) ) then
     begin
       for i := 0 to Responses.Count - 1 do
       begin
-        with TTextRect( Responses.Items[ i ] ) do
+//          if ( X >= Rect.Left ) and ( X < Rect.Right ) and ( Y >= Rect.Top ) and ( Y < Rect.Bottom ) then
+        if PtInRect( ApplyOffset( Responses[i].Rect ), point( x, y ) ) then
         begin
-          if ( X >= Rect.Left ) and ( X < Rect.Right ) and ( Y >= Rect.Top ) and ( Y < Rect.Bottom ) then
+          if i <> HLText then
           begin
-            if i <> HLText then
-            begin
-              HLText := i;
-              Paint;
-            end;
-            Exit;
+            HLText := i;
+            Paint;
           end;
+          Exit;
         end;
       end;
     end;
@@ -427,8 +439,8 @@ begin
     begin
       strCrntHeading := Section;
          //Say Text
-      if ( Tcharacter( ObjectRef ) <> current ) and ( Tcharacter( ObjectRef ).properties[ 'charactername' ] <> '' ) then
-        Caption := TCharacter( ObjectRef ).properties[ 'charactername' ] + ':  ' + Ini.ReadString( strCrntHeading, 'Say', '' )
+      if ( TCharacter( ObjectRef ) <> current ) and ( TCharacter( ObjectRef ).Property_[ 'charactername' ] <> '' ) then
+        Caption := TCharacter( ObjectRef ).Property_[ 'charactername' ] + ':  ' + Ini.ReadString( strCrntHeading, 'Say', '' )
       else
         Caption := Ini.ReadString( strCrntHeading, 'Say', '' );
 
@@ -440,7 +452,7 @@ begin
       end;
     end
     else
-      Caption := TCharacter( ObjectRef ).properties[ 'charactername' ] + ':  ' + hail;
+      Caption := TCharacter( ObjectRef ).Property_[ 'charactername' ] + ':  ' + hail;
 
 
     caption := StringReplace( caption, '%playername%', player.name, [ rfReplaceAll, rfIgnoreCase ] );
@@ -454,9 +466,9 @@ begin
       strTmp := TTokenString(Ini.ReadString( strCrntHeading, 'special', '' )).PipeToken( 0 );
       for jLoop := 0 to NPCList.count - 1 do
       begin
-        if TCharacter( NPCList.Items[ jLoop ] ).Guid = strTmp then
+        if NPCList[ jLoop ].Guid = strTmp then
         begin
-          RunScript( TCharacter( NPCList.Items[ jLoop ] ), TTokenString(Ini.ReadString( strCrntHeading, 'special', '' )).PipeToken( 1 ));
+          RunScript( NPCList[ jLoop ], TTokenString(Ini.ReadString( strCrntHeading, 'special', '' )).PipeToken( 1 ));
         end;
       end;
 
@@ -490,9 +502,7 @@ begin
 
 
     for iLoop := 0 to Responses.count - 1 do
-    begin
-      TTextRect( Responses.items[ iLoop ] ).free;
-    end;
+      Responses[ iLoop ].Free;
     Responses.clear;
 
     slResponse.Clear;
@@ -558,7 +568,7 @@ begin
       begin
         NewText := TTextRect.Create;
 
-        s := StringReplace( s, '%charactername%', Tcharacter( ObjectRef ).properties[ 'charactername' ], [ rfReplaceAll, rfIgnoreCase ] );
+        s := StringReplace( s, '%charactername%', TCharacter( ObjectRef ).Property_[ 'charactername' ], [ rfReplaceAll, rfIgnoreCase ] );
         s := StringReplace( s, '%playername%', player.name, [ rfReplaceAll, rfIgnoreCase ] );
 
         NewText.Text := S;
@@ -581,7 +591,7 @@ begin
       else
         NewText.Text := sorry;
 
-      NewText.Text := StringReplace( NewText.Text, '%charactername%', Tcharacter( ObjectRef ).properties[ 'charactername' ], [ rfReplaceAll, rfIgnoreCase ] );
+      NewText.Text := StringReplace( NewText.Text, '%charactername%', TCharacter( ObjectRef ).Property_[ 'charactername' ], [ rfReplaceAll, rfIgnoreCase ] );
       NewText.Text := StringReplace( NewText.Text, '%playername%', player.name, [ rfReplaceAll, rfIgnoreCase ] );
 
       Responses.Add( NewText );
@@ -622,7 +632,7 @@ begin
     begin
       GetSurfaceDims( W, H, Image );
       pr := Rect( 0, 0, W, H );
-      lpDDSback.BltFast( X1, Y1, Image, @pr, DDBLTFAST_SRCCOLORKEY or DDBLTFAST_WAIT );
+      lpDDSback.BltFast( X1 + Offset.X, Y1 + Offset.Y, Image, @pr, DDBLTFAST_SRCCOLORKEY or DDBLTFAST_WAIT );
     end
     else
     begin
@@ -635,9 +645,9 @@ begin
       R.Top := j;
       R.Right := X1 + W - 30;
       if UseSmallFont then
-        j := j + 18 * pText.PlotTinyTextBlock( Caption, R.Left, R.Right, R.Top, 240 ) + 10
+        j := j + 18 * pText.PlotTinyTextBlock( Caption, R.Left + Offset.X, R.Right + Offset.X, R.Top + Offset.Y, 240 ) + 10
       else
-        j := j + 22 * pText.PlotTextBlock( Caption, R.Left, R.Right, R.Top, 240 ) + 10;
+        j := j + 22 * pText.PlotTextBlock( Caption, R.Left + Offset.X, R.Right + Offset.X, R.Top + Offset.Y, 240 ) + 10;
       R.Bottom := j;
 
       if bTraining then
@@ -647,26 +657,27 @@ begin
     end;
     for i := 0 to Responses.count - 1 do
     begin
-      S := TTextRect( Responses.items[ i ] ).Text;
+      S := Responses[i].Text;
       R.Left := X1 + 40;
       R.Top := j;
       R.Right := X1 + W - 30;
+      { TODO : Wrap pText plot into existing DIalogs PlotTexts }
       if i = HLText then
       begin
         if UseSmallFont then
-          j := j + 18 * pText.PlotTinyTextBlock( S, R.Left, R.Right, R.Top, 240 )
+          j := j + 18 * pText.PlotTinyTextBlock( S, R.Left + Offset.X, R.Right + Offset.X, R.Top + Offset.Y, 240 )
         else
-          j := j + 22 * pText.PlotTextBlock( S, R.Left, R.Right, R.Top, 240 );
+          j := j + 22 * pText.PlotTextBlock( S, R.Left + Offset.X, R.Right + Offset.X, R.Top + Offset.Y, 240 );
       end
       else
       begin
         if UseSmallFont then
-          j := j + 18 * pText.PlotTinyTextBlock( S, R.Left, R.Right, R.Top, 120 )
+          j := j + 18 * pText.PlotTinyTextBlock( S, R.Left + Offset.X, R.Right + Offset.X, R.Top + Offset.Y, 120 )
         else
-          j := j + 22 * pText.PlotTextBlock( S, R.Left, R.Right, R.Top, 120 );
+          j := j + 22 * pText.PlotTextBlock( S, R.Left + Offset.X, R.Right + Offset.X, R.Top + Offset.Y, 120 );
       end;
       R.Bottom := j;
-      TTextRect( Responses.items[ i ] ).Rect := R;
+      Responses[ i ].Rect := R;
       Inc( j, 10 );
     end;
     SoAOS_DX_BltFront;
@@ -690,9 +701,7 @@ begin
     Image := nil;
     Image := nil;
     for i := 0 to Responses.Count - 1 do
-    begin
-      TTextRect( Responses.Items[ i ] ).Free;
-    end;
+      Responses[ i ].Free;
     Responses.Clear;
     slResponse.Clear;
     pText.UnloadTinyFontGraphic;
@@ -870,7 +879,6 @@ end;
 function CheckPartyAll( sTmp : string ) : boolean;
 var
   iLoop : integer;
-  jLoop : integer;
   strTmp : string;
   b1 : boolean;
   b2 : boolean;
@@ -889,23 +897,14 @@ begin
       strTmp := TTokenString(sTmp).CommaToken( iLoop ).Trim;
       if strTmp[1] <> '!' then
       begin
-        b1 := false;
-        for jLoop := 0 to NPCList.count - 1 do
-        begin
-          if TCharacter( NPCList.Items[ jLoop ] ).Guid = strTmp then
-            b1 := true;
-        end;
+        b1 := NPCList.HasGUID(strTmp);
         if not ( b1 ) then
           break;
       end
       else
       begin
-        b2 := false;
-        for jLoop := 0 to NPCList.count - 1 do
-        begin
-          if TCharacter( NPCList.Items[ jLoop ] ).Guid = strTmp.Remove(0, 1) then //get rid of the '!'
-            b2 := true;
-        end;
+        strTmp := strTmp.Remove(0, 1);
+        b2 := NPCList.HasGUID(strTmp);
         if b2 then
           break;
       end;
@@ -1101,7 +1100,6 @@ end;
 function CheckPartyOne( sTmp : string ) : boolean;
 var
   iLoop : integer;
-  jLoop : integer;
   strTmp : string;
   b1 : boolean;
   b2 : boolean;
@@ -1122,29 +1120,14 @@ begin
       strTmp := TTokenString(sTmp).CommaToken( iLoop ).Trim;
       if strTmp[1] <> '!' then
       begin
-        b1 := false;
-        for jLoop := 0 to NPCList.count - 1 do
-        begin
-          if TCharacter( NPCList.Items[ jLoop ] ).Guid = strTmp then
-          begin
-            b1 := true;
-          end;
-        end;
+        b1 := NPCList.HasGUID(strTmp);
         if b1 then
           break
-
       end
       else
       begin
         strTmp := strTmp.Remove(0, 1); //get rid of the '!'
-        b2 := false;
-        for jLoop := 0 to NPCList.count - 1 do
-        begin
-          if TCharacter( NPCList.Items[ jLoop ] ).Guid = strTmp then
-          begin
-            b2 := true;
-          end;
-        end;
+        b2 := NPCList.HasGUID(strTmp);
         if not ( b2 ) then
           break;
       end;

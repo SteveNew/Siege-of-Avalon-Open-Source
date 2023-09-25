@@ -1,0 +1,3 @@
+[submodule "soa-resources"]
+	path = soa-resources
+	url = git@bitbucket.org:general-arcade/soa-resources.git

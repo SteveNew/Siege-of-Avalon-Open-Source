@@ -203,31 +203,32 @@ begin
 
     //TODO: The rects are defined identical - clean
     if LoadFile then
-      DXLoad := SoAOS_DX_LoadBMP( InterfacePath + 'ldLoadLight.bmp', cInvisColor )
+      DXLoad := SoAOS_DX_LoadBMP( InterfaceLanguagePath + 'ldLoadLight.bmp', cInvisColor )
     else
-      DXLoad := SoAOS_DX_LoadBMP( InterfacePath + 'ldSaveLight.bmp', cInvisColor );
+      DXLoad := SoAOS_DX_LoadBMP( InterfaceLanguagePath + 'ldSaveLight.bmp', cInvisColor );
 
-    DXCancel := SoAOS_DX_LoadBMP( InterfacePath + 'ldCancel.bmp', cInvisColor );
+    DXCancel := SoAOS_DX_LoadBMP( InterfaceLanguagePath + 'ldCancel.bmp', cInvisColor );
 
-    DXok := SoAOS_DX_LoadBMP( InterfacePath + 'ldOk.bmp', cInvisColor );
+    DXok := SoAOS_DX_LoadBMP( InterfaceLanguagePath + 'ldOk.bmp', cInvisColor );
 
     DXBackHighlight := SoAOS_DX_LoadBMP( InterfacePath + 'opYellow.bmp', cInvisColor );
 
-    DXBack := SoAOS_DX_LoadBMP( InterfacePath + 'ldLoadSave.bmp', cInvisColor, DlgWidth, DlgHeight );
-
+    DXBack := SoAOS_DX_LoadBMP( InterfaceLanguagePath + 'ldLoadSave.bmp', cInvisColor, DlgWidth, DlgHeight );
+    if ScreenMetrics.borderFile<>'' then //Neu hinpinseln, da z.B. DoA ein grünes Menü hat
+        lpDDSBack.BltFast( 0, 0, TfrmMain(frmMain).FillBorder, nil, DDBLTFAST_SRCCOLORKEY or DDBLTFAST_WAIT );
     if LoadFile then
-      DXTemp := SoAOS_DX_LoadBMP( InterfacePath + 'ldLoadDark.bmp', cInvisColor )
+      DXTemp := SoAOS_DX_LoadBMP( InterfaceLanguagePath + 'ldLoadDark.bmp', cInvisColor )
     else
-      DXTemp := SoAOS_DX_LoadBMP( InterfacePath + 'ldSaveDark.bmp', cInvisColor );
+      DXTemp := SoAOS_DX_LoadBMP( InterfaceLanguagePath + 'ldSaveDark.bmp', cInvisColor );
     pr := Rect( 0, 0, DlgRect.dlgLoadSaveRect.Width, DlgRect.dlgLoadSaveRect.Height );
     DXBack.BltFast( DlgRect.dlgLoadSaveRect.Left, DlgRect.dlgLoadSaveRect.Top, DXTemp, @pr, DDBLTFAST_WAIT );
 
     DXTemp := nil;
 
     if LoadFile then
-      DXTemp := SoAOS_DX_LoadBMP( InterfacePath + 'ldLoadUpper.bmp', cInvisColor )
+      DXTemp := SoAOS_DX_LoadBMP( InterfaceLanguagePath + 'ldLoadUpper.bmp', cInvisColor )
     else
-      DXTemp := SoAOS_DX_LoadBMP( InterfacePath + 'ldSaveUpper.bmp', cInvisColor );
+      DXTemp := SoAOS_DX_LoadBMP( InterfaceLanguagePath + 'ldSaveUpper.bmp', cInvisColor );
     pr := Rect( 0, 0, DlgRect.dlgLoadSaveTitleRect.Width, DlgRect.dlgLoadSaveTitleRect.Height );
     DXBack.BltFast( DlgRect.dlgLoadSaveTitleRect.Left, DlgRect.dlgLoadSaveTitleRect.Top, DXTemp, @pr, DDBLTFAST_WAIT );
     pr := Rect( 0, 0, DlgWidth, DlgHeight );
@@ -355,8 +356,19 @@ begin
       begin //only show 9 files
         r := ApplyOffset( Rect( 379, 66 + j * 35, 669, 66 + j * 35 + 35 ) );
         pItem( SelectRect.items[ i ] ).rect := r;
+        if Loadfile then
+        begin
+        //When saving, errorcode in Siege.log, so "if Loadfile" added
+        pText.WriteText(pItem( SelectRect.items[ i ] ).text, pItem( SelectRect.items[ i ] ).rect.left, pItem( SelectRect.items[ i ] ).rect.top, 14);
+        //ptext.PlotText( pItem( SelectRect.items[ i ] ).text, pItem( SelectRect.items[ i ] ).rect.left, pItem( SelectRect.items[ i ] ).rect.top, 240 );
+        pText.WriteText(pItem( SelectRect.items[ i ] ).date, 590 + Offset.X, pItem( SelectRect.items[ i ] ).rect.top, 10);
+        //ptext.PlotText( pItem( SelectRect.items[ i ] ).date, 590 + Offset.X, pItem( SelectRect.items[ i ] ).rect.top, 240 );
+        end
+        else
+        begin
         ptext.PlotText( pItem( SelectRect.items[ i ] ).text, pItem( SelectRect.items[ i ] ).rect.left, pItem( SelectRect.items[ i ] ).rect.top, 240 );
         ptext.PlotText( pItem( SelectRect.items[ i ] ).date, 590 + Offset.X, pItem( SelectRect.items[ i ] ).rect.top, 240 );
+        end;
         j := j + 1;
       end
       else
@@ -971,7 +983,7 @@ begin
   Log.DebugLog( FailName );
   try
 
-    DXBorders := SoAOS_DX_LoadBMP( InterfacePath + 'ldChooseBox.bmp', cInvisColor, width, height );
+    DXBorders := SoAOS_DX_LoadBMP( InterfaceLanguagePath + 'ldChooseBox.bmp', cInvisColor, width, height );
     nRect := pItem( SelectRect.Items[ CurrentSelectedListItem ] ).Rect;
     pr := Rect( 0, 0, width, height );
     lpDDSBack.BltFast( nRect.left - 10, nRect.top + 32, DXBorders, @pr, DDBLTFAST_SRCCOLORKEY or DDBLTFAST_WAIT );
@@ -998,13 +1010,13 @@ var
   nRect : TRect;
   pr : TRect;
 const
-  FailName : string = 'TCharacter.Attack ';
+  FailName : string = 'TLoadGame.OverwriteSavedFile ';
 begin
 
   Log.DebugLog( FailName );
   try
 
-    DXBorders := SoAOS_DX_LoadBMP( InterfacePath + 'ldChooseBox.bmp', cInvisColor, width, height );
+    DXBorders := SoAOS_DX_LoadBMP( InterfaceLanguagePath + 'ldChooseBox.bmp', cInvisColor, width, height );
     nRect := pItem( SelectRect.Items[ CurrentSelectedListItem ] ).Rect;
     pr := Rect( 0, 0, width, height );
     lpDDSBack.BltFast( nRect.left - 10, nRect.top + 32, DXBorders, @pr, DDBLTFAST_SRCCOLORKEY or DDBLTFAST_WAIT );
@@ -1031,7 +1043,7 @@ var
   nRect : TRect;
   pr : TRect;
 begin
-  DXBorders := SoAOS_DX_LoadBMP( InterfacePath + 'ldChooseBox.bmp', cInvisColor, width, height );
+  DXBorders := SoAOS_DX_LoadBMP( InterfaceLanguagePath + 'ldChooseBox.bmp', cInvisColor, width, height );
   nRect := pItem( SelectRect.Items[ CurrentSelectedListItem ] ).Rect;
   pr := Rect( 0, 0, width, height );
   lpDDSBack.BltFast( nRect.left - 10, nRect.top + 32, DXBorders, @pr, DDBLTFAST_SRCCOLORKEY or DDBLTFAST_WAIT );
@@ -1080,11 +1092,22 @@ begin
             pr := Rect( nRect.left - 10, nRect.top - 5, nRect.right, nRect.bottom - 5 );
             DrawAlpha( lpDDSBack, pr, rect( 0, 0, 12, 12 ), DXBackHighlight, False, 40 );
           end;
+          if loadfile then
+          begin
+          //Bei Speichern fehler, sobald eine Datei angeklickt wird, siehe Siege.log
+          //Mein Gedanke: Überschreiben des Bildes von Writetext mit dem alten Plottext verursacht Fehler
+          pText.WriteText(pItem( SelectRect.items[ i ] ).text, pItem( SelectRect.items[ i ] ).rect.left, pItem( SelectRect.items[ i ] ).rect.top, 14);
+          //pText.PlotText( pItem( SelectRect.items[ i ] ).text, pItem( SelectRect.items[ i ] ).rect.left, pItem( SelectRect.items[ i ] ).rect.top, 240 );
+          pText.WriteText(pItem( SelectRect.items[ i ] ).date, 590 + Offset.X, pItem( SelectRect.items[ i ] ).rect.top, 10);
+          //pText.PlotText( pItem( SelectRect.items[ i ] ).date, 590 + Offset.X, pItem( SelectRect.items[ i ] ).rect.top, 240 );
+          end
+          else
+          begin
           pText.PlotText( pItem( SelectRect.items[ i ] ).text, pItem( SelectRect.items[ i ] ).rect.left, pItem( SelectRect.items[ i ] ).rect.top, 240 );
           pText.PlotText( pItem( SelectRect.items[ i ] ).date, 590 + Offset.X, pItem( SelectRect.items[ i ] ).rect.top, 240 );
+          end;
         end;
       end; //end for
-
     end; //endif
 
     if CurrentSelectedListItem > -1 then
@@ -1126,11 +1149,11 @@ begin
     pr := Rect( 111, 65, 344, 231 );
     lpDDSBack.BltFast( pr.Left + Offset.X, pr.Top + Offset.Y, DXBack, @pr, DDBLTFAST_WAIT );
 
-    pText.PlotTextBlock( MapName, 123 + Offset.X, 340 + Offset.X, 70 + Offset.Y, 240 );
+    PlotTextBlock( MapName, 123, 340, 70, 240, False, False );
 
     for i := 1 to CharacterCount do
     begin
-      pText.PlotText( CharacterName[ i ], 133 + Offset.X, 70 + i * 25 + Offset.Y, 240 );
+      PlotText( CharacterName[ i ], 133, 70 + i * 25, 240 );
     end;
   except
     on E : Exception do
@@ -1255,7 +1278,7 @@ var
   Filename : string;
   FoundCharacters : boolean;
 const
-  FailName : string = 'TCharacter.Attack ';
+  FailName : string = 'TLoadGame.LoadGame ';
 begin
   Log.DebugLog( FailName );
   result := false;

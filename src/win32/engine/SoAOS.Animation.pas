@@ -51,6 +51,7 @@ uses
   AStar,
   // Winapi.DirectDraw,
   DirectX,
+  D3DRenderer,
   MMTimer,
 
   SoAOS.Types,
@@ -262,14 +263,12 @@ type
 
   TGameObject = class(TAniFigure)
   private
+    FProperties: TStringList;
     LoadCount: Integer;
   protected
     function GetProperty(const Name: string): string; virtual;
     procedure SetProperty(const Name: string; const Value: string); virtual;
   public
-    // New - was private
-    FProperties: TStringList;
-    //
     Loading: Boolean;
     GUID: string;
     GroupName: string;
@@ -282,19 +281,20 @@ type
     procedure SaveProperties(List: TStringList); virtual;
     procedure Init; virtual;
     procedure DoLoad;
-    property Properties[const Name: string]: string read GetProperty
-      write SetProperty;
+    property Property_[const Name: string]: string read GetProperty write SetProperty;
+    property Properties: TStringList read FProperties write FProperties;
   end;
 
   TSpriteObject = class(TGameObject)
   private
+    FCollideCount: Integer;
     ActivateCount: Integer;
-
     MsgDuration: Integer;
     MsgImage: IDirectDrawSurface;
     MsgWidth: Integer;
     MsgHeight: Integer;
     procedure SetFacing(const Value: TFacing);
+    procedure SetCollideCount(const Value: Integer);
   protected
     FFacing: TFacing;
     procedure SetResource(const Value: TAniResource); override;
@@ -302,9 +302,6 @@ type
     procedure SetProperty(const Name: string; const Value: string); override;
     function GetName: string; virtual;
   public
-    // New - was private
-    CollideCount: Integer;
-    //
     SpecialEffect: TAniSpecialEffect;
     MaskHeight: Integer;
     OnActivate: string;
@@ -312,8 +309,7 @@ type
     Alpha: Integer;
     UnMoveable: Boolean;
     ColorR, ColorG, ColorB: Integer;
-    constructor Create(X, Y, Z: Longint; Frame: Word;
-      Enabled: Boolean); virtual;
+    constructor Create(X, Y, Z: Longint; Frame: Word; Enabled: Boolean); virtual;
     destructor Destroy; override;
     function ActionExists(const Action: string): Boolean;
     function DoAction(const Action: string): Boolean; virtual;
@@ -325,6 +321,7 @@ type
     function ShouldSave: Boolean; virtual;
     property Facing: TFacing read FFacing write SetFacing;
     property Name: string read GetName;
+    property CollideCount: Integer read FCollideCount write SetCollideCount;
   end;
 
   TAniView = class(TGraphicControl)
@@ -434,9 +431,10 @@ type
     MouseOverTile: PGridInfo;
     MousePosition: TPoint;
     ForceRefresh: Boolean;
+    IStealthFactor: Integer; // für BasicHumanoid-, Undead- und MiscAI
     constructor Create(AOwner: TComponent); override;
     destructor Destroy; override;
-    procedure InitDX(Handle: HWND; ResW, ResH, BPP: Integer);
+    procedure InitDX(Handle: HWND; ResW, ResH, BPP, RefreshRate: Integer; Windowed, VSync: Boolean; MaxFPS: Integer);
     procedure CloseDX;
     property Active: Boolean read FActive write SetActive;
     procedure MouseDown(Button: TMouseButton; Shift: TShiftState;
@@ -500,6 +498,24 @@ procedure Clip(ClipX1, ClipX2: Integer; var DestX1, DestX2, SrcX1,
 procedure Clip1(ClipX1, ClipX2: Integer; var DestX1, SrcX1, SrcX2: Integer);
 procedure Clip2(ClipX1, ClipX2: Integer; var DestX1, SrcX1, W: Integer);
 
+{
+ Windowed mode support functions
+ The idea is to intercept references to BltFast and Flip and add additional code
+ which will blit the result to the window surface.
+ This introduces some memory overhead which I believe can be negleted nowadays.
+}
+
+function lpDDSFront_BltFast (dwX: DWORD; dwY: DWORD;
+        lpDDSrcSurface: IDirectDrawSurface; lpSrcRect: PRect;
+        dwTrans: DWORD) : HResult;
+
+function lpDDSFront_Flip (lpDDSurfaceTargetOverride: IDirectDrawSurface;
+        dwFlags: DWORD) : HResult;
+
+function lpDD_CreateSurface (var lpDDSurfaceDesc: TDDSurfaceDesc;
+        out lplpDDSurface: IDirectDrawSurface;
+        pUnkOuter: IUnknown) : HResult;
+
 var
   lpDD: IDirectDraw;
   lpDDSFront: IDirectDrawSurface;
@@ -509,13 +525,18 @@ var
   DXMode: Boolean;
   PixelFormat: TPixelFormat;
   Debug: Longint;
+  D3D11Renderer: TDXRenderer;
+
+procedure D3DPresent;
 
 implementation
 
 uses
   System.SysUtils,
+  System.UITypes,
   System.IniFiles,
   Vcl.Forms,
+  Vcl.Dialogs,
   DXUtil,
   DXEffects,
   SoAOS.Graphics.Draw,
@@ -523,7 +544,156 @@ uses
   Engine,
   Resource,
   Character,
-  LogFile;
+  LogFile,
+  Math,
+  Winapi.D3D11
+  ;
+
+var
+  BltWindowed : Boolean;
+  D3DFullscreen: Boolean;
+  WindowHandle: HWND;
+  IsWindows7: Boolean;
+
+procedure D3DPresent;
+begin
+//  if Assigned(MouseCursor) then
+//  begin
+//    MouseCursor.Update;
+//  end;
+//  if D3D11Renderer <> nil then
+//  begin
+//    D3D11Renderer.Render;
+//    D3D11Renderer.Present;
+//  end;
+end;
+
+function lpDDSFront_BltFast(dwX: DWORD; dwY: DWORD;
+        lpDDSrcSurface: IDirectDrawSurface; lpSrcRect: PRect;
+        dwTrans: DWORD) : HResult;
+var
+  res: HRESULT;
+  srcDC: HDC;
+  dstDC: HDC;
+  srcdesc: TDDSurfaceDesc;
+  rc: TRect;
+begin
+  if BltWindowed then
+  begin
+    lpDDSFront.BltFast(dwX, dwY, lpDDSrcSurface, lpSrcRect, dwTrans);
+    if D3D11Renderer = nil then
+    begin
+      res := lpDDSFront.GetDC(srcDC);
+      if res = DD_OK then
+      begin
+        dstDC := GetDC(WindowHandle);
+        BitBlt(dstDC, dwX, dwY, lpSrcRect.Width, lpSrcRect.Height, srcDC, dwX, dwY, SRCCOPY);
+        ReleaseDC(WindowHandle, dstDC);
+        lpDDSFront.ReleaseDC(srcDC);
+      end;
+    end
+    else
+    begin
+      ZeroMemory(@srcdesc, sizeof(srcdesc));
+      srcdesc.dwSize := sizeof(srcdesc);
+      res := lpDDSFront.Lock(nil, srcdesc,  DDLOCK_WAIT, 0);
+      if res = DD_OK then
+      begin
+        //D3DRenderer.UpdateTexture(srcdesc.lpSurface, srcdesc.lPitch);
+        rc.Left := dwX;
+        rc.Top := dwY;
+        rc.Width := lpSrcRect.Width;
+        rc.Height := lpSrcRect.Height;
+        D3D11Renderer.UpdateTexture(srcdesc.lpSurface, srcdesc.lPitch, rc);
+        lpDDSFront.Unlock(nil);
+        D3DPresent;
+      end;
+    end;
+    Result := DD_OK;
+  end
+  else
+    Result := lpDDSFront.BltFast(dwX, dwY, lpDDSrcSurface, lpSrcRect, dwTrans);
+end;
+
+function lpDDSFront_Flip(lpDDSurfaceTargetOverride: IDirectDrawSurface;
+        dwFlags: DWORD) : HResult;
+var
+  res: HRESULT;
+  srcDC: HDC;
+  dstDC: HDC;
+  srcdesc: TDDSurfaceDesc;
+  tmp: IDirectDrawSurface;
+begin
+  if BltWindowed then
+  begin
+    if D3D11Renderer <> nil then
+    begin
+      ZeroMemory(@srcdesc, sizeof(srcdesc));
+      srcdesc.dwSize := sizeof(srcdesc);
+      res := lpDDSBack.Lock(nil, srcdesc,  DDLOCK_WAIT, 0);
+      if res = DD_OK then
+      begin
+        D3D11Renderer.UpdateTexture(srcdesc.lpSurface, srcdesc.lPitch);
+        lpDDSBack.Unlock(nil);
+      end;
+      D3DPresent;
+    end
+    else
+    begin
+      res := lpDDSBack.GetDC(srcDC);
+      if res = DD_OK then
+      begin
+        dstDC := GetDC(WindowHandle);
+        BitBlt(dstDC, 0, 0, ScreenMetrics.ScreenWidth, ScreenMetrics.ScreenHeight, srcDC, 0, 0, SRCCOPY);
+        ReleaseDC(WindowHandle, dstDC);
+        lpDDSBack.ReleaseDC(srcDC);
+      end;
+    end;
+
+    { swap the surfaces to simulate hardware buffer flipping }
+    tmp := lpDDSBack;
+    lpDDSBack := lpDDSFront;
+    lpDDSFront := tmp;
+
+    Result := DD_OK;
+  end
+  else
+    Result := lpDDSFront.Flip(lpDDSurfaceTargetOverride, dwFlags);
+end;
+
+function lpDD_CreateSurface (var lpDDSurfaceDesc: TDDSurfaceDesc;
+        out lplpDDSurface: IDirectDrawSurface;
+        pUnkOuter: IUnknown) : HResult;
+begin
+  if BltWindowed then
+  begin
+    { force the game to use 565 surfaces only as it uses digifx which cannot handle 888 pixel format }
+    lpDDSurfaceDesc.dwFlags := lpDDSurfaceDesc.dwFlags or DDSD_PIXELFORMAT;
+    ZeroMemory(@lpDDSurfaceDesc.ddpfPixelFormat, sizeof(lpDDSurfaceDesc.ddpfPixelFormat));
+    lpDDSurfaceDesc.ddpfPixelFormat.dwSize := sizeof(TDDPIXELFORMAT);
+    lpDDSurfaceDesc.ddpfPixelFormat.dwFlags := DDPF_RGB;
+    lpDDSurfaceDesc.ddpfPixelFormat.dwRGBBitCount := 16;
+    lpDDSurfaceDesc.ddpfPixelFormat.dwRBitMask := $0000F800;
+    lpDDSurfaceDesc.ddpfPixelFormat.dwGBitMask := $000007E0;
+    lpDDSurfaceDesc.ddpfPixelFormat.dwBBitMask := $0000001F;
+
+//    if (lpDDSurfaceDesc.dwFlags and DDSD_CAPS) = 0 then
+//    begin
+    lpDDSurfaceDesc.dwFlags := lpDDSurfaceDesc.dwFlags or DDSD_CAPS;
+//    end;
+    lpDDSurfaceDesc.ddsCaps.dwCaps := lpDDsurfaceDesc.ddsCaps.dwCaps and not DDSCAPS_VIDEOMEMORY;
+    lpDDSurfaceDesc.ddsCaps.dwCaps := lpDDsurfaceDesc.ddsCaps.dwCaps (*or DDSCAPS_OFFSCREENPLAIN *) or DDSCAPS_SYSTEMMEMORY;
+
+  end;
+  Result := lpDD.CreateSurface(lpDDSurfaceDesc, lplpDDSurface, pUnkOuter);
+end;
+
+function EnumDevices(lpGUID: PGUID; lpDriverDescription: PAnsiChar; lpDriverName: PAnsiChar; lpContext: Pointer; Monitor: HMonitor): BOOL; stdcall;
+begin
+  if lpGUID <> nil then
+    TStringList(lpContext).Add(lpDriverName + '=' + GUIDtoString(lpGUID^));
+  Result := True;
+end;
 
 procedure Clip(ClipX1, ClipX2: Integer; var DestX1, DestX2, SrcX1,
   SrcX2: Integer);
@@ -575,6 +745,7 @@ var
 begin
   inherited Create(AOwner);
 
+  IsWindows7 := (TOSVersion.Major = 6) and (TOSVersion.Minor = 1);
   FInterval := 50;
   ShowRepaint := false;
 
@@ -617,7 +788,7 @@ begin
   inherited Destroy;
 end;
 
-procedure TAniView.InitDX(Handle: HWND; ResW, ResH, BPP: Integer);
+procedure TAniView.InitDX(Handle: HWND; ResW, ResH, BPP, RefreshRate: Integer; Windowed, VSync: Boolean; MaxFPS: Integer);
 var
   ddsd: TDDSurfaceDesc;
   Caps: TDDSCaps;
@@ -625,36 +796,190 @@ var
   C: Longint;
   pr: TRect;
   tmpDD: IDirectDraw;
+  pdeviceGUID: PGUID;
+  deviceGUID: TGUID;
+  devices: TStringList;
+  res: HRESULT;
+  guidStr : String;
 begin
+  if (IsWindows7 and (not Windowed)) or (ScreenMetrics.ForceD3DFullscreen and (not Windowed)) then
+  begin
+    D3DFullscreen := True;
+    Windowed := True;
+  end
+  else
+  begin
+    D3DFullscreen := False;
+  end;
+
+  FillChar(ddsd, sizeof(ddsd), 0);
+  WindowHandle := Handle;
   // Log.Log('InitDX');
   if DXMode then
     Exit;
   ResWidth := ResW;
   ResHeight := ResH;
-  DirectDrawCreate(nil, tmpDD, nil); // Prepare for DirectX 7 or newer
+
+  if DeviceDriverName = '' then
+    pdeviceGUID := nil
+  else
+  begin
+    devices := TStringList.Create;
+    devices.NameValueSeparator := '=';
+    try
+      res := DirectDrawEnumerateExA(EnumDevices, devices, DDENUM_ATTACHEDSECONDARYDEVICES);
+      if res<>DD_OK then
+        Log.Log( 'DX: Failed to enumerate drivers.' );
+
+      guidStr := devices.Values[DeviceDriverName];
+
+      if guidStr = '' then
+        pdeviceGUID := nil
+      else
+      begin
+        deviceGUID := StringToGUID(guidStr);
+        pdeviceGUID := @deviceGUID;
+      end;
+
+      Log.Log( 'DX: Using Device driver: '+DeviceDriverName );
+    finally
+      devices.Free;
+    end;
+  end;
+
+  {$IFDEF DX7}
+  res := DirectDrawCreateEx(pdeviceGUID, tmpDD, IID_IDirectDraw7, nil); // Prepare for DirectX 7 or newer
+  {$ELSE}
+  res := DirectDrawCreate(pdeviceGUID, tmpDD, nil);
+  {$ENDIF}
+  if res<>DD_OK then
+  begin
+    Log.Log( 'DX: Failed to create directdraw.' );
+    MessageDlg('Could not initialize video subsystem. Please make sure that you have the latest video driver update installed.', mtError, [mbOk], 0);
+    Application.Terminate;
+  end;
+  if tmpDD = nil then
+  begin
+    Log.Log( 'DX: DirectDrawCreateEx returned nil' );
+    MessageDlg('Could not initialize video subsystem. Please make sure that you have the latest video driver update installed.', mtError, [mbOk], 0);
+    Application.Terminate;
+  end;
+
+  lpDD := nil;
   try
     tmpDD.QueryInterface(IID_IDirectDraw, lpDD);
   finally
     tmpDD := nil;
   end;
-  lpDD.SetCooperativeLevel(Handle, DDSCL_EXCLUSIVE or DDSCL_FULLSCREEN);
-  lpDD.SetDisplayMode(ResW, ResH, BPP);
-
-  ddsd.dwSize := SizeOf(ddsd);
-  ddsd.dwFlags := DDSD_CAPS or DDSD_BACKBUFFERCOUNT;
-  ddsd.dwBackBufferCount := 1;
-  ddsd.ddsCaps.dwCaps := DDSCAPS_COMPLEX + DDSCAPS_FLIP +
-    DDSCAPS_PRIMARYSURFACE;
-  if (lpDD.CreateSurface(ddsd, lpDDSFront, nil) = DD_OK) then
+  if lpDD = nil then
   begin
-    Caps.dwCaps := DDSCAPS_BACKBUFFER;
-    lpDDSFront.GetAttachedSurface(Caps, lpDDSBack);
+    Log.Log('DX: Failed to query IID_DirectDraw');
+    MessageDlg('Could not initialize video subsystem. Please make sure that you have the latest video driver update installed.', mtError, [mbOk], 0);
+    Application.Terminate;
   end;
+
+  if Windowed then
+    res := lpDD.SetCooperativeLevel(Handle, DDSCL_NORMAL)
+  else
+    res := lpDD.SetCooperativeLevel(Handle, DDSCL_EXCLUSIVE or DDSCL_FULLSCREEN);
+
+  if res<>DD_OK then
+  begin
+    MessageDlg('Could not initialize video subsystem. Please make sure that you have the latest video driver update installed.', mtError, [mbOk], 0);
+    Log.Log( 'DX: Failed to set cooperative level.' );
+  end;
+
+  ZeroMemory(@ddsd, SizeOf(ddsd));
+  if Windowed then
+  begin
+    D3D11REnderer := TDXRenderer.Create(Handle, ResW, ResH, RefreshRate, not D3DFullscreen, VSync, MaxFPS);
+
+    if D3D11Renderer = nil then
+    begin
+      Log.Log('Failed to initialize D3D11 renderer');
+      MessageDlg('Could not initialize video subsystem. Please make sure that you have the latest video driver update installed.', mtError, [mbOk], 0);
+      Application.Terminate;
+      Exit;
+    end;
+
+    D3D11Renderer.StartPresenterThread;
+
+    BltWindowed := True;
+    ddsd.dwSize := SizeOf(ddsd);
+    ddsd.dwFlags := DDSD_CAPS or DDSD_WIDTH or DDSD_HEIGHT;
+    ddsd.ddsCaps.dwCaps := DDSCAPS_OFFSCREENPLAIN;
+    ddsd.dwWidth := ResW;
+    ddsd.dwHeight := ResH;
+
+    res := lpDD_CreateSurface(ddsd, lpDDSFront, nil);
+    if res = DD_OK then
+    begin
+      res := lpDD_CreateSurface(ddsd, lpDDSBack, nil);
+      if res = DD_OK then
+      begin
+        // Both offscreen surfaces created
+      end
+      else
+        Log.Log( 'DX: Failed to create back buffer.' );
+    end
+  end
+  else
+  begin
+    {$IFDEF DX7}
+    res := lpDD.SetDisplayMode(ResW, ResH, BPP, 60, 0);
+    {$ELSE}
+    res := lpDD.SetDisplayMode(ResW, ResH, BPP);
+    {$ENDIF}
+    if res<>DD_OK then
+    begin
+      Log.Log( 'DX: Failed to set display mode.' );
+      if res = DDERR_GENERIC then Log.Log( 'DX: DDERR_GENERIC' );
+      if res = DDERR_INVALIDMODE then Log.Log( 'DX: DDERR_INVALIDMODE' );
+      if res = DDERR_INVALIDOBJECT then Log.Log( 'DX: DDERR_INVALIDOBJECT' );
+      if res = DDERR_INVALIDPARAMS then Log.Log( 'DX: DDERR_INVALIDPARAMS' );
+      if res = DDERR_LOCKEDSURFACES then Log.Log( 'DX: DDERR_LOCKEDSURFACES' );
+      if res = DDERR_NOEXCLUSIVEMODE then Log.Log( 'DX: DDERR_NOEXCLUSIVEMODE' );
+      if res = DDERR_SURFACEBUSY then Log.Log( 'DX: DDERR_SURFACEBUSY' );
+      if res = DDERR_UNSUPPORTED then Log.Log( 'DX: DDERR_UNSUPPORTED' );
+      if res = DDERR_UNSUPPORTEDMODE then Log.Log( 'DX: DDERR_UNSUPPORTEDMODE' );
+      if res = DDERR_WASSTILLDRAWING then Log.Log( 'DX: DDERR_WASSTILLDRAWING' );
+
+      MessageDlg('Could not initialize video subsystem. Please make sure that you have the latest video driver update installed.', mtError, [mbOk], 0);
+      Application.Terminate;
+    end;
+
+    ddsd.dwSize := SizeOf(ddsd);
+    ddsd.dwFlags := DDSD_CAPS or DDSD_BACKBUFFERCOUNT;
+    ddsd.dwBackBufferCount := 1;
+    ddsd.ddsCaps.dwCaps := DDSCAPS_COMPLEX + DDSCAPS_FLIP + DDSCAPS_PRIMARYSURFACE;
+    res := lpDD_CreateSurface(ddsd, lpDDSFront, nil);
+    if (res = DD_OK) then
+    begin
+      ZeroMemory(@Caps, sizeof(Caps));
+      Caps.dwCaps := DDSCAPS_BACKBUFFER;
+      lpDDSFront.GetAttachedSurface(Caps, lpDDSBack);
+      if lpDDSBack = nil then
+      begin
+        Log.Log('DX: failed to get attached surface');
+        Log.Flush;
+      end;
+    end
+    else
+    begin
+      Log.Log('DX: failed to create surface');
+      Log.Flush;
+    end
+  end;
+
+  BltWindowed := Windowed;
+
   BltFx.dwSize := SizeOf(BltFx);
   BltFx.dwFillColor := 0;
   pr := Rect(0, 0, ResWidth, ResHeight);
+
+
   lpDDSBack.Blt(@pr, nil, @pr, DDBLT_COLORFILL + DDBLT_WAIT, @BltFx);
-  lpDDSFront.Flip(nil, DDFLIP_WAIT);
+  lpDDSFront_Flip(nil, DDFLIP_WAIT);
   BltFx.dwSize := SizeOf(BltFx);
   BltFx.dwFillColor := 0;
   pr := Rect(0, 0, ResWidth, ResHeight);
@@ -667,6 +992,9 @@ begin
   else
     PixelFormat := pf555;
   DXMode := True;
+  BltWindowed := Windowed;
+  if BltWindowed then
+    InvalidateRect(Handle, nil, FALSE);
 end;
 
 procedure TAniView.CloseDX;
@@ -801,9 +1129,8 @@ begin
   while GetTickCount < NextTickCount do
   begin
     if Assigned(OnWaitForTimer) then
-      OnWaitForTimer(Self)
-    else
-      application.processmessages;
+      OnWaitForTimer(Self);
+    Application.HandleMEssage;
   end;
 end;
 
@@ -1378,7 +1705,9 @@ begin
   if Assigned(FOnBeforeDisplay) then
     FOnBeforeDisplay(Self);
 
-  lpDDSFront.Flip(nil, DDFLIP_WAIT);
+  lpDDSFront_Flip(nil, DDFLIP_WAIT);
+  if BltWindowed then
+    InvalidateRect(WindowHandle, nil, FALSE);
 
   if Assigned(FOnAfterDisplay) then
     FOnAfterDisplay(Self);
@@ -1600,6 +1929,7 @@ var
   ddsd: TDDSurfaceDesc;
   ReturnCode: HRESULT;
 begin
+  FillChar(ddsd, sizeof(ddsd), 0);
   MapPreCreated := True;
   Log.Log('Creating map buffer');
   Log.Log(inttostr(W) + ' x ' + inttostr(H));
@@ -1610,7 +1940,7 @@ begin
   ddsd.ddsCaps.dwCaps := DDSCAPS_OFFSCREENPLAIN or DDSCAPS_VIDEOMEMORY;
   ddsd.dwWidth := W;
   ddsd.dwHeight := H;
-  ReturnCode := lpDD.CreateSurface(ddsd, lpDDSMap, nil);
+  ReturnCode := lpDD_CreateSurface(ddsd, lpDDSMap, nil);
   if (ReturnCode = DD_OK) then
   begin
     Log.Log('Map buffer created in VRAM');
@@ -1656,7 +1986,7 @@ begin
       Log.Log('DDERR_UNSUPPORTEDMODE');
 
     ddsd.ddsCaps.dwCaps := DDSCAPS_OFFSCREENPLAIN or DDSCAPS_SYSTEMMEMORY;
-    lpDD.CreateSurface(ddsd, lpDDSMap, nil);
+    lpDD_CreateSurface(ddsd, lpDDSMap, nil);
   end;
 
   Log.Log('Creating work buffer');
@@ -1667,10 +1997,10 @@ begin
   ddsd.ddsCaps.dwCaps := DDSCAPS_OFFSCREENPLAIN or DDSCAPS_VIDEOMEMORY;
   ddsd.dwWidth := WorkWidth;
   ddsd.dwHeight := WorkHeight;
-  if (lpDD.CreateSurface(ddsd, Work, nil) <> DD_OK) then
+  if (lpDD_CreateSurface(ddsd, Work, nil) <> DD_OK) then
   begin
     ddsd.ddsCaps.dwCaps := DDSCAPS_OFFSCREENPLAIN or DDSCAPS_SYSTEMMEMORY;
-    lpDD.CreateSurface(ddsd, Work, nil);
+    lpDD_CreateSurface(ddsd, Work, nil);
   end;
 end;
 
@@ -1692,6 +2022,7 @@ var
   ddck: TDDCOLORKEY;
   ReturnCode: HRESULT;
 begin
+  FillChar(ddsd, sizeof(ddsd), 0);
   if (FMap = nil) then
     Exit;
   // TZone(FMap.Zones[1]).ExportTiles('f:\zone1tiles.bmp');
@@ -1741,7 +2072,7 @@ begin
     ddsd.ddsCaps.dwCaps := DDSCAPS_OFFSCREENPLAIN or DDSCAPS_VIDEOMEMORY;
     ddsd.dwWidth := W;
     ddsd.dwHeight := H;
-    ReturnCode := lpDD.CreateSurface(ddsd, lpDDSMap, nil);
+    ReturnCode := lpDD_CreateSurface(ddsd, lpDDSMap, nil);
     if (ReturnCode = DD_OK) then
     begin
       Log.Log('Map buffer created in VRAM');
@@ -1787,7 +2118,7 @@ begin
         Log.Log('DDERR_UNSUPPORTEDMODE');
 
       ddsd.ddsCaps.dwCaps := DDSCAPS_OFFSCREENPLAIN or DDSCAPS_SYSTEMMEMORY;
-      lpDD.CreateSurface(ddsd, lpDDSMap, nil);
+      lpDD_CreateSurface(ddsd, lpDDSMap, nil);
     end;
   end;
 
@@ -1809,10 +2140,10 @@ begin
     ddsd.ddsCaps.dwCaps := DDSCAPS_OFFSCREENPLAIN or DDSCAPS_VIDEOMEMORY;
     ddsd.dwWidth := WorkWidth;
     ddsd.dwHeight := WorkHeight;
-    if (lpDD.CreateSurface(ddsd, Work, nil) <> DD_OK) then
+    if (lpDD_CreateSurface(ddsd, Work, nil) <> DD_OK) then
     begin
       ddsd.ddsCaps.dwCaps := DDSCAPS_OFFSCREENPLAIN or DDSCAPS_SYSTEMMEMORY;
-      lpDD.CreateSurface(ddsd, Work, nil);
+      lpDD_CreateSurface(ddsd, Work, nil);
     end;
   end;
 
@@ -2787,7 +3118,8 @@ begin
     end;
   end;
 {$ENDIF}
-{$IFDEF DEBUG}
+//{$IFDEF DEBUG}
+{$IF FALSE}
   if Dest = MapBuffer.Canvas.Handle then
   begin
     MapBuffer.Canvas.Brush.Style := bsClear;
@@ -3166,7 +3498,8 @@ begin
     begin
       pBase := GlobalLock(Figure.PathHandle);
       p := pBase;
-{$IFDEF DEBUG}
+//{$IFDEF DEBUG}
+{$IF FALSE}
       RefreshMap;
       MapBuffer.Canvas.Brush.Color := $FF00;
       MapBuffer.Canvas.Ellipse(Figure.FX - OffsetX + MapOffsetX - Figure.Radius,
@@ -3179,7 +3512,8 @@ begin
       begin
         p^.X := p^.X * CellWidth + FStartX;
         p^.Y := p^.Y * CellHeight + FStartY;
-{$IFDEF DEBUG}
+//{$IFDEF DEBUG}
+{$IF FALSE}
         MapBuffer.Canvas.Ellipse(p^.X - OffsetX + MapOffsetX - Figure.Radius,
           p^.Y - OffsetY + MapOffsetY - Figure.Radius div 2,
           p^.X - OffsetX + MapOffsetX + Figure.Radius,
@@ -5054,7 +5388,7 @@ begin
     Inc(ActivateCount);
     event := 'OnActivate[' + IntToStr(ActivateCount) + ']';
     if PropertyExists(event) then
-      RunScript(Self, Properties[event])
+      RunScript(Self, Property_[event])
     else
       RunScript(Self, OnActivate);
 
@@ -5403,7 +5737,7 @@ begin
     MsgDuration := 100;
     BM := TBitmap.Create;
     R := Rect(0, 0, Width * 2, 0);
-    DrawText(BM.Canvas.Handle, PChar(Msg), -1, R, DT_CALCRECT or DT_CENTER or
+    DrawText(BM.Canvas.Handle, PWideChar(Msg), -1, R, DT_CALCRECT or DT_CENTER or
       DT_NOCLIP or DT_NOPREFIX or DT_WORDBREAK);
     MsgWidth := R.Right;
     MsgHeight := R.Bottom;
@@ -5412,7 +5746,7 @@ begin
     SetTextColor(BM.Canvas.Handle, ColorToRGB(Color));
     SetBkMode(BM.Canvas.Handle, TRANSPARENT);
     PatBlt(BM.Canvas.Handle, 0, 0, MsgWidth, MsgHeight, BLACKNESS);
-    DrawText(BM.Canvas.Handle, PChar(Msg), -1, R, DT_CENTER or DT_NOCLIP or
+    DrawText(BM.Canvas.Handle, PWideChar(Msg), -1, R, DT_CENTER or DT_NOCLIP or
       DT_NOPREFIX or DT_WORDBREAK);
     MsgImage := SoAOS_DX_SurfaceFromBMP(BM, clBlack);
     BM.free;
@@ -5458,6 +5792,11 @@ begin
     on E: Exception do
       log.log(FailName, E.Message, []);
   end;
+end;
+
+procedure TSpriteObject.SetCollideCount(const Value: Integer);
+begin
+  FCollideCount := Value;
 end;
 
 procedure TSpriteObject.SetFacing(const Value: TFacing);
@@ -5534,9 +5873,7 @@ const
 begin
   log.DebugLog(FailName);
   try
-
     result := '';
-
   except
     on E: Exception do
       log.log(FailName, E.Message, []);
@@ -5557,11 +5894,9 @@ const
 begin
   log.DebugLog(FailName);
   try
-
     inherited Create(X, Y, Z, Frame, Enabled);
     FProperties := TStringList.Create;
     FProperties.Duplicates := dupIgnore;
-
   except
     on E: Exception do
       log.log(FailName, E.Message, []);
@@ -5621,7 +5956,7 @@ var
   S, S0, S1: string;
   StrTmp: string;
   i, j, L: Integer;
-  INI: TINIFile;
+  INI: TMemINIFile;
 const
   FailName: string = 'TGameObject.LoadProperties';
 begin
@@ -5641,7 +5976,8 @@ begin
           if (j < length(S)) and (S[j + 1] = '#') then
           begin
             if not assigned(INI) then
-              INI := TINIFile.Create(MapPath + 'symbols.ini');
+              INI := TMemINIFile.Create( MapPath + 'symbols.'+ Language +'.ini', TEncoding.ANSI); // GetEncoding(INICodepage) );
+
             S0 := copy(S, j + 1, length(S) - j);
             S1 := Parse(S0, 1, '#');
             StrTmp := S1;
@@ -5678,9 +6014,7 @@ begin
 
   log.DebugLog(FailName);
   try
-
     result := FProperties.IndexOfName(Name) >= 0;
-
   except
     on E: Exception do
       log.log(FailName, E.Message, []);
@@ -5797,7 +6131,7 @@ begin
     Inc(LoadCount);
     event := 'OnLoad[' + IntToStr(LoadCount) + ']';
     if PropertyExists(event) then
-      RunScript(Self, Properties[event])
+      RunScript(Self, Property_[event])
     else
       RunScript(Self, OnLoad);
 

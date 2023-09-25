@@ -57,7 +57,8 @@ uses
   SoAOS.AI.Types,
   SoAOS.AI,
   DFX,
-  Resource;
+  Resource,
+  GameLibIntegration;
 
 const
   MaxCompanions = 5;
@@ -422,7 +423,7 @@ type
     function GetName: string; override;
     procedure DoFrame; override;
   public
-    Inventory: TList;
+    Inventory: TList<TItem>;
     KeyRequired: boolean;
     KeyName: string;
     OnOpen: string;
@@ -529,7 +530,7 @@ type
     WasPartyMember: boolean;
     Dieing: boolean;
     FDeadCount: LongWord;
-    FInventory: TList; // Find correct type
+    FInventory: TList<TItem>; // Find correct type
     FRange: Integer;
     Shifted: boolean;
     InitStand: boolean;
@@ -618,7 +619,7 @@ type
     FWounds: Double;
     FDrain: Double;
     FCurrentSpell: TObject; // TSpell;
-    FHotKey: array [1 .. 10] of TObject; // TSpell;
+    FHotKey: array [1 .. 20] of TObject; // TSpell; //0-9 und F3-F12
     procedure Render; override;
     function GetProperty(const Name: string): string; override;
     procedure SetProperty(const Name: string; const Value: string); override;
@@ -635,6 +636,7 @@ type
     procedure DoFrame; override;
     procedure SetResource(const Value: TAniResource); override;
     function GetName: string; override;
+    procedure TriggerAchievements(Title: string);
   public
     PainSounds: TDynamicSmallIntArray;
     DeathSounds: TDynamicSmallIntArray;
@@ -700,8 +702,7 @@ type
     // this was moved to public to give the AI access to it
     AntiPathEnabled: boolean; // Other wise I cant shut it off in the AI
     // unless the character is reloaded... ie when the map is loaded
-    constructor Create(X, Y, Z: longint; Frame: Word;
-      Enabled: boolean); override;
+    constructor Create(X, Y, Z: longint; Frame: Word; Enabled: boolean); override;
     destructor Destroy; override;
     procedure CalcStats; virtual;
     procedure Stand; virtual;
@@ -749,6 +750,14 @@ type
     procedure ClearEquipment;
     function ValidateSpells: boolean;
     procedure SetVision(v: Integer);
+    
+    procedure SheathWeapon;
+    procedure UnsheathWeapon;
+
+    // AoA only
+    procedure UseManaPotion;
+    procedure UseHealPotion;
+
     // Primary Stats
     property Strength: Integer read FStrength write SetStrength;
     property Coordination: Integer read FCoordination write SetCoordination;
@@ -775,7 +784,7 @@ type
     property Drain: Double read FDrain write FDrain;
     property Ready: boolean read FReady;
     property Equipment[Slot: TSlot]: TItem read GetEquipment write SetEquipment;
-    property Inventory: TList read FInventory;
+    property Inventory: TList<TItem> read FInventory;
     property AI : TAI read FAI write SetAI;
     property Dead: boolean read FDead write SetDead;
     property Range: Integer read FRange;
@@ -810,6 +819,24 @@ type
     // Sensory - values are in horizontal pixels
   end;
 
+  TCharacterList = class(TList<TCharacter>)
+  private
+  public
+    procedure Enable;
+    procedure Freeze;
+    procedure UnFreeze;
+    procedure PaintCharacterOnBorder;
+    procedure TakeDamage(damage: TDamageProfile);
+    procedure MakeNeutral(alliance: string);
+    procedure SetCombatMode(combatMode: boolean);
+    procedure BeginTransit;
+    procedure CancelTransit;
+    function RandomMember: TCharacter;
+    function GetPlayerData: TMemoryStream;
+    function Heal(healer: TCharacter): Boolean;
+    function HasGUID(guid: string): Boolean;
+  end;
+
   TCompanionCharacter = class(TCharacter)
   private
     Fade: Integer;
@@ -829,7 +856,7 @@ type
   TSpriteManager = class(TObject)
   private
     FCurrentIndex: Word;
-    List: TList;
+    List: TList<TSpriteObject>;
     SpriteCount: Integer;
   public
     constructor Create(Count: Integer);
@@ -869,7 +896,7 @@ const
 var
   Sprites: TSpriteManager;
   Player, Current: TCharacter;
-  NPCList: TList;
+  NPCList: TCharacterList;
 
 implementation
 
@@ -900,10 +927,11 @@ uses
 
 function FixCharacterName(const Value: string): string;
 var
-  INI: TINIFile;
+  INI: TMemINIFile;
   StrTmp: string;
 begin
-  INI := TINIFile.Create(MapPath + 'symbols.ini');
+  INI := TMemINIFile.Create( MapPath + 'symbols.'+ Language +'.ini', TEncoding.GetEncoding(INICodepage) );
+
   try
     StrTmp := '#' + Value;
     result := INI.ReadString(Parse(Value, 0, '.'),
@@ -975,8 +1003,8 @@ begin
 
     if not assigned(Sounds) then
       exit;
-    HearingRange := 400;
-    if HearingRange <= 0 then
+    HearingRange := ScreenMetrics.HearingRange;
+    if (HearingRange <= 0) or (Current=nil) then
       exit;
     PanD := X - Current.X;
     D := sqrt(sqr(PanD) + 2 * sqr(Y - Current.Y));
@@ -1012,9 +1040,8 @@ const
 begin
   log.DebugLog(FailName);
   try
-
-    HearingRange := 400;
-    if HearingRange <= 0 then
+    HearingRange := ScreenMetrics.HearingRange;
+    if (HearingRange <= 0) or (Current=nil) then
       exit;
     PanD := X - Current.X;
     D := sqrt(sqr(PanD) + 2 * sqr(Y - Current.Y));
@@ -2150,8 +2177,18 @@ begin
           if CombatMode then
             FEquipment[i].Equip(Self);
         end
+        else if i = slShield then
+        begin
+             if (FEquipment[ i ] is TWeapon) then
+             begin
+                  if CombatMode then
+                  FEquipment[ i ].Equip( Self );
+             end
         else
           FEquipment[i].Equip(Self);
+        end
+        else //i = everything else
+          FEquipment[ i ].Equip( Self );
       end;
     end;
 
@@ -2190,6 +2227,12 @@ begin
       TWeapon(FEquipment[slWeapon]).GetDamage(Self);
       // Add unarmed damage
       FRange := TWeapon(FEquipment[slWeapon]).Range;
+    end
+    //Lefthandsword, calculate only when no weapon on right hand, Adddamagebonus later then
+    else if FCombatMode and not Assigned( FEquipment[ slWeapon ] ) and Assigned( FEquipment[ slShield ] ) and ( FEquipment[ slShield ] is TWeapon ) then
+    begin
+      TWeapon( FEquipment[ slShield] ).GetDamage( Self );
+      FRange := TWeapon( FEquipment[ slShield ] ).Range;
     end
     else
     begin // Unarmed
@@ -2248,7 +2291,7 @@ begin
     BaseHitPoints := 20;
     BaseMana := 10;
     BaseAttackRecovery := 12;
-    BaseHitRecovery := 0;
+    BaseHitRecovery := 15; //15 eig noch wenig, zuvor 0, Hinweis: Je höher umso länger "gelähmt"
     TrainingPoints := 0;
     FVision := 400;
     Hearing := 80;
@@ -2269,7 +2312,7 @@ begin
     OnNoPath := NoPath;
     OnTrigger := Trigger;
     OnFilter := Filter;
-    FInventory := TList.Create;
+    FInventory := TList<TItem>.Create;
     Titles := TStringList.Create;
     FFriends := TStringList.Create;
     FFriends.Sorted := true;
@@ -2465,7 +2508,7 @@ begin
     event := 'OnDie[' + IntToStr(DieCount) + ']';
     if PropertyExists(event) then
     begin
-      RunScript(Self, Properties[event]);
+      RunScript(Self, Property_[event]);
     end
     else
     begin
@@ -2787,14 +2830,14 @@ begin
             end
             else
             begin
-              i := NPCList.IndexOf(FTarget);
+              i := NPCList.IndexOf(TCharacter(FTarget));
               if i >= 0 then
               begin
-                if assigned(TCharacter(NPCList.items[i]).FAI) and
-                  (TCharacter(NPCList.items[i]).FAI is TPartyAI) and
+                if assigned(NPCList[i].FAI) and
+                  (NPCList[i].FAI is TPartyAI) and
                   not CombatMode and not InterfaceLocked then
                 begin
-                  frmMain.BeginObjInventory(Current, NPCList.items[i]);
+                  frmMain.BeginObjInventory(Current, NPCList[i]);
                 end;
                 FTarget := nil;
               end
@@ -2814,7 +2857,7 @@ begin
             if FindFreeInventoryXY(TItem(FTarget)) then
             begin
               TItem(FTarget).PickUp;
-              Inventory.add(FTarget);
+              Inventory.add(TItem(FTarget));
               TItem(FTarget).Enabled := false;
               TItem(FTarget).LayeredImage :=
                 PartManager.GetImageFile(TItem(FTarget).PartName,
@@ -2842,7 +2885,7 @@ begin
                   event := 'OnOpenAttempt[' +
                     IntToStr(TContainer(FTarget).OpenAttemptCount) + ']';
                   if TContainer(FTarget).PropertyExists(event) then
-                    RunScript(FTarget, TContainer(FTarget).Properties[event])
+                    RunScript(FTarget, TContainer(FTarget).Property_[event])
                   else
                     RunScript(FTarget, TContainer(FTarget).OnOpenAttempt);
                 end;
@@ -2880,7 +2923,7 @@ begin
                   event := 'OnOpenAttempt[' +
                     IntToStr(TDoor(FTarget).OpenAttemptCount) + ']';
                   if TDoor(FTarget).PropertyExists(event) then
-                    RunScript(FTarget, TDoor(FTarget).Properties[event])
+                    RunScript(FTarget, TDoor(FTarget).Property_[event])
                   else
                     RunScript(FTarget, TDoor(FTarget).OnOpenAttempt);
                 end;
@@ -3034,7 +3077,7 @@ begin
       result := false;
     end;
   end;
-  for i := 1 to 10 do
+  for i := 1 to 20 do //war 10
   begin
     if assigned(HotKey[i]) then
     begin
@@ -3172,7 +3215,7 @@ begin
       Inc(DieCount);
       event := 'OnDie[' + IntToStr(DieCount) + ']';
       if PropertyExists(event) then
-        RunScript(Self, Properties[event])
+        RunScript(Self, Property_[event])
       else
         RunScript(Self, OnDie);
     end
@@ -3672,11 +3715,10 @@ begin
 
     if TSpriteObject(Target).OnCollide <> '' then
     begin
-      Inc(TSpriteObject(Target).CollideCount);
-      event := 'OnCollide[' + IntToStr(TSpriteObject(Target)
-        .CollideCount) + ']';
+      TSpriteObject(Target).CollideCount := TSpriteObject(Target).CollideCount + 1;
+      event := 'OnCollide[' + IntToStr(TSpriteObject(Target).CollideCount) + ']';
       if TSpriteObject(Target).PropertyExists(event) then
-        RunScript(Self, TSpriteObject(Target).Properties[event])
+        RunScript(Self, TSpriteObject(Target).Property_[event])
       else
         RunScript(Self, TSpriteObject(Target).OnCollide);
     end;
@@ -3880,6 +3922,78 @@ begin
   end;
 end;
 
+procedure TCharacter.TriggerAchievements(Title: string);
+var
+  AchievementString: string;
+begin
+  if frmMain.Achievements.getIdByTitle(Title, self, AchievementString) then begin
+    Log.Log('Achievement unlocked: '+AchievementString);
+    FGameLibIntegration.SetAchievement(pAnsiChar(ansistring(AchievementString)));
+  end;
+end;
+
+procedure TCharacter.UnsheathWeapon;
+begin
+  if FReady then
+  begin
+    if (Assigned( Equipment[ slWeapon ] ) and not ( Equipment[ slWeapon ] is TBow )) or
+      (Assigned( Equipment[ slShield ] ) and ( Equipment[ slShield ] is TWeapon )) then
+    begin
+      if DoAction('unsheath') then
+      begin
+        inherited Stop;
+        FReady := False;
+      end;
+    end
+    else if Assigned( Equipment[ slWeapon ] ) and ( Equipment[ slWeapon ] is TBow ) then
+    begin
+      if DoAction('bowunequip')then
+      begin
+        inherited Stop;
+        FReady := False;
+      end;
+    end;
+  end;
+end;
+
+procedure TCharacter.UseHealPotion;
+begin
+  if Wounds > 0 then
+  begin
+    if Assigned(Equipment[ slhealthpois ]) and DoAction( 'Trink' ) then
+    begin
+       inherited Stop;
+       if TitleExists('Lifesmall') then
+         Wounds := Wounds - 15
+       else if TitleExists('Lifemedium') then
+         Wounds := Wounds - 25
+       else
+         Wounds := Wounds - 40;
+       Equipment[ slhealthpois ] := nil;
+       FReady := False;
+    end;
+  end;
+end;
+
+procedure TCharacter.UseManaPotion;
+begin
+  if Drain > 0 then
+  begin
+    if Assigned(Equipment[ slmanapois ]) and DoAction( 'Trink' ) then
+    begin
+      inherited Stop;
+      if TitleExists('Manasmall') then
+        Drain := Drain - 15
+      else if TitleExists('Manamedium') then
+        Drain := Drain - 25
+      else
+        Drain := Drain - 40;
+      Equipment[ slmanapois ] := nil;
+      FReady := False;
+    end;
+  end;
+end;
+
 procedure TCharacter.Filter(Source: TAniFigure; ID, PrevID: SmallInt);
 const
   FailName: string = 'TCharacter.Filter';
@@ -3975,6 +4089,33 @@ begin
   except
     on E: Exception do
       log.log(FailName, E.Message, []);
+  end;
+end;
+
+procedure TCharacter.SheathWeapon;
+begin
+  if FReady then
+  begin
+    //Weapon in right hand, but not a Bow
+    if (Assigned( Equipment[ slWeapon ] ) and not ( Equipment[ slWeapon ] is TBow )) or
+    //or at least a Weapon in left hand
+      (Assigned( Equipment[ slShield ] ) and ( Equipment[ slShield ] is TWeapon )) then
+    begin
+      if DoAction('sheath') then
+      begin
+        inherited Stop;
+        FReady := False;
+      end;
+    end
+    //With a Bow
+    else if Assigned( Equipment[ slWeapon ] ) and ( Equipment[ slWeapon ] is TBow ) then
+    begin
+      if DoAction('bowequip')then
+      begin
+        inherited Stop;
+        FReady := False;
+      end;
+    end;
   end;
 end;
 
@@ -4166,6 +4307,47 @@ begin
       S := 'hotkey10=' + HotKey[10].Name;
       List.add(S);
     end;
+    //F3-F12 Zusatz
+    if assigned( HotKey[ 11 ] ) then
+    begin
+      S := 'hotkey11=' + HotKey[ 11 ].Name; List.add( S );
+    end;
+    if assigned( HotKey[ 12 ] ) then
+    begin
+      S := 'hotkey12=' + HotKey[ 12 ].Name; List.add( S );
+    end;
+    if assigned( HotKey[ 13 ] ) then
+    begin
+      S := 'hotkey13=' + HotKey[ 13 ].Name; List.add( S );
+    end;
+    if assigned( HotKey[ 14 ] ) then
+    begin
+      S := 'hotkey14=' + HotKey[ 14 ].Name; List.add( S );
+    end;
+    if assigned( HotKey[ 15 ] ) then
+    begin
+      S := 'hotkey15=' + HotKey[ 15 ].Name; List.add( S );
+    end;
+    if assigned( HotKey[ 16 ] ) then
+    begin
+      S := 'hotkey16=' + HotKey[ 16 ].Name; List.add( S );
+    end;
+    if assigned( HotKey[ 17 ] ) then
+    begin
+      S := 'hotkey17=' + HotKey[ 17 ].Name; List.add( S );
+    end;
+    if assigned( HotKey[ 18 ] ) then
+    begin
+      S := 'hotkey18=' + HotKey[ 18 ].Name; List.add( S );
+    end;
+    if assigned( HotKey[ 19 ] ) then
+    begin
+      S := 'hotkey19=' + HotKey[ 19 ].Name; List.add( S );
+    end;
+    if assigned( HotKey[ 20 ] ) then
+    begin
+      S := 'hotkey20=' + HotKey[ 20 ].Name; List.add( S );
+    end;
     if assigned(CurrentSpell) then
     begin
       S := 'currentspell=' + CurrentSpell.Name;
@@ -4202,6 +4384,11 @@ begin
     if assigned(Equipment[slLeg2]) then
     begin
       S := 'equipment.leg2=' + Equipment[slLeg2].ItemName;
+      List.add(S);
+    end;
+    if assigned( Equipment[ slTatt ] ) then
+    begin
+      S := 'equipment.Tatt=' + Equipment[slTatt].ItemName;
       List.add(S);
     end;
     if assigned(Equipment[slChest1]) then
@@ -4259,6 +4446,21 @@ begin
       S := 'equipment.tabar=' + Equipment[sltabar].ItemName;
       List.add(S);
     end;
+    if assigned( Equipment[ slCoif ] ) then
+    begin
+      S := 'equipment.coif=' + Equipment[slCoif].ItemName;
+      List.add( S );
+    end;
+    if assigned( Equipment[ slhealthpois ] ) then
+    begin
+      S := 'equipment.healthpois=' + Equipment[slhealthpois].ItemName;
+      List.add( S );
+    end;
+    if assigned( Equipment[ slmanapois ] ) then
+    begin
+      S := 'equipment.manapois=' + Equipment[slmanapois].ItemName;
+      List.add( S );
+    end;
     if assigned(Equipment[slMisc1]) then
     begin
       S := 'equipment.misc1=' + Equipment[slMisc1].ItemName;
@@ -4303,6 +4505,12 @@ begin
       S := S + 'shield,';
     if EquipmentLocked[sltabar] then
       S := S + 'tabar,';
+      if EquipmentLocked[slCoif] then
+      S := S + 'coif,';
+    if EquipmentLocked[slhealthpois] then
+      S := S + 'healthpois,';
+    if EquipmentLocked[slmanapois] then
+      S := S + 'manapois,';
     if EquipmentLocked[slMisc1] then
       S := S + 'misc1,';
     if EquipmentLocked[slMisc2] then
@@ -4472,6 +4680,8 @@ begin
         result := result + 'boot,';
       if EquipmentLocked[slLeg2] then
         result := result + 'leg2,';
+      if EquipmentLocked[sltatt] then
+        result := result + 'Tatt,';
       if EquipmentLocked[slChest1] then
         result := result + 'chest1,';
       if EquipmentLocked[slChest2] then
@@ -4494,6 +4704,12 @@ begin
         result := result + 'shield,';
       if EquipmentLocked[sltabar] then
         result := result + 'tabar,';
+      if EquipmentLocked[slCoif] then
+        result := result + 'coif,';
+      if EquipmentLocked[slhealthpois] then
+        result := result + 'healthpois,';
+      if EquipmentLocked[slmanapois] then
+        result := result + 'manapois,';
       if EquipmentLocked[slMisc1] then
         result := result + 'misc1,';
       if EquipmentLocked[slMisc2] then
@@ -4509,6 +4725,8 @@ begin
       result := Equipment[slBoot].ItemName
     else if S = 'equipment.leg2' then
       result := Equipment[slLeg2].ItemName
+    else if S = 'equipment.Tatt' then
+      Result := Equipment[slTatt].ItemName
     else if S = 'equipment.chest1' then
       result := Equipment[slChest1].ItemName
     else if S = 'equipment.chest2' then
@@ -4531,6 +4749,12 @@ begin
       result := Equipment[slShield].ItemName
     else if S = 'equipment.tabar' then
       result := Equipment[sltabar].ItemName
+    else if S = 'equipment.coif' then
+      Result := Equipment[slCoif].ItemName
+    else if S = 'equipment.healthpois' then
+      Result := Equipment[slhealthpois].ItemName
+    else if S = 'equipment.manapois' then
+      Result := Equipment[slmanapois].ItemName
     else if S = 'equipment.misc1' then
       result := Equipment[slMisc1].ItemName
     else if S = 'equipment.misc2' then
@@ -4740,6 +4964,86 @@ begin
             else
               HotKey[10] := TSpell(AllSpellList.objects[i]);
           end
+          else if S = 'hotkey11' then
+          begin
+            i := AllSpellList.IndexOf( Value );
+            if i < 0 then
+              HotKey[ 11 ] := nil
+            else
+              HotKey[ 11 ] := TSpell( AllSpellList.Objects[ i ] );
+          end
+          else if S = 'hotkey12' then
+          begin
+            i := AllSpellList.IndexOf( Value );
+            if i < 0 then
+              HotKey[ 12 ] := nil
+            else
+              HotKey[ 12 ] := TSpell( AllSpellList.Objects[ i ] );
+          end
+          else if S = 'hotkey13' then
+          begin
+            i := AllSpellList.IndexOf( Value );
+            if i < 0 then
+              HotKey[ 13 ] := nil
+            else
+              HotKey[ 13 ] := TSpell( AllSpellList.Objects[ i ] );
+          end
+          else if S = 'hotkey14' then
+          begin
+            i := AllSpellList.IndexOf( Value );
+            if i < 0 then
+              HotKey[ 14 ] := nil
+            else
+              HotKey[ 14 ] := TSpell( AllSpellList.Objects[ i ] );
+          end
+          else if S = 'hotkey15' then
+          begin
+            i := AllSpellList.IndexOf( Value );
+            if i < 0 then
+              HotKey[ 15 ] := nil
+            else
+              HotKey[ 15 ] := TSpell( AllSpellList.Objects[ i ] );
+          end
+          else if S = 'hotkey16' then
+          begin
+            i := AllSpellList.IndexOf( Value );
+            if i < 0 then
+              HotKey[ 16 ] := nil
+            else
+              HotKey[ 16 ] := TSpell( AllSpellList.Objects[ i ] );
+          end
+          else if S = 'hotkey17' then
+          begin
+            i := AllSpellList.IndexOf( Value );
+            if i < 0 then
+              HotKey[ 17 ] := nil
+            else
+              HotKey[ 17 ] := TSpell( AllSpellList.Objects[ i ] );
+          end
+          else if S = 'hotkey18' then
+          begin
+            i := AllSpellList.IndexOf( Value );
+            if i < 0 then
+              HotKey[ 18 ] := nil
+            else
+              HotKey[ 18 ] := TSpell( AllSpellList.Objects[ i ] );
+          end
+          else if S = 'hotkey19' then
+          begin
+            i := AllSpellList.IndexOf( Value );
+            if i < 0 then
+              HotKey[ 19 ] := nil
+            else
+              HotKey[ 19 ] := TSpell( AllSpellList.Objects[ i ] );
+          end
+          else if S = 'hotkey20' then
+          begin
+            i := AllSpellList.IndexOf( Value );
+            if i < 0 then
+              HotKey[ 20 ] := nil
+            else
+              HotKey[ 20 ] := TSpell( AllSpellList.Objects[ i ] );
+          end
           else
             NoProp := true;
         end;
@@ -4872,9 +5176,17 @@ begin
           begin
             FEquipmentNames[slLeg2] := Value
           end
+          else if S = 'equipment.tatt' then
+          begin
+            FEquipmentNames[slTatt] := Value
+          end
           else if S = 'equipment.belt' then
           begin
             FEquipmentNames[slBelt] := Value
+          end
+          else if S = 'equipment.coif' then
+          begin
+            FEquipmentNames[slCoif] := Value
           end
           else if S = 'willbedisabled' then
           begin
@@ -4913,6 +5225,7 @@ begin
             EquipmentLocked[slLeg1] := S.Contains('leg1');
             EquipmentLocked[slBoot] := S.Contains('boot');
             EquipmentLocked[slLeg2] := S.Contains('leg2');
+            EquipmentLocked[slLeg2] := S.Contains('tatt');
             EquipmentLocked[slChest1] := S.Contains('chest1');
             EquipmentLocked[slChest2] := S.Contains('chest2');
             EquipmentLocked[slArm] := S.Contains('arm');
@@ -4924,6 +5237,9 @@ begin
             EquipmentLocked[slWeapon] := S.Contains('weapon');
             EquipmentLocked[slShield] := S.Contains('shield');
             EquipmentLocked[sltabar] := S.Contains('tabar');
+            EquipmentLocked[slLeg2] := S.Contains('coif');
+            EquipmentLocked[slLeg2] := S.Contains('healthpois');
+            EquipmentLocked[slLeg2] := S.Contains('manapois');
             EquipmentLocked[slMisc1] := S.Contains('misc1');
             EquipmentLocked[slMisc2] := S.Contains('misc2');
             EquipmentLocked[slMisc3] := S.Contains('misc3');
@@ -4965,6 +5281,19 @@ begin
           if S = 'equipment.gauntlet' then
           begin
             FEquipmentNames[slGauntlet] := Value
+          end
+          else if S = 'equipment.manapois' then
+          begin
+            FEquipmentNames[ slmanapois ] := Value
+          end
+          else
+            NoProp := true;
+        end;
+      20 :
+        begin
+          if S = 'equipment.healthpois' then
+          begin
+            FEquipmentNames[ slhealthpois ] := Value
           end
           else
             NoProp := true;
@@ -5331,7 +5660,8 @@ var
   pr, pr0: TRect;
 begin
   inherited;
-  if Highlighted and not FDead and assigned(AI) and Current.IsEnemy(Self) then
+  // Combat health bar.
+  if ShowEnemyHealthBar and Highlighted and not FDead and assigned(AI) and Current.IsEnemy(Self) then
   begin
     X := View.Left + PosX + (Self.Width - Width) div 2;
     Y := View.Top + PosY - Height;
@@ -5729,6 +6059,7 @@ begin
       i := Titles.add(Title);
       Titles.objects[i] := TObject(Modifier);
       CalcStats;
+      TriggerAchievements(Title);
     end;
 
   except
@@ -6510,8 +6841,8 @@ begin
   TCharacter(NewObject).BuyingDiscount := BuyingDiscount;
   TCharacter(NewObject).SellingMarkup := SellingMarkup;
   TCharacter(NewObject).Alliance := Alliance;
-  TCharacter(NewObject).FProperties.text := FProperties.text;
-  TCharacter(NewObject).Titles.text := Titles.text;
+  TCharacter(NewObject).Properties.Text := Properties.Text;
+  TCharacter(NewObject).Titles.Text := Titles.Text;
   for i := 0 to Titles.Count - 1 do
   begin
     if assigned(Titles.objects[i]) then
@@ -7043,7 +7374,7 @@ begin
   try
 
     inherited;
-    Inventory := TList.Create;
+    Inventory := TList<TItem>.Create;
     OnScriptEnd := ScriptEnd;
     FClosed := true;
 
@@ -7097,7 +7428,7 @@ begin
     Inc(CloseCount);
     event := 'OnClose[' + IntToStr(CloseCount) + ']';
     if PropertyExists(event) then
-      RunScript(Self, Properties[event])
+      RunScript(Self, Property_[event])
     else
       RunScript(Self, OnClose);
 
@@ -7138,7 +7469,7 @@ begin
       event := 'OnOpen[' + IntToStr(OpenCount) + ']';
       if PropertyExists(event) then
       begin
-        S := Properties[event];
+        S := Property_[event];
         if S = '' then
           ShowObjectInventory := true
         else
@@ -7179,7 +7510,7 @@ begin
       event := 'OnOpen[' + IntToStr(OpenCount) + ']';
       if PropertyExists(event) then
       begin
-        S := Properties[event];
+        S := Property_[event];
         if S = '' then
           ShowObjectInventory := true
         else
@@ -7866,7 +8197,7 @@ begin
     Inc(CloseCount);
     event := 'OnClose[' + IntToStr(CloseCount) + ']';
     if PropertyExists(event) then
-      RunScript(Self, Properties[event])
+      RunScript(Self, Property_[event])
     else
       RunScript(Self, OnClose);
 
@@ -8123,7 +8454,7 @@ begin
       Inc(OpenCount);
       event := 'OnOpen[' + IntToStr(OpenCount) + ']';
       if PropertyExists(event) then
-        RunScript(Self, Properties[event])
+        RunScript(Self, Property_[event])
       else
         RunScript(Self, OnOpen);
     end;
@@ -8472,7 +8803,7 @@ begin
     Inc(DropCount);
     event := 'OnDrop[' + IntToStr(DropCount) + ']';
     if PropertyExists(event) then
-      RunScript(Self, Properties[event])
+      RunScript(Self, Property_[event])
     else
       RunScript(Self, OnDrop);
 
@@ -8554,12 +8885,13 @@ var
 const
   FailName: string = 'TItem.GetIconicImage';
 begin
+  ZeroMemory(@ddsd, sizeof(ddsd));
   log.DebugLog(FailName);
   try
 
     result := nil;
-    W := GroundListWidth;
-    H := GroundListHeight;
+    W := cGroundListWidth;
+    H := cGroundListHeight;
     result := DDGetSurface(lpDD, W, H, cTransparent, true, ColorMatch);
     if assigned(result) then
     begin
@@ -8628,6 +8960,7 @@ var
 const
   FailName: string = 'TItem.GetInventoryImage';
 begin
+  ZeroMemory(@ddsd, sizeof(ddsd));
   log.DebugLog(FailName);
   try
 
@@ -8686,6 +9019,7 @@ var
 const
   FailName: string = 'TItem.GetInventoryShadow';
 begin
+  ZeroMemory(@ddsd, sizeof(ddsd));
   log.DebugLog(FailName);
   try
 
@@ -8852,6 +9186,8 @@ begin
         result := result + '[Boot]';
       if slLeg2 in SlotsAllowed then
         result := result + '[Leg2]';
+      if slTatt in SlotsAllowed then
+        result := result + '[Tatt]';
       if slChest1 in SlotsAllowed then
         result := result + '[Chest1]';
       if slChest2 in SlotsAllowed then
@@ -8874,6 +9210,12 @@ begin
         result := result + '[Shield]';
       if sltabar in SlotsAllowed then
         result := result + '[tabar]';
+      if slCoif in SlotsAllowed then
+        result := result + '[coif]';
+      if slhealthpois in SlotsAllowed then
+        result := result + '[healthpois]';
+      if slmanapois in SlotsAllowed then
+        result := result + '[manapois]';
       if slMisc1 in SlotsAllowed then
         result := result + '[Misc1]';
       if slMisc2 in SlotsAllowed then
@@ -8926,7 +9268,7 @@ begin
     Inc(PickUpCount);
     event := 'OnPickUp[' + IntToStr(PickUpCount) + ']';
     if PropertyExists(event) then
-      RunScript(Self, Properties[event])
+      RunScript(Self, Property_[event])
     else
       RunScript(Self, OnPickUp);
 
@@ -9027,6 +9369,8 @@ begin
       S := S + '[Boot]';
     if slLeg2 in SlotsAllowed then
       S := S + '[Leg2]';
+    if slTatt in SlotsAllowed then
+      S := S + '[Tatt]';
     if slChest1 in SlotsAllowed then
       S := S + '[Chest1]';
     if slChest2 in SlotsAllowed then
@@ -9049,6 +9393,12 @@ begin
       S := S + '[Shield]';
     if sltabar in SlotsAllowed then
       S := S + '[tabar]';
+    if slCoif in SlotsAllowed then
+      S := S + '[coif]';
+    if slhealthpois in SlotsAllowed then
+      S := S + '[healthpois]';
+    if slmanapois in SlotsAllowed then
+      S := S + '[manapois]';
     if slMisc1 in SlotsAllowed then
       S := S + '[Misc1]';
     if slMisc2 in SlotsAllowed then
@@ -9099,6 +9449,8 @@ begin
               SlotsAllowed := SlotsAllowed + [slBoot];
             if S.Contains('[leg2]') then
               SlotsAllowed := SlotsAllowed + [slLeg2];
+            if S.Contains('[tatt]') then
+              SlotsAllowed := SlotsAllowed + [sltatt];
             if S.Contains('[chest1]') then
               SlotsAllowed := SlotsAllowed + [slChest1];
             if S.Contains('[chest2]') then
@@ -9121,6 +9473,12 @@ begin
               SlotsAllowed := SlotsAllowed + [slShield];
             if S.Contains('[tabar]') then
               SlotsAllowed := SlotsAllowed + [sltabar];
+            if S.Contains('[coif]') then
+              SlotsAllowed := SlotsAllowed + [slCoif];
+            if S.Contains('[healthpois]') then
+              SlotsAllowed := SlotsAllowed + [slhealthpois];
+            if S.Contains('[manapois]') then
+              SlotsAllowed := SlotsAllowed + [slmanapois];
             if S.Contains('[misc1]') then
               SlotsAllowed := SlotsAllowed + [slMisc1];
             if S.Contains('[misc2]') then
@@ -9440,7 +9798,7 @@ end;
 //        S := List.strings[i];
 //        j := Pos('=', S);
 //        if (j > 0) { and (j<length(S)) } then
-//        begin // This caused blank properties not to overwrite defaults
+//        begin // This caused blank Property_ not to overwrite defaults
 //          if (j < length(S)) and (S[j + 1] = '#') then
 //          begin
 //            if not assigned(INI) then
@@ -9600,7 +9958,7 @@ end;
 //    Inc(LoadCount);
 //    event := 'OnLoad[' + IntToStr(LoadCount) + ']';
 //    if PropertyExists(event) then
-//      RunScript(Self, Properties[event])
+//      RunScript(Self, Property_[event])
 //    else
 //      RunScript(Self, OnLoad);
 //
@@ -9624,7 +9982,7 @@ end;
 //    Inc(ActivateCount);
 //    event := 'OnActivate[' + IntToStr(ActivateCount) + ']';
 //    if PropertyExists(event) then
-//      RunScript(Self, Properties[event])
+//      RunScript(Self, Property_[event])
 //    else
 //      RunScript(Self, OnActivate);
 //
@@ -10549,7 +10907,7 @@ begin
       Inc(TriggerCount);
       event := 'OnTrigger[' + IntToStr(TriggerCount) + ']';
       if PropertyExists(event) then
-        RunScript(Activator, Properties[event])
+        RunScript(Activator, Property_[event])
       else
         RunScript(Activator, OnTrigger);
     end;
@@ -10690,7 +11048,7 @@ begin
       Inc(TriggerCount);
       event := 'OnTrigger[' + IntToStr(TriggerCount) + ']';
       if PropertyExists(event) then
-        RunScript(Character, Properties[event])
+        RunScript(Character, Property_[event])
       else
         RunScript(Character, OnTrigger);
     end
@@ -10775,7 +11133,7 @@ var
     end
     else
     begin
-      HearingRange := Radius;
+      HearingRange := Radius + (ScreenMetrics.HearingRange-400);
       if HearingRange <= 0 then
         exit;
       PanD := X - Current.X;
@@ -11294,7 +11652,7 @@ end;
 function TransferItem(Source, Dest: TGameObject; ItemName: string;
   DropIfNoRoom: boolean): boolean;
 var
-  Inventory: TList;
+  Inventory: TList<TItem>;
   S: string;
   Item: TItem;
   i, j: Integer;
@@ -11829,7 +12187,7 @@ begin
   try
 
     SpriteCount := Count;
-    List := TList.Create;
+    List := TList<TSpriteObject>.Create;
     List.capacity := SpriteCount;
     for i := 1 to SpriteCount do
     begin
@@ -11850,10 +12208,8 @@ const
 begin
   log.DebugLog(FailName);
   try
-
     List.free;
     inherited;
-
   except
     on E: Exception do
       log.log(FailName, E.Message, []);
@@ -11874,7 +12230,7 @@ begin
   try
 
     StartIndex := FCurrentIndex;
-    while TAniFigure(List.items[FCurrentIndex]).Enabled do
+    while List[FCurrentIndex].Enabled do
     begin
       Inc(FCurrentIndex);
       if (FCurrentIndex >= SpriteCount) then
@@ -11884,9 +12240,9 @@ begin
     end;
     // We're going to rely on the assumption that the indexes in Game.FigureList
     // match the indexes in List.
-    if (TAniFigure(List.items[FCurrentIndex]) is TProjectile) then
+    if (TAniFigure(List[FCurrentIndex]) is TProjectile) then
     begin
-      Tail1 := TProjectile(List.items[FCurrentIndex]).TrailedBy;
+      Tail1 := TProjectile(List[FCurrentIndex]).TrailedBy;
       while assigned(Tail1) do
       begin
         if Tail1.Enabled then
@@ -11903,7 +12259,7 @@ begin
     result := ClassType.Create(X, Y, Z, Frame, true);
     result.Resource := Resource;
     Game.ReplaceFigure(FCurrentIndex, result);
-    List.items[FCurrentIndex] := result;
+    List[FCurrentIndex] := result;
 
     Inc(FCurrentIndex);
     if (FCurrentIndex >= SpriteCount) then
@@ -12264,7 +12620,7 @@ begin
       event := 'OnTimer[' + IntToStr(TimerCount) + ']';
       if PropertyExists(event) then
       begin
-        RunScript(Self, Properties[event]);
+        RunScript(Self, Property_[event]);
       end
       else
       begin
@@ -12519,6 +12875,179 @@ begin
     on E: Exception do
       log.log(FailName, E.Message, []);
   end;
+end;
+
+{ TCharacterList }
+
+procedure TCharacterList.BeginTransit;
+begin
+  for var i := 0 to Count - 1 do
+  begin
+    Self[ i ].TransitX := Self[ i ].PrevX;
+    Self[ i ].TransitY := Self[ i ].PrevY;
+    Self[ i ].TransitZ := Self[ i ].PrevZ;
+  end;
+end;
+
+procedure TCharacterList.CancelTransit;
+begin
+  for var i := 0 to Count - 1 do
+  begin
+    with Self[ i ] do
+      SetPos(TransitX, TransitY, TransitZ);
+    Self[ i ].Stand;
+  end;
+end;
+
+procedure TCharacterList.Enable;
+begin
+  for var i: Integer := 0 to Count-1 do
+    Self[i].Enabled := True;
+end;
+
+procedure TCharacterList.Freeze;
+begin
+  if Count > 1 then
+  begin
+    frmMain.ChangeFocus( player );
+    for var i: Integer := 0 to Count - 1 do
+      if Self[ i ] <> player then
+      begin
+        Self[ i ].Frozen := True;
+      end;
+  end
+end;
+
+function TCharacterList.GetPlayerData: TMemoryStream;
+var
+  Block: TSavBlocks;
+  List: TStringList;
+  L: Longint;
+  S: AnsiString;
+  k: TSlot;
+  EOB: Word;
+begin
+  EOB := EOBMarker;
+  Result := TMemoryStream.Create;
+  List := TStringList.Create;
+  try
+    for var i := 0 to Count - 1 do
+    begin
+      Block := sbCharacter;
+      Result.Write(Block, SizeOf(Block));
+      List.Clear;
+      Self[i].SaveProperties(List);
+      S := AnsiString(List.Text);
+      L := Length(S);
+      Result.Write(L, SizeOf(L));
+      Result.Write(S[1], L);
+      Result.Write(EOB, SizeOf(EOB));
+
+      for k := slLeg1 to SlMisc3 do
+      begin
+        if Assigned(Self[i].Equipment[k]) then
+        begin
+          // Log.Log('Saving equipment item '+NPCList[i].Equipment[k].ItemName);
+          Block := sbItem;
+          Result.Write(Block, SizeOf(Block));
+          List.Clear;
+          Self[i].Equipment[k].SaveProperties(List);
+          S := AnsiString(List.Text);
+          L := Length(S);
+          Result.Write(L, SizeOf(L));
+          Result.Write(S[1], L);
+          Result.Write(EOB, SizeOf(EOB));
+        end;
+      end;
+
+      for var j := 0 to Self[i].Inventory.Count - 1 do
+      begin
+        // Log.Log('Saving inventory item '+NPCList[i].Inventory[j].ItemName);
+        Block := sbItem;
+        Result.Write(Block, SizeOf(Block));
+        List.Clear;
+        Self[i].Inventory[j].SaveProperties(List);
+        S := AnsiString(List.Text);
+        L := Length(S);
+        Result.Write(L, SizeOf(L));
+        Result.Write(S[1], L);
+        Result.Write(EOB, SizeOf(EOB));
+      end;
+    end;
+  finally
+    List.Free;
+  end;
+end;
+
+function TCharacterList.HasGUID(guid: string): Boolean;
+begin
+  Result := False;
+  for var i := 0 to Count - 1 do
+  begin
+    if Self[ i ].Guid = guid then
+      Exit(True);
+  end;
+end;
+
+function TCharacterList.Heal(healer: TCharacter): Boolean;
+begin
+  Result := False;
+  for var i := 0 to Count - 1 do
+  begin
+    if Self[ i ].wounds > ( Self[ i ].HitPoints * 0.50 ) then
+    begin
+      healer.Cast( Self[ i ] );
+      Result := True;
+      break;
+    end;
+  end;
+end;
+
+procedure TCharacterList.MakeNeutral(alliance: string);
+begin
+  for var i := 0 to Count - 1 do
+    Self[ i ].MakeNeutral( alliance );
+end;
+
+procedure TCharacterList.PaintCharacterOnBorder;
+begin
+  for var i := 0 to Count-1 do
+    frmMain.PaintCharacterOnBorder( TSpriteObject( Self[ i ] ), i );
+end;
+
+function TCharacterList.RandomMember: TCharacter;
+begin
+  Result := Self[ Random( Self.count ) ];
+end;
+
+procedure TCharacterList.TakeDamage(damage: TDamageProfile);
+begin
+  for var i := 0 to Count - 1 do
+  begin
+    var Total: Single := CalcTotalDamage( damage, Self[ i ].Resistance, 1, false );
+    Self[ i ].TakeDamage( Self[ i ], Total, 0, false );
+  end;
+end;
+
+procedure TCharacterList.SetCombatMode(combatMode: boolean);
+begin
+  for var i := 0 to Count - 1 do
+  begin
+    Self[ i ].CombatMode := combatMode;
+    frmMain.PaintCharacterOnBorder( TSpriteObject( Self[ i ] ), i );
+
+    if combatMode then
+      Self[ i ].SheathWeapon
+    else
+      Self[ i ].UnsheathWeapon;
+  end;
+end;
+
+procedure TCharacterList.UnFreeze;
+begin
+  for var i := 0 to Count - 1 do
+    if Self[ i ] <> player then
+      Self[ i ].Frozen := false;
 end;
 
 end.

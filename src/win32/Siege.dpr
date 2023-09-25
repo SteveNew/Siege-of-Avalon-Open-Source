@@ -117,7 +117,51 @@ uses
   SoAOS.Projectile in 'engine\SoAOS.Projectile.pas',
   SoAOS.Map in 'engine\SoAOS.Map.pas',
   SoAOS.Animation in 'engine\SoAOS.Animation.pas',
-  SoAOS.Intrface.KeyEvents in 'interface\SoAOS.Intrface.KeyEvents.pas';
+  SoAOS.Intrface.KeyEvents in 'interface\SoAOS.Intrface.KeyEvents.pas',
+  D3DRenderer in 'graphics\D3DRenderer.pas',
+  D3DShader in 'graphics\D3DShader.pas',
+  D3DMesh in 'graphics\D3DMesh.pas',
+  Achievements in 'engine\Achievements.pas',
+  GameLibIntegration.Gog in 'platforms\GameLibIntegration.Gog.pas',
+  GameLibIntegration in 'platforms\GameLibIntegration.pas',
+  GameLibIntegration.Steam in 'platforms\GameLibIntegration.Steam.pas',
+  GalaxyWrapper in 'platforms\gogIntegration\GalaxyWrapper.pas',
+  Steamworks in 'platforms\steamIntegration\Steamworks.pas',
+  SteamworksClasses in 'platforms\steamIntegration\SteamworksClasses.pas',
+  SteamworksTypes in 'platforms\steamIntegration\SteamworksTypes.pas',
+  MfPlayerClass in 'MfPlayer\MfPlayerClass.pas',
+  UniThreadTimer in 'MfPlayer\UniThreadTimer.pas',
+  D3DMousePtr in 'engine\D3DMousePtr.pas',
+  SoAOS.StackTrace in 'engine\SoAOS.StackTrace.pas',
+  JclDebug in 'jcl\JclDebug.pas',
+  JclBase in 'jcl\JclBase.pas',
+  JclResources in 'jcl\JclResources.pas',
+  JclFileUtils in 'jcl\JclFileUtils.pas',
+  JclWin32 in 'jcl\JclWin32.pas',
+  JclSysUtils in 'jcl\JclSysUtils.pas',
+  JclSynch in 'jcl\JclSynch.pas',
+  JclLogic in 'jcl\JclLogic.pas',
+  JclRegistry in 'jcl\JclRegistry.pas',
+  JclStrings in 'jcl\JclStrings.pas',
+  JclSysInfo in 'jcl\JclSysInfo.pas',
+  JclAnsiStrings in 'jcl\JclAnsiStrings.pas',
+  JclWideStrings in 'jcl\JclWideStrings.pas',
+  JclStreams in 'jcl\JclStreams.pas',
+  JclStringConversions in 'jcl\JclStringConversions.pas',
+  JclCharsets in 'jcl\JclCharsets.pas',
+  JclMath in 'jcl\JclMath.pas',
+  Jcl8087 in 'jcl\Jcl8087.pas',
+  JclConsole in 'jcl\JclConsole.pas',
+  JclSecurity in 'jcl\JclSecurity.pas',
+  JclShell in 'jcl\JclShell.pas',
+  JclUnicode in 'jcl\JclUnicode.pas',
+  Snmp in 'jcl\Snmp.pas',
+  JclIniFiles in 'jcl\JclIniFiles.pas',
+  JclDateTime in 'jcl\JclDateTime.pas',
+  JclPeImage in 'jcl\JclPeImage.pas',
+  JclTD32 in 'jcl\JclTD32.pas',
+  JclHookExcept in 'jcl\JclHookExcept.pas',
+  SoAOS.SysUtils in 'engine\SoAOS.SysUtils.pas';
 
 {$R *.RES}
 
@@ -125,107 +169,53 @@ const
   MUTEXNAME = 'DigitalTomeSiegeOfAvalon';
 
 var
-  hMutex : THandle;
-  zAppName : array[ 0..512 ] of Char;
-  zCurDir : array[ 0..255 ] of Char;
-  WorkDir : string;
-  MovieSwitches : string;
-  STARTUPINFO : TStartupInfo;
-  ProcessInfo : TProcessInformation;
-  SiegeIni : TIniFile;
+  hMutex: THandle;
 
-procedure PlayOpeningMovie;
-begin
-  SiegeIni := nil;
-  SiegeIni := TIniFile.Create( ExtractFilePath( Application.ExeName ) + 'siege.ini' );
-  try
-
-    OpeningMovie := SiegeIni.ReadString( 'Settings', 'MoviePath', ExtractFilePath( Application.ExeName ) + 'Movies' ) + '\' + SiegeIni.ReadString( 'Settings', 'OpeningMovie', 'siegeopening.bik' );
-    ClosingMovie := SiegeIni.ReadString( 'Settings', 'MoviePath', ExtractFilePath( Application.ExeName ) + 'Movies' ) + '\' + SiegeIni.ReadString( 'Settings', 'ClosingMovie', 'siegeclosing.bik' );
-    MovieSwitches := UpperCase( SiegeIni.ReadString( 'Settings', 'MovieSwitches', '/R/C/U1/I102/D9/B0' ) );
-
-    Screen.Cursor := crNone;
-    Application.ProcessMessages;
-
-    if TFile.Exists( OpeningMovie ) and ( LowerCase( SiegeIni.ReadString( 'Settings', 'ShowIntro', 'true' ) ) = 'true' ) then
-    begin
-      //Begin the opening Movie
-      StrPCopy( zAppName, ExtractFilePath( Application.ExeName ) + 'BinkPlay.exe' + ' ' + OpeningMovie + ' ' + MovieSwitches + '/P' );
-      GetDir( 0, WorkDir );
-      StrPCopy( zCurDir, WorkDir );
-      FillChar( STARTUPINFO, SizeOf( STARTUPINFO ), #0 );
-      STARTUPINFO.cb := SizeOf( STARTUPINFO );
-
-      STARTUPINFO.dwFlags := STARTF_USESHOWWINDOW;
-      STARTUPINFO.wShowWindow := 1;
-      if CreateProcess( nil, zAppName, nil, nil, False, CREATE_NEW_CONSOLE or NORMAL_PRIORITY_CLASS
-        , nil, nil, STARTUPINFO, ProcessInfo ) then
-        WaitForSingleObject( ProcessInfo.hProcess, INFINITE );
-    end;
-  finally
-    if Assigned( SiegeIni ) then
-      SiegeIni.Free;
-    SiegeIni := nil;
-  end;
-
-  zAppName := '';
-  WorkDir := '';
-  zCurDir := '';
-  Screen.Cursor := crDefault;
-end;
-
-procedure PlayClosingMovie;
-begin
-  //Begin the closing Movie
-  Screen.Cursor := crNone;
-  Application.ProcessMessages;
-  if TFile.Exists( ClosingMovie ) and bPlayClosingMovie then
-  begin
-    StrPCopy( zAppName, ExtractFilePath( Application.ExeName ) + 'BinkPlay.exe' + ' ' + ClosingMovie + ' ' + MovieSwitches );
-    GetDir( 0, WorkDir );
-    StrPCopy( zCurDir, WorkDir );
-    FillChar( STARTUPINFO, SizeOf( STARTUPINFO ), #0 );
-    STARTUPINFO.cb := SizeOf( STARTUPINFO );
-
-    STARTUPINFO.dwFlags := STARTF_USESHOWWINDOW;
-    STARTUPINFO.wShowWindow := 1;
-    if CreateProcess( nil, zAppName, nil, nil, False, CREATE_NEW_CONSOLE or NORMAL_PRIORITY_CLASS
-      , nil, nil, STARTUPINFO, ProcessInfo ) then
-      WaitForSingleObject( ProcessInfo.hProcess, INFINITE );
-  end;
-  Screen.Cursor := crDefault;
-end;
+var
+  LaunchSettingResult: TModalResult;
+  ChosenDisplayIndex: Integer;
+  frmLaunchSetting: TfrmLaunchSetting;
 
 begin
-//  ReportMemoryLeaksOnShutdown := TRUE;
+  // ReportMemoryLeaksOnShutdown := TRUE;
 
   // A means of assuring that only one copy of game runs at a time, but does it REALLY work? What is runtime error 216?
-  hMutex := OpenMutex( MUTEX_ALL_ACCESS, False, MUTEXNAME );
+  hMutex := OpenMutex(MUTEX_ALL_ACCESS, False, MUTEXNAME);
   if hMutex <> 0 then
   begin
-    CloseHandle( hMutex );
+    CloseHandle(hMutex);
     Exit;
   end;
-  hMutex := CreateMutex( nil, True, MUTEXNAME );
-
-//  PlayOpeningMovie;
-//  bPlayClosingMovie := False; // Game must force to true to show closing movie
+  hMutex := CreateMutex(nil, True, MUTEXNAME);
 
   // Launch dialog until game UI is redone - SDL2 - ran out of room on the ingame graphic.
-  TfrmLaunchSetting.Execute;
+  frmLaunchSetting := TfrmLaunchSetting.Create(nil);
+  try
+    LaunchSettingResult := frmLaunchSetting.ShowModal;
+    ChosenDisplayIndex := frmLaunchSetting.GetChosenDisplayIndex;
+  finally
+    frmLaunchSetting.Free;
+  end;
 
-  Application.Initialize;
-  Application.HelpFile := 'help.htm';
-  Application.Title := 'Siege of Avalon';
+  if (LaunchSettingResult = mrOK) then
+  begin
+    Application.Initialize;
+    Application.MainFormOnTaskbar := True;
+    Application.Title := 'Siege of Avalon';
 
-  Application.ProcessMessages;
-  Application.CreateForm(TfrmMain, frmMain);
-  Application.Run;
+    Application.ProcessMessages;
+    Application.CreateForm(TfrmMain, frmMain);
+  if (ChosenDisplayIndex >= 0) and (ChosenDisplayIndex < Screen.MonitorCount) then
+    begin
+      frmMain.ChosenDisplayIndex := ChosenDisplayIndex;
+      frmMain.Left := Screen.Monitors[ChosenDisplayIndex].Left;
+      frmMain.Top := Screen.Monitors[ChosenDisplayIndex].Top;
+    end;
 
-  ReleaseMutex( hMutex );
-  CloseHandle( hMutex );
+    Application.Run;
+  end;
 
-//  PlayClosingMovie;
+  ReleaseMutex(hMutex);
+  CloseHandle(hMutex);
 
 end.
-

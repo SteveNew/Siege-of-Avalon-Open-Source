@@ -33,44 +33,67 @@ unit SoAOSExtSetting;
 interface
 
 uses
-  Winapi.Windows, Winapi.Messages, System.SysUtils, System.Variants, System.Classes, Vcl.Graphics,
-  Vcl.Controls, Vcl.Forms, Vcl.Dialogs, Vcl.StdCtrls, Vcl.ExtCtrls,
+  Anidemo, // für Modname
+  Winapi.Windows, Winapi.Messages, System.SysUtils, System.Variants,
+  System.Classes, System.UITypes,
+  Vcl.Graphics, Vcl.Controls, Vcl.Forms, Vcl.Dialogs, Vcl.StdCtrls,
+  Vcl.ExtCtrls,
   Vcl.Imaging.pngimage;
 
 const
-  cNoLanguage = 'default';
+  cNoLanguage = 'Default';
 
 type
   TfrmLaunchSetting = class(TForm)
-    imgPage1: TImage;
+    imgBack: TImage;
     tmrScroll: TTimer;
-    LinkLabel: TLinkLabel;
-    StaticText1: TStaticText;
-    StaticText2: TStaticText;
     lblLanguage: TStaticText;
+    StaticText3: TStaticText;
+    lblMonitor: TStaticText;
+    lblResolution: TStaticText;
+    imgCheck: TImage;
+    VersionLabel: TLabel;
     procedure FormCreate(Sender: TObject);
     procedure tmrScrollTimer(Sender: TObject);
-    procedure TxtScrollLeft;
-    procedure TxtScrollRight;
-    procedure imgPage1Click(Sender: TObject);
-    procedure Done(r: integer);
+    procedure imgBackClick(Sender: TObject);
+    procedure Done(r: integer; windowed: Boolean);
     procedure FormDestroy(Sender: TObject);
-    procedure LinkLabelLinkClick(Sender: TObject; const Link: string;
-      LinkType: TSysLinkType);
     procedure FormShow(Sender: TObject);
+    procedure StaticText3Click(Sender: TObject);
+    procedure FormCloseQuery(Sender: TObject; var CanClose: Boolean);
+    procedure imgCheckClick(Sender: TObject);
   private
     { Private declarations }
     FLanguages: TStringList;
     FCurrentLanguage: string;
-    FCurrentLanguageIdx: Integer;
+    FCurrentLanguageIdx: integer;
+
+    FMonitors: TStringList;
+    FCurrentDevice: string;
+    FForceD3DFullscreen: Boolean;
+    FVSync: Boolean;
+    FCurrentDeviceIdx: integer;
+
+    FResolutions: TStringList;
+    FCurrentResolution: string;
+    FCurrentResolutionIdx: integer;
+
     FScrollDirLeft: Boolean;
     FScrollText: string;
+    FScrollFullText: string;
+    FScrollControl: TStaticText;
+
     FInterfacePath: string;
 
-    Support720p: Boolean;
-    Support1080p: Boolean;
+    monitorCnt: integer;
+
+    function AppHookFunc(var Message: TMessage): Boolean;
+    procedure SetResolutionSupport(lpszDeviceName: LPCWSTR);
+    function ScrollText(const goLeft: Boolean; var idx: integer;
+      const list: TStringList; const control: TStaticText): string;
   public
     class function Execute: TModalResult;
+    function GetChosenDisplayIndex: integer;
   end;
 
 var
@@ -81,58 +104,64 @@ implementation
 uses
   System.IOUtils,
   System.IniFiles,
-  Winapi.ShellAPI;
+  Winapi.ShellAPI,
+  Winapi.Multimon,
+  SoAOS.Types,
+  LogFile;
 
 {$R *.dfm}
 
-function LoadResourceFontByID( ResourceID : Integer; ResType: PChar ) : Boolean;
+function TfrmLaunchSetting.GetChosenDisplayIndex: integer;
+begin
+  Result := FCurrentDeviceIdx;
+end;
+
+function LoadResourceFontByID(ResourceID: integer; ResType: PChar): Boolean;
 var
-  ResStream : TResourceStream;
-  FontsCount : DWORD;
+  ResStream: TResourceStream;
+  FontsCount: DWORD;
 begin
   ResStream := TResourceStream.CreateFromID(hInstance, ResourceID, ResType);
   try
-    Result := (AddFontMemResourceEx(ResStream.Memory, ResStream.Size, nil, @FontsCount) <> 0);
+    Result := (AddFontMemResourceEx(ResStream.Memory, ResStream.Size, nil,
+      @FontsCount) <> 0);
   finally
     ResStream.Free;
   end;
 end;
 
-procedure TfrmLaunchSetting.TxtScrollLeft;
+function TfrmLaunchSetting.AppHookFunc(var Message: TMessage): Boolean;
 begin
-  Dec(FCurrentLanguageIdx);
-  if FCurrentLanguageIdx=-1 then
-    FCurrentLanguageIdx := FLanguages.Count-1;
-  FCurrentLanguage := FLanguages[FCurrentLanguageIdx];
-  FScrollText := FCurrentLanguage.PadLeft(30,' ');
-  FScrollDirLeft := True;
-  tmrScroll.Enabled := True;
+  Result := False;
+  if Message.Msg = WM_SYSCOMMAND then
+  begin
+    PostMessage(Handle, WM_CLOSE, 0, 0);
+    Result := True;
+  end;
 end;
 
-procedure TfrmLaunchSetting.TxtScrollRight;
-begin
-  Inc(FCurrentLanguageIdx);
-  if FCurrentLanguageIdx=FLanguages.Count then
-    FCurrentLanguageIdx := 0;
-  FCurrentLanguage := FLanguages[FCurrentLanguageIdx];
-  FScrollText := FCurrentLanguage.PadRight(30,' ');
-  FScrollDirLeft := False;
-  tmrScroll.Enabled := True;
-end;
-
-procedure TfrmLaunchSetting.Done(r: integer);
+procedure TfrmLaunchSetting.Done(r: integer; windowed: Boolean);
 var
-  INI: TIniFile;
-  languagePath, fsrc, fdest: string;
-  files: TArray<string>;
+  INI, DaysINI, PillarsINI, AshesINI, CavesINI, RiseINI, KingdomsINI: TIniFile;
 begin
-  INI := TIniFile.Create(ChangeFileExt(Application.ExeName,'.ini'));
+  // Mods, for synchronizing language
+  DaysINI := TIniFile.Create(ExtractFilePath(Application.ExeName) + 'days.ini');
+  PillarsINI := TIniFile.Create(ExtractFilePath(Application.ExeName) +
+    'pillars.ini');
+  AshesINI := TIniFile.Create(ExtractFilePath(Application.ExeName) +
+    'ashes.ini');
+  CavesINI := TIniFile.Create(ExtractFilePath(Application.ExeName) +
+    'caves.ini');
+  RiseINI := TIniFile.Create(ExtractFilePath(Application.ExeName) + 'rise.ini');
+  KingdomsINI := TIniFile.Create(ExtractFilePath(Application.ExeName) +
+    'kingdoms.ini');
+  INI := TIniFile.Create(ExtractFilePath(Application.ExeName) + 'siege.ini');
   try
-
     try
       if (FCurrentLanguage <> cNoLanguage) then
       begin
-        if TDirectory.Exists(TPath.Combine(FInterfacePath, FCurrentLanguage)) then
+        if TDirectory.Exists(TPath.Combine(FInterfacePath, FCurrentLanguage))
+        then
           INI.WriteString('Settings', 'LanguagePath', FCurrentLanguage)
         else
         begin
@@ -141,22 +170,46 @@ begin
         end;
       end;
       INI.WriteInteger('Settings', 'ScreenResolution', r);
+      INI.WriteBool('Settings', 'Windowed', windowed);
+      INI.WriteBool('Settings', 'ForceD3DFullscreen', FForceD3DFullscreen);
+      INI.WriteBool('Settings', 'D3DVSync', FVSync);
+      INI.WriteString('Settings', 'DeviceName', FCurrentDevice);
+      // Mods only have 2 localizations (English und german)
+      if (FCurrentLanguage <> 'German') then
+      begin
+        if fileexists('days.ini') then
+          DaysINI.WriteString('Settings', 'LanguagePath', 'english');
+        if fileexists('pillars.ini') then
+          PillarsINI.WriteString('Settings', 'LanguagePath', 'english');
+        if fileexists('ashes.ini') then
+          AshesINI.WriteString('Settings', 'LanguagePath', 'english');
+        if fileexists('rise.ini') then
+          RiseINI.WriteString('Settings', 'LanguagePath', 'english');
+        if fileexists('caves.ini') then
+          CavesINI.WriteString('Settings', 'LanguagePath', 'english');
+        if fileexists('kingdoms.ini') then
+          KingdomsINI.WriteString('Settings', 'LanguagePath', 'english');
+      end
+      else
+      begin
+        if fileexists('days.ini') then
+          DaysINI.WriteString('Settings', 'LanguagePath', 'german');
+        if fileexists('pillars.ini') then
+          PillarsINI.WriteString('Settings', 'LanguagePath', 'german');
+        if fileexists('ashes.ini') then
+          AshesINI.WriteString('Settings', 'LanguagePath', 'german');
+        if fileexists('rise.ini') then
+          RiseINI.WriteString('Settings', 'LanguagePath', 'german');
+        if fileexists('caves.ini') then
+          CavesINI.WriteString('Settings', 'LanguagePath', 'german');
+        if fileexists('kingdoms.ini') then
+          KingdomsINI.WriteString('Settings', 'LanguagePath', 'german');
+      end;
       INI.UpdateFile;
     except
       on EIniFileException do
       begin
         RaiseLastOsError;
-      end;
-    end;
-
-    if FCurrentLanguage <> cNoLanguage then
-    begin
-      languagePath := IncludeTrailingPathDelimiter(TPath.Combine(FInterfacePath, FCurrentLanguage));
-      files := TDirectory.GetFiles(languagePath);
-      for fsrc in files do
-      begin
-        fdest := TPath.Combine( FInterfacePath, TPath.GetFileName( fsrc ) );
-        TFile.Copy( fsrc, fdest, True);
       end;
     end;
 
@@ -178,100 +231,350 @@ begin
   end;
 end;
 
+procedure TfrmLaunchSetting.FormCloseQuery(Sender: TObject;
+  var CanClose: Boolean);
+begin
+  CanClose := True;
+  if ModalResult = mrNone then
+    ModalResult := mrCancel;
+end;
+
 procedure TfrmLaunchSetting.FormCreate(Sender: TObject);
 var
   INI: TIniFile;
   lInterfacePath: string;
   dir: string;
+  prim: integer;
+
+  devName: string;
+  DisplayDevice: TDisplayDevice;
+  MonitorInfo: TMonitorInfoEx;
+  iDevNum: DWORD;
+  p: integer;
+  langStr: string;
+
+  Png: TPngImage;
+  Bmp: TBitmap;
+  BlendFn: TBlendFunction;
 begin
-  FLanguages := TStringList.Create(dupIgnore, True, False);
+  Png := TPngImage.Create;
+  Png.LoadFromResourceName(hInstance, 'startupback');
+  Bmp := TBitmap.Create;
+  Bmp.Assign(Png);
+
+  // prepare TImage for accepting a partial transparent image
+  imgBack.Picture.Bitmap.PixelFormat := pf32bit;
+  imgBack.Picture.Bitmap.AlphaFormat := afPremultiplied;
+  imgBack.Picture.Bitmap.Canvas.Brush.Color := clLtGray;
+  imgBack.Picture.Bitmap.SetSize(Png.Width, Png.Height);
+
+  // alpha blend the temporary bitmap to the bitmap of the image
+  BlendFn.BlendOp := AC_SRC_OVER;
+  BlendFn.BlendFlags := 0;
+  BlendFn.SourceConstantAlpha := 240; // set opacity here
+  BlendFn.AlphaFormat := AC_SRC_ALPHA;
+
+  Winapi.Windows.AlphaBlend(imgBack.Picture.Bitmap.Canvas.Handle, 0, 0,
+    imgBack.Picture.Bitmap.Width, imgBack.Picture.Bitmap.Height,
+    Bmp.Canvas.Handle, 0, 0, Bmp.Width, Bmp.Height, BlendFn);
+
+  Bmp.Free;
+  Png.Free;
+
+  Application.HookMainWindow(AppHookFunc);
+
   if LoadResourceFontByID(1, RT_FONT) then
     Self.Font.Name := 'BlackChancery';
-  SendMessage(HWND_BROADCAST, WM_FONTCHANGE, 0, 0) ;
+  SendMessageTimeout(HWND_BROADCAST, WM_FONTCHANGE, 0, 0, SMTO_NORMAL,
+    100, nil);
   Application.ProcessMessages;
-  INI := TIniFile.Create(ChangeFileExt(Application.ExeName,'.ini'));
+  // Evtl unnötig und nicht initialisiert...
+  case modselection of
+    TModSelection.SoA:
+      INI := TIniFile.Create(ExtractFilePath(Application.ExeName) +
+        'siege.ini');
+    TModSelection.DoA:
+      INI := TIniFile.Create(ExtractFilePath(Application.ExeName) + 'days.ini');
+    TModSelection.PoA:
+      INI := TIniFile.Create(ExtractFilePath(Application.ExeName) +
+        'pillars.ini');
+    TModSelection.AoA:
+      INI := TIniFile.Create(ExtractFilePath(Application.ExeName) +
+        'ashes.ini');
+    TModSelection.Caves:
+      INI := TIniFile.Create(ExtractFilePath(Application.ExeName) +
+        'caves.ini');
+    TModSelection.RoD:
+      INI := TIniFile.Create(ExtractFilePath(Application.ExeName) + 'rise.ini');
+    TModSelection.TSK:
+      INI := TIniFile.Create(ExtractFilePath(Application.ExeName) +
+        'kingdoms.ini');
+  else
+    INI := TIniFile.Create(ExtractFilePath(Application.ExeName) + 'siege.ini');
+  end;
+
   try
     FCurrentLanguage := INI.ReadString('Settings', 'LanguagePath', cNoLanguage);
-    if FCurrentLanguage='' then
+    if FCurrentLanguage = '' then
       FCurrentLanguage := cNoLanguage;
     lInterfacePath := INI.ReadString('Settings', 'Interface', 'Interface');
+    imgCheck.Visible := not INI.ReadBool('Settings', 'Windowed', False);
+    FForceD3DFullscreen := INI.ReadBool('Settings', 'ForceD3DFullscreen', True);
+    // D3D fullscreen seems to be safer than DDraw
+    FVSync := INI.ReadBool('Settings', 'D3DVSync', True);
+    FCurrentDevice := INI.ReadString('Settings', 'DeviceName', '');
+    FCurrentResolution := INI.ReadString('Settings', 'ScreenResolution', '600');
   finally
     INI.Free;
   end;
-  FInterfacePath := IncludeTrailingPathDelimiter(TPath.GetFullPath(lInterfacePath));
+
+  FLanguages := TStringList.Create(dupIgnore, True, False);
+  FInterfacePath := IncludeTrailingPathDelimiter
+    (TPath.GetFullPath(lInterfacePath));
   for dir in TDirectory.GetDirectories(FInterfacePath) do
-    FLanguages.Add(Copy(dir, dir.LastIndexOf(PathDelim)+2));
-  if FLanguages.Count=0 then // no languages - other than english
-    FLanguages.Add(cNoLanguage);
-  FCurrentLanguageIdx := FLanguages.IndexOf(FCurrentLanguage);
-  if FCurrentLanguageIdx=-1 then
-    FCurrentLanguageIdx := 0;
-  for var i: integer := 0 to screen.MonitorCount-1 do
   begin
-    var mon: TMonitor := screen.Monitors[i];
-    if mon.Primary then
+    if FileExists(dir + '\Text.ini') then
     begin
-      Support1080p := (mon.Height >= 1080);
-      Support720p := (mon.Height >= 720);
+      langStr := AnsiLowerCase(Copy(dir, dir.LastIndexOf(PathDelim) + 2));
+      FLanguages.Add(AnsiUpperCase(langStr[1]) + Copy(langStr, 2));
     end;
   end;
+  if FLanguages.Count = 0 then // no languages - other than english
+    FLanguages.Add(cNoLanguage);
+  FCurrentLanguageIdx := FLanguages.IndexOf(FCurrentLanguage);
+  if FCurrentLanguageIdx = -1 then
+    FCurrentLanguageIdx := 0;
+
+  FMonitors := TStringList.Create();
+  FMonitors.NameValueSeparator := '=';
+  monitorCnt := Screen.MonitorCount;
+  prim := 0;
+  // DeviceDrivers
+  DisplayDevice.cb := SizeOf(DisplayDevice);
+  p := 0;
+  for iDevNum := 0 to monitorCnt - 1 do
+  begin
+    ZeroMemory(@MonitorInfo, SizeOf(MonitorInfo));
+    MonitorInfo.cbSize := SizeOf(MonitorInfo);
+    GetMonitorInfo(Screen.Monitors[iDevNum].Handle, @MonitorInfo);
+    devName := MonitorInfo.szDevice;
+    EnumDisplayDevices(PChar(devName), 0, DisplayDevice, 0);
+    FMonitors.Add('Display ' + (iDevNum + 1).ToString + ' - ' +
+      string(DisplayDevice.DeviceString) + '=' + devName);
+    if devName = FCurrentDevice then
+      prim := iDevNum;
+    Inc(p);
+  end;
+  FCurrentDeviceIdx := prim;
+  FCurrentDevice := FMonitors.ValueFromIndex[FCurrentDeviceIdx];
+
+  FResolutions := TStringList.Create(dupIgnore, True, False);
+  SetResolutionSupport(PWideChar(FCurrentDevice));
+
+  // serge: if there are any errors with getting display device names then
+  // we assume that something is wrong with video drivers.
+  // This definitely happens on some systems with Intel IGPU
+  // when there are no vendor drivers installed.
+
+  if p <> monitorCnt then
+  begin
+    Log.Log('Failed to enumerate display devices');
+    MessageDlg
+      ('Could not initialize video subsystem. Please make sure that you have the latest video driver update installed.',
+      mtError, [mbOk], 0);
+    Application.Terminate;
+  end;
+
 end;
 
 procedure TfrmLaunchSetting.FormDestroy(Sender: TObject);
 begin
   FLanguages.Free;
+  FMonitors.Free;
+  FResolutions.Free;
+  Application.UnHookMainWindow(AppHookFunc);
 end;
 
 procedure TfrmLaunchSetting.FormShow(Sender: TObject);
 begin
   lblLanguage.Font.Name := 'BlackChancery';
   lblLanguage.Caption := FLanguages[FCurrentLanguageIdx];
- // lblLanguageCaption.Font.Name := 'BlackChancery';
+  lblResolution.Font.Name := 'BlackChancery';
+  lblResolution.Caption := FResolutions.KeyNames[FCurrentResolutionIdx];
+  lblMonitor.Font.Name := 'BlackChancery';
+  lblMonitor.Caption := FMonitors.KeyNames[FCurrentDeviceIdx];
 end;
 
-procedure TfrmLaunchSetting.imgPage1Click(Sender: TObject);
+procedure TfrmLaunchSetting.imgCheckClick(Sender: TObject);
+begin
+  imgCheck.Visible := not imgCheck.Visible;
+  SetResolutionSupport(PWideChar(FCurrentDevice));
+end;
+
+procedure TfrmLaunchSetting.imgBackClick(Sender: TObject);
 var
   lInterfacePath: string;
 begin
   lInterfacePath := FInterfacePath;
   if FCurrentLanguage <> cNoLanguage then
-    lInterfacePath := IncludeTrailingPathDelimiter(TPath.Combine(FInterfacePath, FCurrentLanguage));
-  if Rect(321,283,342,304).Contains(imgPage1.ScreenToClient(Mouse.cursorpos)) then
-    TxtScrollLeft;
-  if Rect(455,283,476,304).Contains(imgPage1.ScreenToClient(Mouse.cursorpos)) then
-    TxtScrollRight;
-  if Rect(100,327,186,380).Contains(imgPage1.ScreenToClient(Mouse.cursorpos)) then
-    Done(600);
-  if Rect(241,327,327,380).Contains(imgPage1.ScreenToClient(Mouse.cursorpos)) then
-    if Support720p then Done(720)
-    else ShowMessage('The current resolution of primary monitor does not support 720p/HD.');
-  if Rect(373,327,459,380).Contains(imgPage1.ScreenToClient(Mouse.cursorpos)) then
-    if Support1080p then Done(1080)
-    else ShowMessage('The current resolution of primary monitor does not support 1080p/FullHD.');
+    lInterfacePath := IncludeTrailingPathDelimiter(TPath.Combine(FInterfacePath,
+      FCurrentLanguage));
+  // Language
+  if Rect(195, 338, 210, 353).Contains(imgBack.ScreenToClient(Mouse.cursorpos))
+  then
+    FCurrentLanguage := ScrollText(True, FCurrentLanguageIdx, FLanguages,
+      lblLanguage);
+  if Rect(295, 338, 310, 353).Contains(imgBack.ScreenToClient(Mouse.cursorpos))
+  then
+    FCurrentLanguage := ScrollText(False, FCurrentLanguageIdx, FLanguages,
+      lblLanguage);
+
+  // Resolution
+  if Rect(195, 274, 210, 289).Contains(imgBack.ScreenToClient(Mouse.cursorpos))
+  then
+    FCurrentResolution := ScrollText(False, FCurrentResolutionIdx, FResolutions,
+      lblResolution);
+  if Rect(395, 274, 410, 289).Contains(imgBack.ScreenToClient(Mouse.cursorpos))
+  then
+    FCurrentResolution := ScrollText(True, FCurrentResolutionIdx, FResolutions,
+      lblResolution);
+
+  // Monitor
+  if Rect(195, 240, 210, 255).Contains(imgBack.ScreenToClient(Mouse.cursorpos))
+  then
+  begin
+    FCurrentDevice := ScrollText(True, FCurrentDeviceIdx, FMonitors,
+      lblMonitor);
+    SetResolutionSupport(PWideChar(FCurrentDevice));
+  end;
+  if Rect(488, 240, 503, 255).Contains(imgBack.ScreenToClient(Mouse.cursorpos))
+  then
+  begin
+    FCurrentDevice := ScrollText(False, FCurrentDeviceIdx, FMonitors,
+      lblMonitor);
+    SetResolutionSupport(PWideChar(FCurrentDevice));
+  end;
+
+  // Fullscreen
+  if Rect(214, 300, 240, 326).Contains(imgBack.ScreenToClient(Mouse.cursorpos))
+  then
+  begin
+    imgCheck.Visible := not imgCheck.Visible;
+    SetResolutionSupport(PWideChar(FCurrentDevice));
+  end;
+
+  // Let's Play
+  if Rect(400, 320, 520, 385).Contains(imgBack.ScreenToClient(Mouse.cursorpos))
+  then
+  begin
+    Done(FCurrentResolution.ToInteger, not imgCheck.Visible);
+  end;
 end;
 
-procedure TfrmLaunchSetting.LinkLabelLinkClick(Sender: TObject;
-  const Link: string; LinkType: TSysLinkType);
+function TfrmLaunchSetting.ScrollText(const goLeft: Boolean; var idx: integer;
+  const list: TStringList; const control: TStaticText): string;
 begin
-  ShellExecute(0, nil, PChar(Link), nil, nil, 1);
+  if goLeft then
+  begin
+    Inc(idx);
+    if idx = list.Count then
+      idx := 0;
+  end
+  else
+  begin
+    Dec(idx);
+    if idx = -1 then
+      idx := list.Count - 1;
+  end;
+
+  FScrollFullText := list[idx];
+  if Pos('=', FScrollFullText) > 0 then
+  begin
+    Result := list.ValueFromIndex[idx];
+    FScrollFullText := list.KeyNames[idx];
+  end
+  else
+    Result := FScrollFullText;
+
+  if goLeft then
+    FScrollText := FScrollFullText.PadLeft(FScrollFullText.Length * 3, ' ')
+  else
+    FScrollText := FScrollFullText.PadRight(FScrollFullText.Length * 3, ' ');
+
+  FScrollDirLeft := goLeft;
+  FScrollControl := control;
+  tmrScroll.Enabled := True;
+end;
+
+procedure TfrmLaunchSetting.SetResolutionSupport(lpszDeviceName: LPCWSTR);
+var
+  iModeNum: DWORD;
+  lpDevMode: TDeviceMode;
+  i: integer;
+begin
+  FResolutions.Clear;
+  iModeNum := 0;
+  if lpszDeviceName = '' then
+    lpszDeviceName := nil;
+  while EnumDisplaySettings(lpszDeviceName, iModeNum, lpDevMode) do
+  begin
+    if imgCheck.Visible then // exact resolution needed.
+    begin
+      if (lpDevMode.dmPelsWidth = 800) and (lpDevMode.dmPelsHeight = 600) then
+        FResolutions.Add('800 x 600 (Original)=600');
+      if (lpDevMode.dmPelsWidth = 1280) and (lpDevMode.dmPelsHeight = 720) then
+        FResolutions.Add('1280 x 720 (HD)=720');
+      if (lpDevMode.dmPelsWidth = 1920) and (lpDevMode.dmPelsHeight = 1080) then
+        FResolutions.Add('1920 x 1080 (FullHD)=1080');
+      Inc(iModeNum);
+    end
+    else
+    begin
+      if (lpDevMode.dmPelsWidth >= 800) and (lpDevMode.dmPelsHeight >= 600) then
+        FResolutions.Add('800 x 600 (Original)=600');
+      if (lpDevMode.dmPelsWidth >= 1280) and (lpDevMode.dmPelsHeight >= 720)
+      then
+        FResolutions.Add('1280 x 720 (HD)=720');
+      if (lpDevMode.dmPelsWidth >= 1920) and (lpDevMode.dmPelsHeight >= 1080)
+      then
+        FResolutions.Add('1920 x 1080 (FullHD)=1080');
+      Inc(iModeNum);
+    end;
+  end;
+
+  FCurrentResolutionIdx := 0;
+  for i := 0 to FResolutions.Count - 1 do
+  begin
+    if FResolutions.ValueFromIndex[i] = FCurrentResolution then
+      FCurrentResolutionIdx := i;
+  end;
+
+  FCurrentResolution := FResolutions.ValueFromIndex[FCurrentResolutionIdx];
+  lblResolution.Caption := FResolutions.KeyNames[FCurrentResolutionIdx];
+end;
+
+procedure TfrmLaunchSetting.StaticText3Click(Sender: TObject);
+begin
+  ModalResult := mrCancel;
 end;
 
 procedure TfrmLaunchSetting.tmrScrollTimer(Sender: TObject);
 begin
-  //TODO: Redo this - since DX has partly been initialized controls do not behave correctly
+  // TODO: Redo this - since DX has partly been initialized controls do not behave correctly
   if FScrollDirLeft then
   begin
-    if FScrollText[2]<>' ' then
+    if FScrollText[2] <> ' ' then
       tmrScroll.Enabled := False;
-    FScrollText := copy(FScrollText, 2);
-    lblLanguage.Caption := copy(FScrollText, 1, Length(FCurrentLanguage));
+    FScrollText := Copy(FScrollText, 2);
+    FScrollControl.Caption := Copy(FScrollText, 1, Length(FScrollFullText));
   end
   else
   begin
-    if FScrollText[Length(FScrollText)-1]<>' ' then
+    if FScrollText[Length(FScrollText) - 1] <> ' ' then
       tmrScroll.Enabled := False;
-    FScrollText := copy(FScrollText, 1, Length(FScrollText)-1);
-    lblLanguage.Caption := copy(FScrollText, Length(FScrollText)-Length(FCurrentLanguage));
+    FScrollText := Copy(FScrollText, 1, Length(FScrollText) - 1);
+    FScrollControl.Caption := Copy(FScrollText, Length(FScrollText) -
+      Length(FScrollFullText));
   end;
 end;
 

@@ -56,15 +56,20 @@ type
     DxBox : IDirectDrawSurface;
     OldValue : integer;
     BltFx : TDDBLTFX;
+    function GetOffset: TPoint;
   public
     Loaded : Boolean;
     MaxValue : integer;
     FileName : string;
+    DlgWidth: Integer;
+    DlgHeight: Integer;
+    function ApplyOffset(const r: TRect): TRect;
     procedure SetBar( CurrentValue : integer );
     constructor Create;
     destructor Destroy; override;
     procedure Init;
     procedure Release;
+    property Offset: TPoint read GetOffset;
   end;
 
 implementation
@@ -72,9 +77,16 @@ implementation
 uses
   SoAOS.Types,
   SoAOS.Graphics.Draw,
-  SoAOS.Animation;
+  SoAOS.Animation,
+  AniDemo;
 
 { TLoaderBox }
+
+function TLoaderBox.ApplyOffset(const r: TRect): TRect;
+begin
+  Result := r;
+  Result.Offset(Offset);
+end;
 
 constructor TLoaderBox.Create;
 const
@@ -104,10 +116,15 @@ begin
   end;
 end;
 
+function TLoaderBox.GetOffset: TPoint;
+begin
+  Result := TPoint.Create((ScreenMetrics.ScreenWidth - DlgWidth) div 2, (ScreenMetrics.ScreenHeight - DlgHeight) div 2);
+end;
+
 procedure TLoaderBox.Init;
 var
-  BltFx : TDDBLTFX;
-  i, width, height : integer;
+  BltFx1 : TDDBLTFX;
+  i : integer;
   pr : TRect;
 const
   FailName : string = 'TLoaderBox.init';
@@ -119,11 +136,15 @@ begin
 
     OldValue := 0;
 
-    DXBox := SoAOS_DX_LoadBMP( FileName, cInvisColor, width, height );
-    BltFx.dwSize := SizeOf( BltFx );
-    BltFx.dwFillColor := SoAOS_DX_ColorMatch( DXBox, cLoadColor ); // RGB( 205, 205, 205 )
-    pr := Rect( 0, 0, width, height );
-    lpDDSBack.BltFast( 0, 0, DXBox, @pr, DDBLTFAST_SRCCOLORKEY or DDBLTFAST_WAIT );
+    DXBox := SoAOS_DX_LoadBMP( FileName, cInvisColor, DlgWidth, DlgHeight );
+    BltFx1.dwSize := SizeOf( BltFx1 );
+    BltFx1.dwFillColor := SoAOS_DX_ColorMatch( DXBox, cLoadColor ); // RGB( 205, 205, 205 )
+
+    if ScreenMetrics.borderFile<>'' then
+      lpDDSBack.BltFast( 0, 0, frmMain.FillBorder, nil, DDBLTFAST_SRCCOLORKEY or DDBLTFAST_WAIT );
+
+    pr := Rect( 0, 0, DlgWidth, DlgHeight );
+    lpDDSBack.BltFast( Offset.X, Offset.Y, DXBox, @pr, DDBLTFAST_SRCCOLORKEY or DDBLTFAST_WAIT );
  { for i:=0 to 9 do begin
      DrawSub(lpDDSBack,rect(50+i-5,500+i-5,750,500+i+1-5),rect(50+i-5,500+i-5,750,500+i+1-5),DXBox,False,150-i*10);
      DrawSub(lpDDSBack,rect(50+i-5,500+i-5,50+i-5+1,550),rect(50+i-5,500+i-5,50+i-5+1,550),DXBox,False,150-i*10);
@@ -132,10 +153,10 @@ begin
   end; }
     for i := 0 to 25 do
     begin
-      DrawSub( lpDDSBack, rect( 55, 505 + i, 745, 505 + i + 1 ), rect( 55, 505 + i, 745, 505 + i + 1 ), DXBox, False, 100 - i * 3 );
+      DrawSub( lpDDSBack, ApplyOffset(rect( 55, 505 + i, 745, 505 + i + 1 )), rect( 55, 505 + i, 745, 505 + i + 1 ), DXBox, False, 100 - i * 3 );
     end;
 
-    lpDDSFront.Flip( nil, DDFLIP_WAIT );
+    lpDDSFront_Flip( nil, DDFLIP_WAIT );
     SoAOS_DX_BltFastWaitXY( lpDDSFront, Rect( 0, 0, 800, 600 ) );  //NO HD
   except
     on E : Exception do
@@ -174,7 +195,7 @@ begin
     begin
      //lpDDSFront.Blt(rect(47+250,194+169,Value+47+250,212+169),nil,rect(47+250,194+169,Value+47+250,212+169),DDBLT_COLORFILL + DDBLT_WAIT, BltFx);
 //     lpDDSFront.Blt(rect(60,510,Value+60,525),nil,rect(50,510,Value+60,525),DDBLT_COLORFILL + DDBLT_WAIT, BltFx);
-      pr := Rect( OldValue + 60, 510, Value + 60, 525 );
+      pr := ApplyOffset( Rect( OldValue + 60, 510, Value + 60, 525 ) );
       pr0 := Rect( 0, 0, 0, 0 );
       lpDDSFront.Blt( @pr, nil, @pr0, DDBLT_COLORFILL + DDBLT_WAIT, @BltFx );
       OldValue := Value;

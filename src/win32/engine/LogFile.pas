@@ -60,6 +60,7 @@ type
     CurrDbgGroup : Word; // obsolete, forcibly overwritten herein
     constructor Create( FileName : string );
     procedure Log( const FailName : string; const Msg : string; const Args : array of const ); overload;
+    procedure Log( const FailName : string; const Msg : string; const StackTrace : string; const Args : array of const ); overload;
     procedure Log( const Msg : string ); overload;
     procedure LogEntry( const FailName : string );
     procedure DebugLog( const FailName : string );
@@ -98,7 +99,8 @@ implementation
 uses
   System.StrUtils,
   Engine,
-  System.IniFiles;
+  System.IniFiles,
+  SoAOS.SysUtils;
 
 { TLog }
 
@@ -147,6 +149,7 @@ end;
 procedure TLog.OutputLogHeader;
 var
   S : AnsiString;
+  WineVer: string;
 //  B : TBytes;
 begin
 
@@ -204,6 +207,15 @@ begin
 
     // The amount of avalable bytes that is left to your program to use.
     S := S + AnsiString( IntToStr( dwAvailVirtual ) + ' Available User bytes of address space' + #13#10 );
+
+    S := S + #13#10 + AnsiString( TOSVersion.ToString ) + #13#10;
+    S := S + AnsiString( 'ACP: '+GetACP.ToString ) + #13#10;
+
+    if IsRunningUnderWINE(WineVer) then
+      S := S + AnsiString( 'Running under WINE ('+WineVer+')' + #13#10 );
+
+    if IsMFAvailable then
+      S := S + AnsiString( 'Media Foundation available' + #13#10 );
 
     // Nice little block seperator
     S := S + AnsiString( #13#10 + ' ===== End Of Header =====' + #13#10 + #13#10 );
@@ -289,7 +301,10 @@ var
 begin
   CurrDbgLvl := RealCurrDbgLvl;
   CurrDbgGroup := RealCurrDbgGroup;
-  S := AnsiString( TimeToStr( Time ) + ' ' + Format( '%8.8d', [ Game.FrameCount ] ) + ': ' + FailName + ' ' + Format( Msg, Args ) + #13#10 );
+  if Assigned(Game) then
+    S := AnsiString( TimeToStr( Time ) + ' ' + Format( '%8.8d', [ Game.FrameCount ] ) + ': ' + FailName + ' ' + Format( Msg, Args ) + #13#10 )
+  else
+    S := AnsiString( TimeToStr( Time ) + ' ' + 'Before Init' + ': ' + FailName + ' ' + Format( Msg, Args ) + #13#10 );
 //  b := TEncoding.UTF8.GetBytes(s);
   Write( S[1], Length( S ) );
   if ( RealCurrDbgGroup and DbgFlushLog ) <> 0 then
@@ -331,7 +346,26 @@ var
 begin
   CurrDbgLvl := RealCurrDbgLvl;
   CurrDbgGroup := RealCurrDbgGroup;
-  S := AnsiString( TimeToStr( Time ) + ' ' + Format( '%8.8d', [ Game.FrameCount ] ) + ': ' + Msg + #13#10 );
+  if Game <> nil then
+    S := AnsiString( TimeToStr( Time ) + ' ' + Format( '%8.8d', [ Game.FrameCount ] ) + ': ' + Msg + #13#10 )
+  else
+    S := AnsiString( TimeToStr( Time ) + ' ' + Format( '%8.8d', [ -1 ] ) + ': ' + Msg + #13#10 );
+//  b := TEncoding.UTF8.GetBytes(s);
+  Write( S[1], Length( S ) );
+  if ( RealCurrDbgGroup and DbgFlushLog ) <> 0 then
+    FlushFileBuffers( Handle );
+end;
+
+procedure TLog.Log(const FailName, Msg, StackTrace: string; const Args: array of const);
+var
+  S : AnsiString;
+begin
+  CurrDbgLvl := RealCurrDbgLvl;
+  CurrDbgGroup := RealCurrDbgGroup;
+  if Game <> nil then
+    S := AnsiString( TimeToStr( Time ) + ' ' + Format( '%8.8d', [ Game.FrameCount ] ) + ': ' + Msg + sLineBreak + StackTrace )
+  else
+    S := AnsiString( TimeToStr( Time ) + ' ' + Format( '%8.8d', [ -1 ] ) + ': ' + Msg + sLineBreak + StackTrace );
 //  b := TEncoding.UTF8.GetBytes(s);
   Write( S[1], Length( S ) );
   if ( RealCurrDbgGroup and DbgFlushLog ) <> 0 then

@@ -131,12 +131,15 @@ begin
       begin //only show 10 files
             //Show a hotkey if associated
             //  for k := 1 to 8 do
-        for k := 1 to 10 do
+        for k := 1 to 20 do //war 10
         begin
           if TSpell( SpellList.objects[ i ] ) = Character.HotKey[ k ] then
           begin
+            if k< 11 then
             //  pText.PlotText( 'F' + intToStr( k + 4 ), 611, 264 + j * 35, 240 );
-            pText.PlotText( intToStr( k - 1 ), 611+Offset.X, 264 + j * 35+Offset.Y, 240 );
+            pText.PlotText( intToStr( k - 1 ), 611+Offset.X, 264 + j * 35+Offset.Y, 240 )
+            else
+            pText.PlotText( 'F' + intToStr( k - 8), 611 + Offset.X, 264 + j * 35 + Offset.Y, 240 );
           end;
         end;
             //Plot The Spell Icons
@@ -189,12 +192,14 @@ begin
     pText.LoadFontGraphic( 'createchar' ); //load the GoldFont font graphic in
     if UseSmallFont then
       pText.LoadGoldFontGraphic;
-    DXContinue := SoAOS_DX_LoadBMP( InterfacePath + 'opContinue.bmp', cInvisColor );
+    DXContinue := SoAOS_DX_LoadBMP( InterfaceLanguagePath + 'opContinue.bmp', cInvisColor );
     DXYellow := SoAOS_DX_LoadBMP( InterfacePath + 'opYellow.bmp', cInvisColor );
     DXVolumeSlider := SoAOS_DX_LoadBMP( InterfacePath + 'opVolume.bmp', cInvisColor );
     DXVolumeShadow := SoAOS_DX_LoadBMP( InterfacePath + 'opVolumeShadow.bmp', cInvisColor );
-    DXBack := SoAOS_DX_LoadBMP( InterfacePath + 'options.bmp', cInvisColor, DlgWidth, DlgHeight );
+    DXBack := SoAOS_DX_LoadBMP( InterfaceLanguagePath + 'options.bmp', cInvisColor, DlgWidth, DlgHeight );
 
+    if ScreenMetrics.borderFile<>'' then
+      lpDDSBack.BltFast( 0, 0, frmMain.FillBorder, nil, DDBLTFAST_SRCCOLORKEY or DDBLTFAST_WAIT );
   //now we blit the screen to the backbuffer
     pr := Rect( 0, 0, DlgWidth, DlgHeight );
     lpDDSBack.BltFast( Offset.X, Offset.Y, DXBack, @pr, DDBLTFAST_SRCCOLORKEY or DDBLTFAST_WAIT );
@@ -283,11 +288,14 @@ begin
       begin
         if ( i >= StartSpell ) and ( i < StartSpell + 5 ) then
         begin //only show 10 files
-		  for k := 1 to 10 do // Keys 0-9
+		  for k := 1 to 20 do // Keys 0-9
           begin
             if TSpell( SpellList.objects[ i ] ) = Character.HotKey[ k ] then
             begin
-              pText.PlotText( intToStr( k - 1), 611+Offset.X, 264 + j * 35+Offset.Y, 240 );
+              if k < 11 then
+              pText.PlotText( intToStr( k - 1), 611+Offset.X, 264 + j * 35+Offset.Y, 240 )
+              else
+              pText.PlotText( 'F' + intToStr( k - 8), 611 + Offset.X, 264 + j * 35 + Offset.Y, 240 );
             end;
           end;
             //Plot The Spell Icons
@@ -320,27 +328,38 @@ const
 begin
   Log.DebugLog(FailName);
   try
-
-   //was function key f3 to f12, now 0-9
+   //was function key f3 to f12, now only 0-9
     if Character <> nil then
     begin
-//      if ( key > 115 ) and ( key < 124 ) and ( CurrentSelectedListItem <> -1 ) then
-if ( key > 47 ) and ( key < 58 ) and ( CurrentSelectedListItem <> -1 ) then
+      if ( key > 47 ) and ( key < 58 ) and ( CurrentSelectedListItem <> -1 ) then
       begin
-//        Character.HotKey[ key - 115 ] := TSpell( SpellList.objects[ CurrentSelectedListItem ] );
-Character.HotKey[ key - 47 ] := TSpell( SpellList.objects[ CurrentSelectedListItem ] );
+        Character.HotKey[ key - 47 ] := TSpell( SpellList.objects[ CurrentSelectedListItem ] );
            //We dont want more than one key pointing at the same spell, so if allready assigned, change to nil.
-//        for i := 1 to 8 do
-for i := 1 to 10 do
+        for i := 1 to 20 do //war 10
         begin
-//          if i <> key - 115 then
-if i <> key - 47 then
+          if i <> key - 47 then
           begin
-//            if Character.HotKey[ key - 115 ] = Character.HotKey[ i ] then
-if Character.HotKey[ key - 47 ] = Character.HotKey[ i ] then
+            if Character.HotKey[ key - 47 ] = Character.HotKey[ i ] then
               Character.HotKey[ i ] := nil;
           end
         end;
+        PlotMenu;
+      end
+      //F3 bis F12
+      else if ( key > 113 ) and ( key < 125 ) and ( CurrentSelectedListItem <> -1 ) then
+      begin
+        Character.HotKey[ key - 113 + 10 ] := TSpell( SpellList.objects[ CurrentSelectedListItem ] );
+        //We dont want more than one key pointing at the same spell, so if allready assigned, change to nil.
+        for i := 1 to 20 do //muss 20 sein, da sonst Überschneideung von Zahlentasten und F-Tasten
+        begin
+          if i <> key - 113 + 10 then
+          begin
+            if Character.HotKey[ key - 113 + 10 ] = Character.HotKey[ i ] then
+              Character.HotKey[ i ] := nil;
+          end
+        end;
+        (*if key = 121 then  //Damit die Menüfunktion nicht ausgeführt wird, (nur bei ddraw.dll mit libwine.dll) und wined3d.dll)
+        key := 0;*)
         PlotMenu;
       end;
     end;
@@ -455,7 +474,7 @@ begin
   try
 
   //Clear rollover text area
-    pr := Rect( 351, 113, 684, 206 );
+    pr := Rect( 345, 110, 690, 240 );
     lpDDSBack.BltFast( pr.Left + Offset.X, pr.Top + Offset.Y, DXBack, @pr, DDBLTFAST_WAIT );
   //clear Volume bars
     pr := Rect( 100, 92, 336, 155 );
@@ -533,12 +552,15 @@ begin
         begin //only show 10 files
             //Show a hotkey if associated
             // for k := 1 to 8 do
-          for k := 1 to 10 do
+          for k := 1 to 20 do
           begin
             if TSpell( SpellList.objects[ i ] ) = Character.HotKey[ k ] then
             begin
+              if k < 11 then
             // pText.PlotText( 'F' + intToStr( k + 4 ), 611, 264 + j * 35, 240 );
-              pText.PlotText( intToStr( k - 1 ), 611+Offset.X, 264 + j * 35+Offset.Y, 240 );
+              pText.PlotText( intToStr( k - 1 ), 611+Offset.X, 264 + j * 35+Offset.Y, 240 )
+              else
+              pText.PlotText( 'F' + intToStr( k - 8 ), 611 + Offset.X, 264 + j * 35 + Offset.Y, 240 );
             end;
           end;
             //Plot The Spell Icons
@@ -568,16 +590,16 @@ begin
       SpllRect := ApplyOffset( Rect( 101, 229, 694, 448 ) );
 
       if FXRect.Contains( Point( X, Y ) ) then //over SoundFX
-        PlotTextBlock( txtMessage[ 0 ], 359, 670, 121, 240 )
+        PlotTextBlock( txtMessage[ 0 ], 359, 670, 121, 240, UseSmallFont, True )
       else if MusRect.Contains( Point( X, Y ) ) then //over music
-        PlotTextBlock( txtMessage[ 1 ], 359, 670, 121, 240 )
+        PlotTextBlock( txtMessage[ 1 ], 359, 670, 121, 240, UseSmallFont, True )
       else if ShdwRect.Contains( Point( X, Y ) ) then //over Shadows
-        PlotTextBlock( txtMessage[ 2 ], 359, 670, 121, 240 )
+        PlotTextBlock( txtMessage[ 2 ], 359, 670, 121, 240, UseSmallFont, True )
       else if SpllRect.Contains( Point( X, Y ) ) then //over Spells list
         if Character = nil then
-          PlotTextBlock( txtMessage[ 3 ], 359, 670, 121, 240 )
+          PlotTextBlock( txtMessage[ 3 ], 359, 670, 121, 240, UseSmallFont, True )
         else
-          PlotTextBlock( txtMessage[ 4 ], 359, 670, 121, 240 );
+          PlotTextBlock( txtMessage[ 4 ], 359, 670, 121, 240, UseSmallFont, True );
     end;
 
     SoAOS_DX_BltFront;

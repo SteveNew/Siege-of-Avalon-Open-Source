@@ -187,7 +187,7 @@ begin
   //create the dirty surface
   DXDirty := DDGetSurface( lpDD, 35, 35, cInvisColor, true );
 
-  DXBack := SoAOS_DX_LoadBMP( InterfacePath + 'NPC.bmp', cInvisColor, width, height );
+  DXBack := SoAOS_DX_LoadBMP( InterfaceLanguagePath + 'NPC.bmp', cInvisColor, width, height );
 
   DXTarget[ 0 ] := SoAOS_DX_LoadBMP( InterfacePath + 'NPCTarget1.bmp', cInvisColor);
   DXTarget[ 1 ] := SoAOS_DX_LoadBMP( InterfacePath + 'NPCTarget2.bmp', cInvisColor );
@@ -195,7 +195,7 @@ begin
   DXTarget[ 3 ] := SoAOS_DX_LoadBMP( InterfacePath + 'NPCTarget4.bmp', cInvisColor );
 
   DXIcons := SoAOS_DX_LoadBMP( InterfacePath + 'NPCActionIcons.bmp', cTransparent );
-  DXBackToGame := SoAOS_DX_LoadBMP( InterfacePath + 'NPCBackToGame.bmp', cTransparent );
+  DXBackToGame := SoAOS_DX_LoadBMP( InterfaceLanguagePath + 'NPCBackToGame.bmp', cTransparent );
 
   LoadTargetActionIcons;
   pr := Rect( 0, 0, width, height );
@@ -239,7 +239,7 @@ begin
     pTAIcon.dx := StartPos + i * 35;
     pTAIcon.dy := 172;
     pTAIcon.sr := rect( 36, i * 36, 36 + 35, i * 36 + 35 );
-    PTAIcon.text := 'Set target to: ' + TCharacter( NPCList.items[ i ] ).name;
+    PTAIcon.text := 'Set target to: ' + NPCList[ i ].name;
     pTAIcon.Target := TTFriend;
     pTAIcon.AiParameter := paSpecificPartyMember;
     TargList.add( pTAIcon );
@@ -1300,23 +1300,21 @@ end; //FadeTimerEvent
 
 procedure TNPCBehavior.ContainCursor( action : integer );
 var
-  prRect : PRect;
+  prRect : TRect;
 begin
-  new( prRect );
-  prRect.top := 0;
-  prRect.left := 0;
+  prRect.Left := 0;
+  prRect.Top := 0;
+  ClientToScreen(frmMain.Handle, prRect.TopLeft);
   if Action = 1 then
   begin //restore to fullscreen
-    prRect.bottom := 456;
-    prRect.Right := 659;
+    prRect.bottom := prRect.Top + 456;
+    prRect.Right := prRect.Left + 659;
+    ClipCursor( @prRect ); //TODO: Windows-ism - replace
   end
   else
   begin //constrict to main inventory area
-    prRect.bottom := ScreenMetrics.ScreenHeight;  // 600 - was 720 - should probably be 1080
-    prRect.Right := ScreenMetrics.ScreenWidth;  // 800 - was 1280 - shold probably be 1920
+    ClipCursor(nil); //TODO: Windows-ism - replace
   end;
-  ClipCursor( prRect ); //TODO: Windows-ism - replace
-  Dispose( prRect );
 end; //TNPCBehavior.ContainCursor
 
 procedure TNPCBehavior.WriteAIData;

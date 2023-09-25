@@ -64,7 +64,7 @@ type
   TDynamicSmallIntArray = TArray<SmallInt>;
 
   TSlot = ( slLeg1, slBoot, slLeg2, slChest1, slChest2, slArm, slBelt, slChest3,
-    slGauntlet, slOuter, slHelmet, slWeapon, slShield, slTabar, slMisc1, slMisc2, slMisc3 );
+    slGauntlet, slOuter, slHelmet, slWeapon, slShield, slTabar, slCoif, slhealthpois, slmanapois, slMisc1, slMisc2, slTatt, slMisc3 );
 
   TSlotAllowed = set of TSlot;
 
@@ -151,7 +151,7 @@ type
   public
     ItemFrame : integer;
     LinkedResource : TResource;
-    BackLayer : array[ 0..383 ] of boolean;
+    BackLayer : array[ 0..1023 ] of boolean; // { TODO : Should be redone and dynamic }
     procedure RenderLocked( Figure : TAniFigure; Bits : PBITPLANE ); override;
     procedure LoadData( INI : TStringINIFile ); override;
   end;
@@ -222,7 +222,6 @@ type
     Strips : Integer;
     ItemIndex : Integer;
     ItemZone : Integer;
-    CacheLoaded : boolean;
     procedure LoadData( INI : TStringINIFile ); override;
     function Define( Map : TAniMap; Zone : byte; Index : Word ) : integer; override;
     procedure RenderLocked( Figure : TAniFigure; Bits : PBITPLANE ); override;
@@ -751,6 +750,7 @@ var
   ddsd : TDDSurfaceDesc;
   Bits : BITPLANE;
 begin
+  FillChar(ddsd, sizeof(ddsd), 0);
   if ( Figure.Frame = 0 ) or not Figure.Visible then
     Exit;
 
@@ -1025,6 +1025,7 @@ begin
     Equipment[ slLeg1 ] := AnsiString( INI.ReadString( 'Layers', 'leg1', '' ) );
     Equipment[ slBoot ] := AnsiString( INI.ReadString( 'Layers', 'boot', '' ) );
     Equipment[ slLeg2 ] := AnsiString( INI.ReadString( 'Layers', 'leg2', '' ) );
+    Equipment[ sltatt ] := AnsiString( INI.ReadString( 'Layers', 'Tatt', '' ) );
     Equipment[ slChest1 ] := AnsiString( INI.ReadString( 'Layers', 'chest1', '' ) );
     Equipment[ slChest2 ] := AnsiString( INI.ReadString( 'Layers', 'chest2', '' ) );
     Equipment[ slArm ] := AnsiString( INI.ReadString( 'Layers', 'arm', '' ) );
@@ -1036,6 +1037,9 @@ begin
     Equipment[ slWeapon ] := AnsiString( INI.ReadString( 'Layers', 'weapon', '' ) );
     Equipment[ slShield ] := AnsiString( INI.ReadString( 'Layers', 'shield', '' ) );
     Equipment[ sltabar ] := AnsiString( INI.ReadString( 'Layers', 'tabar', '' ) );
+    Equipment[ slCoif ] := AnsiString( INI.ReadString( 'Layers', 'coif', '' ) );
+    Equipment[ slhealthpois ] := AnsiString( INI.ReadString( 'Layers', 'healthpois', '' ) );
+    Equipment[ slmanapois ] := AnsiString( INI.ReadString( 'Layers', 'manapois', '' ) );
     Equipment[ slMisc1 ] := AnsiString( INI.ReadString( 'Layers', 'misc1', '' ) );
     Equipment[ slMisc2 ] := AnsiString( INI.ReadString( 'Layers', 'misc2', '' ) );
     Equipment[ slMisc3 ] := AnsiString( INI.ReadString( 'Layers', 'misc3', '' ) );
@@ -1095,6 +1099,7 @@ var
   Bits : BITPLANE;
   i : integer;
 begin
+  FillChar(ddsd, sizeof(ddsd), 0);
   if not Figure.Visible then
     exit;
   if ( Figure.Frame = 0 ) then
@@ -1207,309 +1212,246 @@ var
       GFactor := 100;
       BFactor := 100;
     end;
-
-    if Female and Bikini then
+    //Linkshandschwert
+    if ( TCharacter( Figure ).FEquipment[slShield] is TWeapon ) and TCharacter( Figure ).CombatMode
+    //ODER Schild
+    or not ( TCharacter( Figure ).FEquipment[slShield] is TWeapon ) then
     begin
-      if assigned( TCharacter( Figure ).FEquipment[ slShield ] ) and
-        assigned( TCharacter( Figure ).FEquipment[ slShield ].Resource ) then
-      begin
-        if TLayerResource( TCharacter( Figure ).FEquipment[ slShield ].Resource ).BackLayer[ i ] then
-          TResource( TCharacter( Figure ).FEquipment[ slShield ].Resource ).RLE.DrawColorize( i, 0, 0, MyBits, RFactor, GFactor, BFactor, 100, 0 );
-        if assigned( TLayerResource( TCharacter( Figure ).FEquipment[ slShield ].Resource ).LinkedResource ) then
-          TLayerResource( TCharacter( Figure ).FEquipment[ slShield ].Resource ).LinkedResource.RLE.DrawColorize( i, 0, 0, MyBits, RFactor, GFactor, BFactor, 100, 0 );
+    p := TCharacter( Figure ).FEquipment[ slShield ];
+    if assigned( p ) and assigned( TItem( p ).Resource ) then
+    begin
+      P := TItem( p ).Resource;
+      if TLayerResource( p ).BackLayer[ i ] then
+        TResource( p ).RLE.DrawColorize( i, 0, 0, MyBits, RFactor, GFactor, BFactor, 100, 0 );
+      if assigned( TLayerResource( p ).LinkedResource ) then
+        TLayerResource( p ).LinkedResource.RLE.DrawColorize( i, 0, 0, MyBits, RFactor, GFactor, BFactor, 100, 0 );
       end;
-      if TCharacter( Figure ).CombatMode and assigned( TCharacter( Figure ).FEquipment[ slWeapon ] ) and
-        assigned( TCharacter( Figure ).FEquipment[ slWeapon ].Resource ) then
+    end;
+    if TCharacter( Figure ).CombatMode then
+    begin
+      p := TCharacter( Figure ).FEquipment[ slWeapon ];
+      if assigned( p ) and assigned( TItem( p ).Resource ) then
       begin
-        if TLayerResource( TCharacter( Figure ).FEquipment[ slWeapon ].Resource ).BackLayer[ i ] then
-          TResource( TCharacter( Figure ).FEquipment[ slWeapon ].Resource ).RLE.DrawColorize( i, 0, 0, MyBits, RFactor, GFactor, BFactor, 100, 0 );
-        if assigned( TLayerResource( TCharacter( Figure ).FEquipment[ slWeapon ].Resource ).LinkedResource ) then
-          TLayerResource( TCharacter( Figure ).FEquipment[ slWeapon ].Resource ).LinkedResource.RLE.DrawColorize( i, 0, 0, MyBits, RFactor, GFactor, BFactor, 100, 0 );
+        P := TItem( p ).Resource;
+        if TLayerResource( p ).BackLayer[ i ] then
+          TResource( p ).RLE.DrawColorize( i, 0, 0, MyBits, RFactor, GFactor, BFactor, 100, 0 );
+        if assigned( TLayerResource( p ).LinkedResource ) then
+          TLayerResource( p ).LinkedResource.RLE.DrawColorize( i, 0, 0, MyBits, RFactor, GFactor, BFactor, 100, 0 );
       end;
-      if assigned( TCharacter( Figure ).FEquipment[ sltabar ] ) and
-        assigned( TCharacter( Figure ).FEquipment[ sltabar ].Resource ) then
-      begin
-        if TLayerResource( TCharacter( Figure ).FEquipment[ sltabar ].Resource ).BackLayer[ i ] then
-          TResource( TCharacter( Figure ).FEquipment[ sltabar ].Resource ).RLE.DrawColorize( i, 0, 0, MyBits, RFactor, GFactor, BFactor, 100, 0 );
-        if assigned( TLayerResource( TCharacter( Figure ).FEquipment[ sltabar ].Resource ).LinkedResource ) then
-          TLayerResource( TCharacter( Figure ).FEquipment[ sltabar ].Resource ).LinkedResource.RLE.DrawColorize( i, 0, 0, MyBits, RFactor, GFactor, BFactor, 100, 0 );
-      end;
-      if assigned( TCharacter( Figure ).FEquipment[ slHelmet ] ) and
-        assigned( TCharacter( Figure ).FEquipment[ slHelmet ].Resource ) then
-      begin
-        if TLayerResource( TCharacter( Figure ).FEquipment[ slHelmet ].Resource ).BackLayer[ i ] then
-          TResource( TCharacter( Figure ).FEquipment[ slHelmet ].Resource ).RLE.DrawColorize( i, 0, 0, MyBits, RFactor, GFactor, BFactor, 100, 0 );
-        if assigned( TLayerResource( TCharacter( Figure ).FEquipment[ slHelmet ].Resource ).LinkedResource ) then
-          TLayerResource( TCharacter( Figure ).FEquipment[ slHelmet ].Resource ).LinkedResource.RLE.DrawColorize( i, 0, 0, MyBits, RFactor, GFactor, BFactor, 100, 0 );
-      end;
-      if assigned( TCharacter( Figure ).FEquipment[ slGauntlet ] ) and
-        assigned( TCharacter( Figure ).FEquipment[ slGauntlet ].Resource ) then
-      begin
-        if TLayerResource( TCharacter( Figure ).FEquipment[ slGauntlet ].Resource ).BackLayer[ i ] then
-          TResource( TCharacter( Figure ).FEquipment[ slGauntlet ].Resource ).RLE.DrawColorize( i, 0, 0, MyBits, RFactor, GFactor, BFactor, 100, 0 );
-        if assigned( TLayerResource( TCharacter( Figure ).FEquipment[ slGauntlet ].Resource ).LinkedResource ) then
-          TLayerResource( TCharacter( Figure ).FEquipment[ slGauntlet ].Resource ).LinkedResource.RLE.DrawColorize( i, 0, 0, MyBits, RFactor, GFactor, BFactor, 100, 0 );
-      end;
-      if assigned( TCharacter( Figure ).FEquipment[ slBelt ] ) and
-        assigned( TCharacter( Figure ).FEquipment[ slBelt ].Resource ) then
-      begin
-        if TLayerResource( TCharacter( Figure ).FEquipment[ slBelt ].Resource ).BackLayer[ i ] then
-          TResource( TCharacter( Figure ).FEquipment[ slBelt ].Resource ).RLE.DrawColorize( i, 0, 0, MyBits, RFactor, GFactor, BFactor, 100, 0 );
-        if assigned( TLayerResource( TCharacter( Figure ).FEquipment[ slBelt ].Resource ).LinkedResource ) then
-          TLayerResource( TCharacter( Figure ).FEquipment[ slBelt ].Resource ).LinkedResource.RLE.DrawColorize( i, 0, 0, MyBits, RFactor, GFactor, BFactor, 100, 0 );
-      end;
-      if assigned( TCharacter( Figure ).FEquipment[ slArm ] ) and
-        assigned( TCharacter( Figure ).FEquipment[ slArm ].Resource ) then
-      begin
-        if TLayerResource( TCharacter( Figure ).FEquipment[ slArm ].Resource ).BackLayer[ i ] then
-          TResource( TCharacter( Figure ).FEquipment[ slArm ].Resource ).RLE.DrawColorize( i, 0, 0, MyBits, RFactor, GFactor, BFactor, 100, 0 );
-        if assigned( TLayerResource( TCharacter( Figure ).FEquipment[ slArm ].Resource ).LinkedResource ) then
-          TLayerResource( TCharacter( Figure ).FEquipment[ slArm ].Resource ).LinkedResource.RLE.DrawColorize( i, 0, 0, MyBits, RFactor, GFactor, BFactor, 100, 0 );
-      end;
-      if assigned( TCharacter( Figure ).FEquipment[ slBoot ] ) and
-        assigned( TCharacter( Figure ).FEquipment[ slBoot ].Resource ) then
-      begin
-        if TLayerResource( TCharacter( Figure ).FEquipment[ slBoot ].Resource ).BackLayer[ i ] then
-          TResource( TCharacter( Figure ).FEquipment[ slBoot ].Resource ).RLE.DrawColorize( i, 0, 0, MyBits, RFactor, GFactor, BFactor, 100, 0 );
-        if assigned( TLayerResource( TCharacter( Figure ).FEquipment[ slBoot ].Resource ).LinkedResource ) then
-          TLayerResource( TCharacter( Figure ).FEquipment[ slBoot ].Resource ).LinkedResource.RLE.DrawColorize( i, 0, 0, MyBits, RFactor, GFactor, BFactor, 100, 0 );
-      end;
+    end;
+    //Kettenhaube bei AoA
+    p := TCharacter( Figure ).FEquipment[ slCoif ];
+    if assigned( p ) and assigned( TItem( p ).Resource ) then
+    begin
+      P := TItem( p ).Resource;
+      if TLayerResource( p ).BackLayer[ i ] then
+        TResource( p ).RLE.DrawColorize( i, 0, 0, MyBits, RFactor, GFactor, BFactor, 100, 0 );
+      if assigned( TLayerResource( p ).LinkedResource ) then
+        TLayerResource( p ).LinkedResource.RLE.DrawColorize( i, 0, 0, MyBits, RFactor, GFactor, BFactor, 100, 0 );
+    end;
+    p := TCharacter( Figure ).FEquipment[ slHelmet ];
+    if assigned( p ) and assigned( TItem( p ).Resource ) then
+    begin
+      P := TItem( p ).Resource;
+      if TLayerResource( p ).BackLayer[ i ] then
+        TResource( p ).RLE.DrawColorize( i, 0, 0, MyBits, RFactor, GFactor, BFactor, 100, 0 );
+      if assigned( TLayerResource( p ).LinkedResource ) then
+        TLayerResource( p ).LinkedResource.RLE.DrawColorize( i, 0, 0, MyBits, RFactor, GFactor, BFactor, 100, 0 );
+    end;
+    //Wappenrock bei AoA
+    p := TCharacter( Figure ).FEquipment[ sltabar ];
+    if assigned( p ) and assigned( TItem( p ).Resource ) then
+    begin
+      P := TItem( p ).Resource;
+      if TLayerResource( p ).BackLayer[ i ] then
+        TResource( p ).RLE.DrawColorize( i, 0, 0, MyBits, RFactor, GFactor, BFactor, 100, 0 );
+      if assigned( TLayerResource( p ).LinkedResource ) then
+        TLayerResource( p ).LinkedResource.RLE.DrawColorize( i, 0, 0, MyBits, RFactor, GFactor, BFactor, 100, 0 );
+    end;
+    p := TCharacter( Figure ).FEquipment[ slOuter ];
+    if assigned( p ) and assigned( TItem( p ).Resource ) then
+    begin
+      P := TItem( p ).Resource;
+      if TLayerResource( p ).BackLayer[ i ] then
+        TResource( p ).RLE.DrawColorize( i, 0, 0, MyBits, RFactor, GFactor, BFactor, 100, 0 );
+      if assigned( TLayerResource( p ).LinkedResource ) then
+        TLayerResource( p ).LinkedResource.RLE.DrawColorize( i, 0, 0, MyBits, RFactor, GFactor, BFactor, 100, 0 );
+    end;
+    p := TCharacter( Figure ).FEquipment[ slGauntlet ];
+    if assigned( p ) and assigned( TItem( p ).Resource ) then
+    begin
+      P := TItem( p ).Resource;
+      if TLayerResource( p ).BackLayer[ i ] then
+        TResource( p ).RLE.DrawColorize( i, 0, 0, MyBits, RFactor, GFactor, BFactor, 100, 0 );
+      if assigned( TLayerResource( p ).LinkedResource ) then
+        TLayerResource( p ).LinkedResource.RLE.DrawColorize( i, 0, 0, MyBits, RFactor, GFactor, BFactor, 100, 0 );
+    end;
+    p := TCharacter( Figure ).FEquipment[ slChest3 ];
+    if assigned( p ) and assigned( TItem( p ).Resource ) then
+    begin
+      P := TItem( p ).Resource;
+      if TLayerResource( p ).BackLayer[ i ] then
+        TResource( p ).RLE.DrawColorize( i, 0, 0, MyBits, RFactor, GFactor, BFactor, 100, 0 );
+      if assigned( TLayerResource( p ).LinkedResource ) then
+        TLayerResource( p ).LinkedResource.RLE.DrawColorize( i, 0, 0, MyBits, RFactor, GFactor, BFactor, 100, 0 );
+    end;
+    p := TCharacter( Figure ).FEquipment[ slBelt ];
+    if assigned( p ) and assigned( TItem( p ).Resource ) then
+    begin
+      P := TItem( p ).Resource;
+      if TLayerResource( p ).BackLayer[ i ] then
+        TResource( p ).RLE.DrawColorize( i, 0, 0, MyBits, RFactor, GFactor, BFactor, 100, 0 );
+      if assigned( TLayerResource( p ).LinkedResource ) then
+        TLayerResource( p ).LinkedResource.RLE.DrawColorize( i, 0, 0, MyBits, RFactor, GFactor, BFactor, 100, 0 );
+    end;
+    p := TCharacter( Figure ).FEquipment[ slArm ];
+    if assigned( p ) and assigned( TItem( p ).Resource ) then
+    begin
+      P := TItem( p ).Resource;
+      if TLayerResource( p ).BackLayer[ i ] then
+        TResource( p ).RLE.DrawColorize( i, 0, 0, MyBits, RFactor, GFactor, BFactor, 100, 0 );
+      if assigned( TLayerResource( p ).LinkedResource ) then
+        TLayerResource( p ).LinkedResource.RLE.DrawColorize( i, 0, 0, MyBits, RFactor, GFactor, BFactor, 100, 0 );
+    end;
+    p := TCharacter( Figure ).FEquipment[ slChest2 ];
+    if assigned( p ) and assigned( TItem( p ).Resource ) then
+    begin
+      P := TItem( p ).Resource;
+      if TLayerResource( p ).BackLayer[ i ] then
+        TResource( p ).RLE.DrawColorize( i, 0, 0, MyBits, RFactor, GFactor, BFactor, 100, 0 );
+      if assigned( TLayerResource( p ).LinkedResource ) then
+        TLayerResource( p ).LinkedResource.RLE.DrawColorize( i, 0, 0, MyBits, RFactor, GFactor, BFactor, 100, 0 );
+    end;
+    p := TCharacter( Figure ).FEquipment[ slChest1 ];
+    if assigned( p ) and assigned( TItem( p ).Resource ) then
+    begin
+      P := TItem( p ).Resource;
+      if TLayerResource( p ).BackLayer[ i ] then
+        TResource( p ).RLE.DrawColorize( i, 0, 0, MyBits, RFactor, GFactor, BFactor, 100, 0 );
+      if assigned( TLayerResource( p ).LinkedResource ) then
+        TLayerResource( p ).LinkedResource.RLE.DrawColorize( i, 0, 0, MyBits, RFactor, GFactor, BFactor, 100, 0 );
+    end;
+    //Tattoo bei DoA
+    p := TCharacter( Figure ).FEquipment[ sltatt ];
+      if assigned( p ) and assigned( TItem( p ).Resource ) then
+    begin
+      P := TItem( p ).Resource;
+      if TLayerResource( p ).BackLayer[ i ] then
+        TResource( p ).RLE.DrawColorize( i, 0, 0, MyBits, RFactor, GFactor, BFactor, 100, 0 );
+      if assigned( TLayerResource( p ).LinkedResource ) then
+        TLayerResource( p ).LinkedResource.RLE.DrawColorize( i, 0, 0, MyBits, RFactor, GFactor, BFactor, 100, 0 );
+    end;
+    p := TCharacter( Figure ).FEquipment[ slLeg2 ];
+    if assigned( p ) and assigned( TItem( p ).Resource ) then
+    begin
+      P := TItem( p ).Resource;
+      if TLayerResource( p ).BackLayer[ i ] then
+        TResource( p ).RLE.DrawColorize( i, 0, 0, MyBits, RFactor, GFactor, BFactor, 100, 0 );
+      if assigned( TLayerResource( p ).LinkedResource ) then
+        TLayerResource( p ).LinkedResource.RLE.DrawColorize( i, 0, 0, MyBits, RFactor, GFactor, BFactor, 100, 0 );
+    end;
+    p := TCharacter( Figure ).FEquipment[ slBoot ];
+    if assigned( p ) and assigned( TItem( p ).Resource ) then
+    begin
+      P := TItem( p ).Resource;
+      if TLayerResource( p ).BackLayer[ i ] then
+        TResource( p ).RLE.DrawColorize( i, 0, 0, MyBits, RFactor, GFactor, BFactor, 100, 0 );
+      if assigned( TLayerResource( p ).LinkedResource ) then
+        TLayerResource( p ).LinkedResource.RLE.DrawColorize( i, 0, 0, MyBits, RFactor, GFactor, BFactor, 100, 0 );
+    end;
+    p := TCharacter( Figure ).FEquipment[ slLeg1 ];
+    if assigned( p ) and assigned( TItem( p ).Resource ) then
+    begin
+      P := TItem( p ).Resource;
+      if TLayerResource( p ).BackLayer[ i ] then
+        TResource( p ).RLE.DrawColorize( i, 0, 0, MyBits, RFactor, GFactor, BFactor, 100, 0 );
+      if assigned( TLayerResource( p ).LinkedResource ) then
+        TLayerResource( p ).LinkedResource.RLE.DrawColorize( i, 0, 0, MyBits, RFactor, GFactor, BFactor, 100, 0 );
+    end;
 
-      NakedResource.RLE.DrawColorize( i, 0, 0, MyBits, RFactor, GFactor, BFactor, 100, 0 );
+    NakedResource.RLE.DrawColorize( i, 0, 0, MyBits, RFactor, GFactor, BFactor, 100, 0 );
 
-      if assigned( TCharacter( Figure ).FEquipment[ slBoot ] ) and
-        assigned( TCharacter( Figure ).FEquipment[ slBoot ].Resource ) and
-        not TLayerResource( TCharacter( Figure ).FEquipment[ slBoot ].Resource ).BackLayer[ i ] then
-        TResource( TCharacter( Figure ).FEquipment[ slBoot ].Resource ).RLE.DrawColorize( i, 0, 0, MyBits, RFactor, GFactor, BFactor, 100, 0 );
-      if assigned( TCharacter( Figure ).FEquipment[ slArm ] ) and
-        assigned( TCharacter( Figure ).FEquipment[ slArm ].Resource ) and
-        not TLayerResource( TCharacter( Figure ).FEquipment[ slArm ].Resource ).BackLayer[ i ] then
-        TResource( TCharacter( Figure ).FEquipment[ slArm ].Resource ).RLE.DrawColorize( i, 0, 0, MyBits, RFactor, GFactor, BFactor, 100, 0 );
-      if assigned( TCharacter( Figure ).FEquipment[ slBelt ] ) and
-        assigned( TCharacter( Figure ).FEquipment[ slBelt ].Resource ) and
-        not TLayerResource( TCharacter( Figure ).FEquipment[ slBelt ].Resource ).BackLayer[ i ] then
-        TResource( TCharacter( Figure ).FEquipment[ slBelt ].Resource ).RLE.DrawColorize( i, 0, 0, MyBits, RFactor, GFactor, BFactor, 100, 0 );
-
-      if assigned( HeadResource ) then
-        HeadResource.RLE.DrawColorize( i, 0, 0, MyBits, RFactor, GFactor, BFactor, 100, 0 );
-
-      if assigned( TCharacter( Figure ).FEquipment[ slHelmet ] ) and
-        assigned( TCharacter( Figure ).FEquipment[ slHelmet ].Resource ) and
-        not TLayerResource( TCharacter( Figure ).FEquipment[ slHelmet ].Resource ).BackLayer[ i ] then
-        TResource( TCharacter( Figure ).FEquipment[ slHelmet ].Resource ).RLE.DrawColorize( i, 0, 0, MyBits, RFactor, GFactor, BFactor, 100, 0 );
-
-      if TCharacter( Figure ).CombatMode and assigned( TCharacter( Figure ).FEquipment[ slWeapon ] ) and
-        assigned( TCharacter( Figure ).FEquipment[ slWeapon ].Resource ) and
-        not TLayerResource( TCharacter( Figure ).FEquipment[ slWeapon ].Resource ).BackLayer[ i ] then
-        TResource( TCharacter( Figure ).FEquipment[ slWeapon ].Resource ).RLE.DrawColorize( i, 0, 0, MyBits, RFactor, GFactor, BFactor, 100, 0 );
-      if assigned( TCharacter( Figure ).FEquipment[ slShield ] ) and
-        assigned( TCharacter( Figure ).FEquipment[ slShield ].Resource ) and
-        not TLayerResource( TCharacter( Figure ).FEquipment[ slShield ].Resource ).BackLayer[ i ] then
-        TResource( TCharacter( Figure ).FEquipment[ slShield ].Resource ).RLE.DrawColorize( i, 0, 0, MyBits, RFactor, GFactor, BFactor, 100, 0 );
+    if assigned( TCharacter( Figure ).FEquipment[ slLeg1 ] ) and
+      assigned( TCharacter( Figure ).FEquipment[ slLeg1 ].Resource ) and
+      not TLayerResource( TCharacter( Figure ).FEquipment[ slLeg1 ].Resource ).BackLayer[ i ] then
+    begin
+      TResource( TCharacter( Figure ).FEquipment[ slLeg1 ].Resource ).RLE.DrawColorize( i, 0, 0, MyBits, RFactor, GFactor, BFactor, 100, 0 );
     end
     else
     begin
-      p := TCharacter( Figure ).FEquipment[ slShield ];
-      if assigned( p ) and assigned( TItem( p ).Resource ) then
-      begin
-        P := TItem( p ).Resource;
-        if TLayerResource( p ).BackLayer[ i ] then
-          TResource( p ).RLE.DrawColorize( i, 0, 0, MyBits, RFactor, GFactor, BFactor, 100, 0 );
-        if assigned( TLayerResource( p ).LinkedResource ) then
-          TLayerResource( p ).LinkedResource.RLE.DrawColorize( i, 0, 0, MyBits, RFactor, GFactor, BFactor, 100, 0 );
-      end;
-      if TCharacter( Figure ).CombatMode then
-      begin
-        p := TCharacter( Figure ).FEquipment[ slWeapon ];
-        if assigned( p ) and assigned( TItem( p ).Resource ) then
-        begin
-          P := TItem( p ).Resource;
-          if TLayerResource( p ).BackLayer[ i ] then
-            TResource( p ).RLE.DrawColorize( i, 0, 0, MyBits, RFactor, GFactor, BFactor, 100, 0 );
-          if assigned( TLayerResource( p ).LinkedResource ) then
-            TLayerResource( p ).LinkedResource.RLE.DrawColorize( i, 0, 0, MyBits, RFactor, GFactor, BFactor, 100, 0 );
-        end;
-      end;
-      p := TCharacter( Figure ).FEquipment[ slHelmet ];
-      if assigned( p ) and assigned( TItem( p ).Resource ) then
-      begin
-        P := TItem( p ).Resource;
-        if TLayerResource( p ).BackLayer[ i ] then
-          TResource( p ).RLE.DrawColorize( i, 0, 0, MyBits, RFactor, GFactor, BFactor, 100, 0 );
-        if assigned( TLayerResource( p ).LinkedResource ) then
-          TLayerResource( p ).LinkedResource.RLE.DrawColorize( i, 0, 0, MyBits, RFactor, GFactor, BFactor, 100, 0 );
-      end;
-      p := TCharacter( Figure ).FEquipment[ sltabar ];
-      if assigned( p ) and assigned( TItem( p ).Resource ) then
-      begin
-        P := TItem( p ).Resource;
-        if TLayerResource( p ).BackLayer[ i ] then
-          TResource( p ).RLE.DrawColorize( i, 0, 0, MyBits, RFactor, GFactor, BFactor, 100, 0 );
-        if assigned( TLayerResource( p ).LinkedResource ) then
-          TLayerResource( p ).LinkedResource.RLE.DrawColorize( i, 0, 0, MyBits, RFactor, GFactor, BFactor, 100, 0 );
-      end;
-      p := TCharacter( Figure ).FEquipment[ slOuter ];
-      if assigned( p ) and assigned( TItem( p ).Resource ) then
-      begin
-        P := TItem( p ).Resource;
-        if TLayerResource( p ).BackLayer[ i ] then
-          TResource( p ).RLE.DrawColorize( i, 0, 0, MyBits, RFactor, GFactor, BFactor, 100, 0 );
-        if assigned( TLayerResource( p ).LinkedResource ) then
-          TLayerResource( p ).LinkedResource.RLE.DrawColorize( i, 0, 0, MyBits, RFactor, GFactor, BFactor, 100, 0 );
-      end;
-      p := TCharacter( Figure ).FEquipment[ slGauntlet ];
-      if assigned( p ) and assigned( TItem( p ).Resource ) then
-      begin
-        P := TItem( p ).Resource;
-        if TLayerResource( p ).BackLayer[ i ] then
-          TResource( p ).RLE.DrawColorize( i, 0, 0, MyBits, RFactor, GFactor, BFactor, 100, 0 );
-        if assigned( TLayerResource( p ).LinkedResource ) then
-          TLayerResource( p ).LinkedResource.RLE.DrawColorize( i, 0, 0, MyBits, RFactor, GFactor, BFactor, 100, 0 );
-      end;
-      p := TCharacter( Figure ).FEquipment[ slChest3 ];
-      if assigned( p ) and assigned( TItem( p ).Resource ) then
-      begin
-        P := TItem( p ).Resource;
-        if TLayerResource( p ).BackLayer[ i ] then
-          TResource( p ).RLE.DrawColorize( i, 0, 0, MyBits, RFactor, GFactor, BFactor, 100, 0 );
-        if assigned( TLayerResource( p ).LinkedResource ) then
-          TLayerResource( p ).LinkedResource.RLE.DrawColorize( i, 0, 0, MyBits, RFactor, GFactor, BFactor, 100, 0 );
-      end;
-      p := TCharacter( Figure ).FEquipment[ slBelt ];
-      if assigned( p ) and assigned( TItem( p ).Resource ) then
-      begin
-        P := TItem( p ).Resource;
-        if TLayerResource( p ).BackLayer[ i ] then
-          TResource( p ).RLE.DrawColorize( i, 0, 0, MyBits, RFactor, GFactor, BFactor, 100, 0 );
-        if assigned( TLayerResource( p ).LinkedResource ) then
-          TLayerResource( p ).LinkedResource.RLE.DrawColorize( i, 0, 0, MyBits, RFactor, GFactor, BFactor, 100, 0 );
-      end;
-      p := TCharacter( Figure ).FEquipment[ slArm ];
-      if assigned( p ) and assigned( TItem( p ).Resource ) then
-      begin
-        P := TItem( p ).Resource;
-        if TLayerResource( p ).BackLayer[ i ] then
-          TResource( p ).RLE.DrawColorize( i, 0, 0, MyBits, RFactor, GFactor, BFactor, 100, 0 );
-        if assigned( TLayerResource( p ).LinkedResource ) then
-          TLayerResource( p ).LinkedResource.RLE.DrawColorize( i, 0, 0, MyBits, RFactor, GFactor, BFactor, 100, 0 );
-      end;
-      p := TCharacter( Figure ).FEquipment[ slChest2 ];
-      if assigned( p ) and assigned( TItem( p ).Resource ) then
-      begin
-        P := TItem( p ).Resource;
-        if TLayerResource( p ).BackLayer[ i ] then
-          TResource( p ).RLE.DrawColorize( i, 0, 0, MyBits, RFactor, GFactor, BFactor, 100, 0 );
-        if assigned( TLayerResource( p ).LinkedResource ) then
-          TLayerResource( p ).LinkedResource.RLE.DrawColorize( i, 0, 0, MyBits, RFactor, GFactor, BFactor, 100, 0 );
-      end;
-      p := TCharacter( Figure ).FEquipment[ slChest1 ];
-      if assigned( p ) and assigned( TItem( p ).Resource ) then
-      begin
-        P := TItem( p ).Resource;
-        if TLayerResource( p ).BackLayer[ i ] then
-          TResource( p ).RLE.DrawColorize( i, 0, 0, MyBits, RFactor, GFactor, BFactor, 100, 0 );
-        if assigned( TLayerResource( p ).LinkedResource ) then
-          TLayerResource( p ).LinkedResource.RLE.DrawColorize( i, 0, 0, MyBits, RFactor, GFactor, BFactor, 100, 0 );
-      end;
-      p := TCharacter( Figure ).FEquipment[ slLeg2 ];
-      if assigned( p ) and assigned( TItem( p ).Resource ) then
-      begin
-        P := TItem( p ).Resource;
-        if TLayerResource( p ).BackLayer[ i ] then
-          TResource( p ).RLE.DrawColorize( i, 0, 0, MyBits, RFactor, GFactor, BFactor, 100, 0 );
-        if assigned( TLayerResource( p ).LinkedResource ) then
-          TLayerResource( p ).LinkedResource.RLE.DrawColorize( i, 0, 0, MyBits, RFactor, GFactor, BFactor, 100, 0 );
-      end;
-      p := TCharacter( Figure ).FEquipment[ slBoot ];
-      if assigned( p ) and assigned( TItem( p ).Resource ) then
-      begin
-        P := TItem( p ).Resource;
-        if TLayerResource( p ).BackLayer[ i ] then
-          TResource( p ).RLE.DrawColorize( i, 0, 0, MyBits, RFactor, GFactor, BFactor, 100, 0 );
-        if assigned( TLayerResource( p ).LinkedResource ) then
-          TLayerResource( p ).LinkedResource.RLE.DrawColorize( i, 0, 0, MyBits, RFactor, GFactor, BFactor, 100, 0 );
-      end;
-      p := TCharacter( Figure ).FEquipment[ slLeg1 ];
-      if assigned( p ) and assigned( TItem( p ).Resource ) then
-      begin
-        P := TItem( p ).Resource;
-        if TLayerResource( p ).BackLayer[ i ] then
-          TResource( p ).RLE.DrawColorize( i, 0, 0, MyBits, RFactor, GFactor, BFactor, 100, 0 );
-        if assigned( TLayerResource( p ).LinkedResource ) then
-          TLayerResource( p ).LinkedResource.RLE.DrawColorize( i, 0, 0, MyBits, RFactor, GFactor, BFactor, 100, 0 );
-      end;
-
-      NakedResource.RLE.DrawColorize( i, 0, 0, MyBits, RFactor, GFactor, BFactor, 100, 0 );
-
-      if assigned( TCharacter( Figure ).FEquipment[ slLeg1 ] ) and
-        assigned( TCharacter( Figure ).FEquipment[ slLeg1 ].Resource ) and
-        not TLayerResource( TCharacter( Figure ).FEquipment[ slLeg1 ].Resource ).BackLayer[ i ] then
-      begin
-        TResource( TCharacter( Figure ).FEquipment[ slLeg1 ].Resource ).RLE.DrawColorize( i, 0, 0, MyBits, RFactor, GFactor, BFactor, 100, 0 );
-      end
-      else
-      begin
-        if assigned( UseDefaultPants ) and assigned( UseDefaultPants^ ) then
-          UseDefaultPants^.RLE.DrawColorize( i, 0, 0, MyBits, RFactor, GFactor, BFactor, 100, 0 );
-      end;
-      if assigned( TCharacter( Figure ).FEquipment[ slBoot ] ) and
-        assigned( TCharacter( Figure ).FEquipment[ slBoot ].Resource ) and
-        not TLayerResource( TCharacter( Figure ).FEquipment[ slBoot ].Resource ).BackLayer[ i ] then
-        TResource( TCharacter( Figure ).FEquipment[ slBoot ].Resource ).RLE.DrawColorize( i, 0, 0, MyBits, RFactor, GFactor, BFactor, 100, 0 );
-      if assigned( TCharacter( Figure ).FEquipment[ slLeg2 ] ) and
-        assigned( TCharacter( Figure ).FEquipment[ slLeg2 ].Resource ) and
-        not TLayerResource( TCharacter( Figure ).FEquipment[ slLeg2 ].Resource ).BackLayer[ i ] then
-        TResource( TCharacter( Figure ).FEquipment[ slLeg2 ].Resource ).RLE.DrawColorize( i, 0, 0, MyBits, RFactor, GFactor, BFactor, 100, 0 );
-      if assigned( TCharacter( Figure ).FEquipment[ slChest1 ] ) and
-        assigned( TCharacter( Figure ).FEquipment[ slChest1 ].Resource ) and
-        not TLayerResource( TCharacter( Figure ).FEquipment[ slChest1 ].Resource ).BackLayer[ i ] then
-        TResource( TCharacter( Figure ).FEquipment[ slChest1 ].Resource ).RLE.DrawColorize( i, 0, 0, MyBits, RFactor, GFactor, BFactor, 100, 0 );
-      if assigned( TCharacter( Figure ).FEquipment[ slChest2 ] ) and
-        assigned( TCharacter( Figure ).FEquipment[ slChest2 ].Resource ) and
-        not TLayerResource( TCharacter( Figure ).FEquipment[ slChest2 ].Resource ).BackLayer[ i ] then
-        TResource( TCharacter( Figure ).FEquipment[ slChest2 ].Resource ).RLE.DrawColorize( i, 0, 0, MyBits, RFactor, GFactor, BFactor, 100, 0 );
-      if assigned( TCharacter( Figure ).FEquipment[ slArm ] ) and
-        assigned( TCharacter( Figure ).FEquipment[ slArm ].Resource ) and
-        not TLayerResource( TCharacter( Figure ).FEquipment[ slArm ].Resource ).BackLayer[ i ] then
-        TResource( TCharacter( Figure ).FEquipment[ slArm ].Resource ).RLE.DrawColorize( i, 0, 0, MyBits, RFactor, GFactor, BFactor, 100, 0 );
-      if assigned( TCharacter( Figure ).FEquipment[ slBelt ] ) and
-        assigned( TCharacter( Figure ).FEquipment[ slBelt ].Resource ) and
-        not TLayerResource( TCharacter( Figure ).FEquipment[ slBelt ].Resource ).BackLayer[ i ] then
-        TResource( TCharacter( Figure ).FEquipment[ slBelt ].Resource ).RLE.DrawColorize( i, 0, 0, MyBits, RFactor, GFactor, BFactor, 100, 0 );
-      if assigned( TCharacter( Figure ).FEquipment[ slChest3 ] ) and
-        assigned( TCharacter( Figure ).FEquipment[ slChest3 ].Resource ) and
-        not TLayerResource( TCharacter( Figure ).FEquipment[ slChest3 ].Resource ).BackLayer[ i ] then
-        TResource( TCharacter( Figure ).FEquipment[ slChest3 ].Resource ).RLE.DrawColorize( i, 0, 0, MyBits, RFactor, GFactor, BFactor, 100, 0 );
-      if assigned( TCharacter( Figure ).FEquipment[ slGauntlet ] ) and
-        assigned( TCharacter( Figure ).FEquipment[ slGauntlet ].Resource ) and
-        not TLayerResource( TCharacter( Figure ).FEquipment[ slGauntlet ].Resource ).BackLayer[ i ] then
-        TResource( TCharacter( Figure ).FEquipment[ slGauntlet ].Resource ).RLE.DrawColorize( i, 0, 0, MyBits, RFactor, GFactor, BFactor, 100, 0 );
-      if assigned( TCharacter( Figure ).FEquipment[ slOuter ] ) and
-        assigned( TCharacter( Figure ).FEquipment[ slOuter ].Resource ) and
-        not TLayerResource( TCharacter( Figure ).FEquipment[ slOuter ].Resource ).BackLayer[ i ] then
-        TResource( TCharacter( Figure ).FEquipment[ slOuter ].Resource ).RLE.DrawColorize( i, 0, 0, MyBits, RFactor, GFactor, BFactor, 100, 0 );
-      if assigned( TCharacter( Figure ).FEquipment[ sltabar ] ) and
-        assigned( TCharacter( Figure ).FEquipment[ sltabar ].Resource ) and
-        not TLayerResource( TCharacter( Figure ).FEquipment[ sltabar ].Resource ).BackLayer[ i ] then
-        TResource( TCharacter( Figure ).FEquipment[ sltabar ].Resource ).RLE.DrawColorize( i, 0, 0, MyBits, RFactor, GFactor, BFactor, 100, 0 );
-      
-      if assigned( HeadResource ) then
-        HeadResource.RLE.DrawColorize( i, 0, 0, MyBits, RFactor, GFactor, BFactor, 100, 0 );
-
-      if assigned( TCharacter( Figure ).FEquipment[ slHelmet ] ) and
-        assigned( TCharacter( Figure ).FEquipment[ slHelmet ].Resource ) and
-        not TLayerResource( TCharacter( Figure ).FEquipment[ slHelmet ].Resource ).BackLayer[ i ] then
-        TResource( TCharacter( Figure ).FEquipment[ slHelmet ].Resource ).RLE.DrawColorize( i, 0, 0, MyBits, RFactor, GFactor, BFactor, 100, 0 );
-
-      if TCharacter( Figure ).CombatMode and assigned( TCharacter( Figure ).FEquipment[ slWeapon ] ) and
-        assigned( TCharacter( Figure ).FEquipment[ slWeapon ].Resource ) and
-        not TLayerResource( TCharacter( Figure ).FEquipment[ slWeapon ].Resource ).BackLayer[ i ] then
-        TResource( TCharacter( Figure ).FEquipment[ slWeapon ].Resource ).RLE.DrawColorize( i, 0, 0, MyBits, RFactor, GFactor, BFactor, 100, 0 );
-      if assigned( TCharacter( Figure ).FEquipment[ slShield ] ) and
-        assigned( TCharacter( Figure ).FEquipment[ slShield ].Resource ) and
-        not TLayerResource( TCharacter( Figure ).FEquipment[ slShield ].Resource ).BackLayer[ i ] then
-        TResource( TCharacter( Figure ).FEquipment[ slShield ].Resource ).RLE.DrawColorize( i, 0, 0, MyBits, RFactor, GFactor, BFactor, 100, 0 );
+      if assigned( UseDefaultPants ) and assigned( UseDefaultPants^ ) then
+        UseDefaultPants^.RLE.DrawColorize( i, 0, 0, MyBits, RFactor, GFactor, BFactor, 100, 0 );
     end;
+    if assigned( TCharacter( Figure ).FEquipment[ slBoot ] ) and
+      assigned( TCharacter( Figure ).FEquipment[ slBoot ].Resource ) and
+      not TLayerResource( TCharacter( Figure ).FEquipment[ slBoot ].Resource ).BackLayer[ i ] then
+      TResource( TCharacter( Figure ).FEquipment[ slBoot ].Resource ).RLE.DrawColorize( i, 0, 0, MyBits, RFactor, GFactor, BFactor, 100, 0 );
+    if assigned( TCharacter( Figure ).FEquipment[ slLeg2 ] ) and
+      assigned( TCharacter( Figure ).FEquipment[ slLeg2 ].Resource ) and
+      not TLayerResource( TCharacter( Figure ).FEquipment[ slLeg2 ].Resource ).BackLayer[ i ] then
+      TResource( TCharacter( Figure ).FEquipment[ slLeg2 ].Resource ).RLE.DrawColorize( i, 0, 0, MyBits, RFactor, GFactor, BFactor, 100, 0 );
+    if assigned( TCharacter( Figure ).FEquipment[ slTatt ] ) and
+      assigned( TCharacter( Figure ).FEquipment[ slTatt ].Resource ) and
+      not TLayerResource( TCharacter( Figure ).FEquipment[ slTatt ].Resource ).BackLayer[ i ] then
+      TResource( TCharacter( Figure ).FEquipment[ slTatt ].Resource ).RLE.DrawColorize( i, 0, 0, MyBits, RFactor, GFactor, BFactor, 100, 0 );
+    if assigned( TCharacter( Figure ).FEquipment[ slChest1 ] ) and
+      assigned( TCharacter( Figure ).FEquipment[ slChest1 ].Resource ) and
+      not TLayerResource( TCharacter( Figure ).FEquipment[ slChest1 ].Resource ).BackLayer[ i ] then
+      TResource( TCharacter( Figure ).FEquipment[ slChest1 ].Resource ).RLE.DrawColorize( i, 0, 0, MyBits, RFactor, GFactor, BFactor, 100, 0 );
+    if assigned( TCharacter( Figure ).FEquipment[ slChest2 ] ) and
+      assigned( TCharacter( Figure ).FEquipment[ slChest2 ].Resource ) and
+      not TLayerResource( TCharacter( Figure ).FEquipment[ slChest2 ].Resource ).BackLayer[ i ] then
+      TResource( TCharacter( Figure ).FEquipment[ slChest2 ].Resource ).RLE.DrawColorize( i, 0, 0, MyBits, RFactor, GFactor, BFactor, 100, 0 );
+    if assigned( TCharacter( Figure ).FEquipment[ slArm ] ) and
+      assigned( TCharacter( Figure ).FEquipment[ slArm ].Resource ) and
+      not TLayerResource( TCharacter( Figure ).FEquipment[ slArm ].Resource ).BackLayer[ i ] then
+      TResource( TCharacter( Figure ).FEquipment[ slArm ].Resource ).RLE.DrawColorize( i, 0, 0, MyBits, RFactor, GFactor, BFactor, 100, 0 );
+    if assigned( TCharacter( Figure ).FEquipment[ slBelt ] ) and
+      assigned( TCharacter( Figure ).FEquipment[ slBelt ].Resource ) and
+      not TLayerResource( TCharacter( Figure ).FEquipment[ slBelt ].Resource ).BackLayer[ i ] then
+      TResource( TCharacter( Figure ).FEquipment[ slBelt ].Resource ).RLE.DrawColorize( i, 0, 0, MyBits, RFactor, GFactor, BFactor, 100, 0 );
+    if assigned( TCharacter( Figure ).FEquipment[ slChest3 ] ) and
+      assigned( TCharacter( Figure ).FEquipment[ slChest3 ].Resource ) and
+      not TLayerResource( TCharacter( Figure ).FEquipment[ slChest3 ].Resource ).BackLayer[ i ] then
+      TResource( TCharacter( Figure ).FEquipment[ slChest3 ].Resource ).RLE.DrawColorize( i, 0, 0, MyBits, RFactor, GFactor, BFactor, 100, 0 );
+    if assigned( TCharacter( Figure ).FEquipment[ slGauntlet ] ) and
+      assigned( TCharacter( Figure ).FEquipment[ slGauntlet ].Resource ) and
+      not TLayerResource( TCharacter( Figure ).FEquipment[ slGauntlet ].Resource ).BackLayer[ i ] then
+      TResource( TCharacter( Figure ).FEquipment[ slGauntlet ].Resource ).RLE.DrawColorize( i, 0, 0, MyBits, RFactor, GFactor, BFactor, 100, 0 );
+    if assigned( TCharacter( Figure ).FEquipment[ slOuter ] ) and
+      assigned( TCharacter( Figure ).FEquipment[ slOuter ].Resource ) and
+      not TLayerResource( TCharacter( Figure ).FEquipment[ slOuter ].Resource ).BackLayer[ i ] then
+      TResource( TCharacter( Figure ).FEquipment[ slOuter ].Resource ).RLE.DrawColorize( i, 0, 0, MyBits, RFactor, GFactor, BFactor, 100, 0 );
+    if assigned( TCharacter( Figure ).FEquipment[ sltabar ] ) and
+      assigned( TCharacter( Figure ).FEquipment[ sltabar ].Resource ) and
+      not TLayerResource( TCharacter( Figure ).FEquipment[ sltabar ].Resource ).BackLayer[ i ] then
+      TResource( TCharacter( Figure ).FEquipment[ sltabar ].Resource ).RLE.DrawColorize( i, 0, 0, MyBits, RFactor, GFactor, BFactor, 100, 0 );
+
+    if assigned( HeadResource ) then
+      HeadResource.RLE.DrawColorize( i, 0, 0, MyBits, RFactor, GFactor, BFactor, 100, 0 );
+    if assigned( TCharacter( Figure ).FEquipment[ slCoif ] ) and
+      assigned( TCharacter( Figure ).FEquipment[ slCoif ].Resource ) and
+      not TLayerResource( TCharacter( Figure ).FEquipment[ slCoif ].Resource ).BackLayer[ i ] then
+      TResource( TCharacter( Figure ).FEquipment[ slCoif ].Resource ).RLE.DrawColorize( i, 0, 0, MyBits, RFactor, GFactor, BFactor, 100, 0 );
+    if assigned( TCharacter( Figure ).FEquipment[ slHelmet ] ) and
+      assigned( TCharacter( Figure ).FEquipment[ slHelmet ].Resource ) and
+      not TLayerResource( TCharacter( Figure ).FEquipment[ slHelmet ].Resource ).BackLayer[ i ] then
+      TResource( TCharacter( Figure ).FEquipment[ slHelmet ].Resource ).RLE.DrawColorize( i, 0, 0, MyBits, RFactor, GFactor, BFactor, 100, 0 );
+
+    if TCharacter( Figure ).CombatMode and assigned( TCharacter( Figure ).FEquipment[ slWeapon ] ) and
+      assigned( TCharacter( Figure ).FEquipment[ slWeapon ].Resource ) and
+      not TLayerResource( TCharacter( Figure ).FEquipment[ slWeapon ].Resource ).BackLayer[ i ] then
+      TResource( TCharacter( Figure ).FEquipment[ slWeapon ].Resource ).RLE.DrawColorize( i, 0, 0, MyBits, RFactor, GFactor, BFactor, 100, 0 );
+      //Linkshandschwert
+    if assigned( TCharacter( Figure ).FEquipment[ slShield ] ) and (TCharacter( Figure ).FEquipment[slShield] is TWeapon) and  TCharacter( Figure ).CombatMode and
+      assigned( TCharacter( Figure ).FEquipment[ slShield ].Resource ) and
+      not TLayerResource( TCharacter( Figure ).FEquipment[ slShield ].Resource ).BackLayer[ i ]
+      //ODER Schild
+      or assigned( TCharacter( Figure ).FEquipment[ slShield ] ) and not (TCharacter( Figure ).FEquipment[slShield] is TWeapon) and
+      assigned( TCharacter( Figure ).FEquipment[ slShield ].Resource ) and
+      not TLayerResource( TCharacter( Figure ).FEquipment[ slShield ].Resource ).BackLayer[ i ]
+      then
+      TResource( TCharacter( Figure ).FEquipment[ slShield ].Resource ).RLE.DrawColorize( i, 0, 0, MyBits, RFactor, GFactor, BFactor, 100, 0 );
   end;
 
 begin
@@ -1526,7 +1468,10 @@ begin
           NakedResource.RLE.DrawMono( ShadowFrame, 0, 0, Picture.Bits, ShadowColor );
           with Figure as TCharacter do
           begin
-            if assigned( Equipment[ slShield ] ) and assigned( Equipment[ slShield ].Resource ) then
+            //Linkshandschwert
+            if assigned( Equipment[ slShield ] ) and (TCharacter( Figure ).FEquipment[slShield] is TWeapon) and  TCharacter( Figure ).CombatMode and assigned( Equipment[ slShield ].Resource )
+            //ODER Schild
+            or assigned( Equipment[ slShield ] ) and not (TCharacter( Figure ).FEquipment[slShield] is TWeapon) and assigned( Equipment[ slShield ].Resource )then
               TResource( Equipment[ slShield ].Resource ).RLE.DrawMono( ShadowFrame, 0, 0, Picture.Bits, ShadowColor );
             if TCharacter( Figure ).CombatMode and assigned( Equipment[ slWeapon ] ) and assigned( Equipment[ slWeapon ].Resource ) then
               TResource( Equipment[ slWeapon ].Resource ).RLE.DrawMono( ShadowFrame, 0, 0, Picture.Bits, ShadowColor );
@@ -1555,7 +1500,10 @@ begin
           NakedResource.RLE.DrawMono( ShadowFrame, 0, 0, Picture.Bits, ShadowColor );
           with Figure as TCharacter do
           begin
-            if assigned( Equipment[ slShield ] ) and assigned( Equipment[ slShield ].Resource ) then
+            //Linkshandschwert
+            if assigned( Equipment[ slShield ] ) and (TCharacter( Figure ).FEquipment[slShield] is TWeapon) and TCharacter( Figure ).CombatMode and assigned( Equipment[ slShield ].Resource )
+            //ODER Schild
+            or assigned( Equipment[ slShield ] ) and not (TCharacter( Figure ).FEquipment[slShield] is TWeapon) and assigned( Equipment[ slShield ].Resource ) then
               TResource( Equipment[ slShield ].Resource ).RLE.DrawMono( ShadowFrame, 0, 0, Picture.Bits, ShadowColor );
             if TCharacter( Figure ).CombatMode and assigned( Equipment[ slWeapon ] ) and assigned( Equipment[ slWeapon ].Resource ) then
               TResource( Equipment[ slWeapon ].Resource ).RLE.DrawMono( ShadowFrame, 0, 0, Picture.Bits, ShadowColor );
@@ -1584,7 +1532,10 @@ begin
           NakedResource.RLE.DrawMono( ShadowFrame, 0, 0, Picture.Bits, ShadowColor );
           with Figure as TCharacter do
           begin
-            if assigned( Equipment[ slShield ] ) and assigned( Equipment[ slShield ].Resource ) then
+            //Linkshandschwert
+            if assigned( Equipment[ slShield ] ) and (TCharacter( Figure ).FEquipment[slShield] is TWeapon) and TCharacter( Figure ).CombatMode and assigned( Equipment[ slShield ].Resource )
+            //ODER Schild
+            or assigned( Equipment[ slShield ] ) and not (TCharacter( Figure ).FEquipment[slShield] is TWeapon) and assigned( Equipment[ slShield ].Resource ) then
               TResource( Equipment[ slShield ].Resource ).RLE.DrawMono( ShadowFrame, 0, 0, Picture.Bits, ShadowColor );
             if TCharacter( Figure ).CombatMode and assigned( Equipment[ slWeapon ] ) and assigned( Equipment[ slWeapon ].Resource ) then
               TResource( Equipment[ slWeapon ].Resource ).RLE.DrawMono( ShadowFrame, 0, 0, Picture.Bits, ShadowColor );
@@ -1646,7 +1597,10 @@ begin
               NakedResource.RLE.DrawMono( ShadowFrame, 0, 0, Picture.Bits, ShadowColor );
               with Figure as TCharacter do
               begin
-                if assigned( Equipment[ slShield ] ) and assigned( Equipment[ slShield ].Resource ) then
+                //Linkshandschwert
+                if assigned( Equipment[ slShield ] ) and (TCharacter( Figure ).FEquipment[slShield] is TWeapon) and TCharacter( Figure ).CombatMode and assigned( Equipment[ slShield ].Resource )
+                //ODER Schild
+                or assigned( Equipment[ slShield ] ) and not (TCharacter( Figure ).FEquipment[slShield] is TWeapon) and assigned( Equipment[ slShield ].Resource ) then
                   TResource( Equipment[ slShield ].Resource ).RLE.DrawMono( ShadowFrame, 0, 0, Picture.Bits, ShadowColor );
                 if TCharacter( Figure ).CombatMode and assigned( Equipment[ slWeapon ] ) and assigned( Equipment[ slWeapon ].Resource ) then
                   TResource( Equipment[ slWeapon ].Resource ).RLE.DrawMono( ShadowFrame, 0, 0, Picture.Bits, ShadowColor );
@@ -2262,6 +2216,7 @@ var
 const
   FailName : string = 'TStaticResource.GetImage1';
 begin
+  FillChar(ddsd, sizeof(ddsd), 0);
   Log.DebugLog(FailName);
   try
     ddsd.dwSize := SizeOf( ddsd );
@@ -2295,6 +2250,7 @@ var
 const
   FailName : string = 'TStaticResource.GetImage';
 begin
+  FillChar(ddsd, sizeof(ddsd), 0);
   Log.DebugLog(FailName);
   try
 

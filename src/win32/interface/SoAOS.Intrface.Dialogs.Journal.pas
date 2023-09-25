@@ -44,6 +44,7 @@ interface
 uses
 //  Winapi.DirectDraw,
   DirectX,
+  DXEffects, //für DrawAlpha (Journalskalierung)
   System.SysUtils,
   System.IOUtils,
   System.Types,
@@ -132,10 +133,10 @@ begin
   //JournalLog.LogDirectory:=ExtractFilePath(Application.ExeName) + 'Journal\';
     INI := TIniFile.Create( SiegeINIFile );
 
-    if ( INI.readinteger( 'Settings', 'JournalFont', 0 ) = 1 ) and TDirectory.Exists( ResourcePath + 'journalalt' ) then
-      JournalLog.LogDirectory := ResourcePath + 'journalalt\'
+    if ( INI.readinteger( 'Settings', 'JournalFont', 0 ) = 1 ) and TDirectory.Exists( ResourcePath + 'journalalt\'  + Language ) then
+      JournalLog.LogDirectory := ResourcePath + 'journalalt\' + Language + '\'
     else
-      JournalLog.LogDirectory := ResourcePath + 'journal\';
+      JournalLog.LogDirectory := ResourcePath + 'journal\' + Language + '\';
 
     ini.free;
   //LogText:=JournalLog.ReadLogByName(LogFile);
@@ -152,7 +153,7 @@ begin
 
     pText.LoadFontGraphic( 'inventory' ); //load the statistics font graphic in
 
-    DXBack := SoAOS_DX_LoadBMP( InterfacePath + 'Journal.bmp', cInvisColor, DlgWidth, DlgHeight );
+    DXBack := SoAOS_DX_LoadBMP( InterfaceLanguagePath + 'Journal.bmp', cInvisColor, DlgWidth, DlgHeight );
 
   {//Now for the Alpha'ed edges
   BMBack.LoadFromFile(ExtractFilePath(Application.ExeName) + 'Options\Dialog-Shadow.bmp');
@@ -234,7 +235,7 @@ begin
      pText.PlotDarkText('Exit',740,570,240);
   end;
 
-  lpDDSFront.Flip(nil, DDFLIP_WAIT);
+  lpDDSFront_Flip(nil, DDFLIP_WAIT);
   lpDDSBack.BltFast(0, 0, lpDDSFront, Rect(0, 0, 800, 600), DDBLTFAST_WAIT);
   }
   except
@@ -248,10 +249,19 @@ procedure TJournal.MouseDown( Sender : TObject; Button : TMouseButton;
 var
   pr1, pr2, pr3: TRect;
 begin
-  try
-    pr1 := ApplyOffset( Rect( 582, 575, 659, 596 ) );
-    pr2 := ApplyOffset( Rect( 681, 575, 721, 596 ) );
-    pr3 := ApplyOffset( Rect( 746, 575, 786, 596 ) );
+  try //Scale +50%, 360 und 90 as new offset
+    if ( ScreenMetrics.IniIdent = 'FullHD' ) and ScaleJournal then
+    begin
+      pr1 := Rect( round(582*1.5) + 360, round(575*1.5) + 90, round(659*1.5) + 360, round(596*1.5) + 90 );
+      pr2 := Rect( round(681*1.5) + 360, round(575*1.5) + 90, round(721*1.5) + 360, round(596*1.5) + 90 );
+      pr3 := Rect( round(746*1.5) + 360, round(575*1.5) + 90, round(786*1.5) + 360, round(596*1.5) + 90 );
+    end
+    else //normal
+    begin
+      pr1 := ApplyOffset( Rect( 582, 575, 659, 596 ) );
+      pr2 := ApplyOffset( Rect( 681, 575, 721, 596 ) );
+      pr3 := ApplyOffset( Rect( 746, 575, 786, 596 ) );
+    end;
   //check for clicks
     if pr1.Contains( Point( x, y ) ) then
     begin //prev
@@ -292,7 +302,6 @@ begin
 
 end;
 
-
 procedure TJournal.Release;
 const
   FailName : string = 'TJournal.release';
@@ -310,7 +319,6 @@ begin
   end;
 end;
 
-
 procedure TJournal.ShowText;
 var
   BM : TBitmap;
@@ -327,6 +335,8 @@ begin
     if CurrentLogIndex > StartLogIndex then
       StartLogIndex := CurrentLogIndex;
   //clear screen
+    if ScreenMetrics.borderFile<>'' then
+      lpDDSBack.BltFast( 0, 0, TfrmMain(frmMain).FillBorder, nil, DDBLTFAST_SRCCOLORKEY or DDBLTFAST_WAIT );
     pr := Rect( 0, 0, DlgWidth, DlgHeight );
     lpDDSBack.BltFast( Offset.X, Offset.Y, DXBack, @pr, DDBLTFAST_SRCCOLORKEY or DDBLTFAST_WAIT );
   //Plot buttons
@@ -338,6 +348,7 @@ begin
     LogText := JournalLog.ReadLogByIndex( CurrentLogIndex );
 
 //TODO: JPEG code should go - or be interchangable with BMP (and PNG)
+//lieber nicht, da u.a. PoA .jpg-Journale verwendet
   //get the pic, if it exists
     if ( CurrentLogIndex >= 0 ) and ( CurrentLogIndex < JournalLog.LogFileList.count ) then
     begin
@@ -352,6 +363,10 @@ begin
         PicWidth := width;
         PicHeight := height;
         pr := Rect( 0, 0, width, Height );
+        //scale +50%, don't forget MouseDownevents
+        if ( ScreenMetrics.IniIdent = 'FullHD' ) and ScaleJournal then
+        DrawAlpha(lpDDSBack, rect( PicXY.X + Offset.X - 200, PicXY.Y - 150 + Offset.Y, PicXY.X + 1000 + Offset.X, PicXY.Y + 750 + Offset.Y ), Rect( 0, 0, width, Height ), DXPic, true, 255 )
+        else
         lpDDSBack.BltFast( PicXY.X + Offset.X, PicXY.Y + Offset.Y, DXPic, @pr, DDBLTFAST_SRCCOLORKEY or DDBLTFAST_WAIT );
         if LogText <> '' then
           pText.PlotTextBlockAroundBox( Logtext, 50, 750, 50, 240, rect( PicXY.X, PicXY.Y, PicXY.X + PicWidth + 20, PicXY.Y + PicHeight + 20 ) );
@@ -383,6 +398,10 @@ begin
         end;
 
         pr := Rect( 0, 0, BM.width, BM.Height );
+        //Scale 50%
+        if ( ScreenMetrics.IniIdent = 'FullHD' ) and ScaleJournal then
+        DrawAlpha(lpDDSBack, rect( PicXY.X + Offset.X - 200, PicXY.Y - 150 + Offset.Y, PicXY.X + 1000 + Offset.X, PicXY.Y + 750 + Offset.Y ), Rect( 0, 0, width, Height ), DXPic, true, 255 )
+        else
         lpDDSBack.BltFast( PicXY.X + Offset.X, PicXY.Y + Offset.Y, DXPic, @pr, DDBLTFAST_SRCCOLORKEY or DDBLTFAST_WAIT );
         if LogText <> '' then
           pText.PlotTextBlockAroundBox( Logtext, 50, 750, 50, 240, rect( PicXY.X, PicXY.Y, PicXY.X + PicWidth + 20, PicXY.Y + PicHeight + 20 ) );
@@ -392,8 +411,10 @@ begin
     end
     else
       pText.PlotTextBlock( Logtext, 50, 750, 50, 240 );
-
-    if not NoPageNumbers then
+    if not NoPageNumbers then //Also other position when ScaleJournal
+    if ( ScreenMetrics.IniIdent = 'FullHD' ) and ScaleJournal then
+      pText.plotText( txtMessage[ 0 ] + intToStr( CurrentLogIndex + 1 ) + txtMessage[ 1 ] + IntToStr( JournalLog.LogFileList.count ), 81 + Offset.X - 200, 575 + 150 + Offset.Y, 255)
+    else
       pText.plotText( txtMessage[ 0 ] + intToStr( CurrentLogIndex + 1 ) + txtMessage[ 1 ] + IntToStr( JournalLog.LogFileList.count ), 81 + Offset.X, 575 + Offset.Y, 255 );
     SoAOS_DX_BltFront;
 

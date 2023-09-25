@@ -57,7 +57,16 @@ const
   cTalkBlueColor   = TColors.Blue;  // Undead
   cBlackBackground = TColors.Black;
 
+  cGroundListWidth : integer = 75;
+  cGroundListHeight : integer = 29;
+
+  EOBMarker = $4242;
+
 type
+  TSavBlocks = ( sbMap, sbMapKnown, sbCharacter, sbItem, sbTravel, sbJournal, scAbstract, scSoundPlayer, scPathCorner, scTrigger, scSpriteObject,
+    scItem, scWeapon, scQuiver, scBow, scContainer, scDoor, scCharacter, sbStartJournalIndex, sbQuest, siItem, sbAdventure,
+    sbDeathScreen, sbStartQuestIndex, sbStartAdventureIndex, scEventTimer, sbIndex, sbMaxPartyMembers );
+
 //  class function AppPath: string; static;
 
 /// <summary> Screen resolution to improve readbility, names might change when I get a clue what is needed</summary>
@@ -65,19 +74,26 @@ type
     ScreenWidth: integer;
     ScreenHeight: integer;
     BPP: integer;
+    Windowed: Boolean;
+    VSync: Boolean;
+    ForceD3DFullscreen: Boolean;
+    RefreshRate: Integer;
+    MaxFPS: Integer;
     PreMapWidth: integer;
     PreMapHeight: integer;
     GameWidth: integer;
     GameHeight: integer;
-    GameMapWidth: integer;
-    GameMapHeight: integer;
+    HearingRange: integer;
     SpellX : integer;
   	SpellBarX : integer;
    	SpellBarY : integer;
 	  StatsX : integer;  // and inventorydlg?
    	StatsY : integer;
+    NPCX : integer;
+    NPCY : integer;
   	HelpBoxY : integer;
   	MouseMsgX : integer;
+    PauseX: integer;
   	BottomBarX : integer;
   	NPCBarY : integer;
   	ManaEmptyX : integer;
@@ -94,6 +110,7 @@ type
     spellbarFile: string;
     sidebarFile: string;
     bottombarFile: string;
+    borderFile: string;
 //    MagicRange: integer;
     IniIdent: string;
     popInventoryRect: TRect;
@@ -133,15 +150,17 @@ const
      PreMapHeight: 544;
      GameWidth : 703;
      GameHeight : 511;
-     GameMapWidth : 200;
-     GameMapHeight : 400;
+     HearingRange : 400;
      SpellX : 339;
 	   SpellBarX : 683;
 	   SpellBarY : 486;
 	   StatsX : 699;
 	   StatsY : 498;
+     NPCX : 16;
+     NPCY : 12;
 	   HelpBoxY : 455;
 	   MouseMsgX : 394;
+     PauseX : 456;
 	   BottomBarX : 391;
 	   NPCBarY : 581;
 	   ManaEmptyX : 699;
@@ -153,11 +172,12 @@ const
      CharacterRange: 300;
      CharacterReach: 160;
      CompanionRange: 300;
-     PartyMemberSlots: 2;
+     PartyMemberSlots: 4;
      spellbarFile: 'spellbar';
      sidebarFile: 'sidebar';
      bottombarFile: 'bottombar';
-     IniIdent : 'SDAOA';
+     borderFile: '';
+     IniIdent : 'Original';
      popInventoryRect: ( Left: 726; Top: 429; Right: 772; Bottom: 473 );
      popMapRect: ( Left: 732; Top: 511; Right: 781; Bottom: 555 );
      popQuestRect: ( Left: 666; Top: 511; Right: 715; Bottom: 531 );
@@ -169,11 +189,11 @@ const
      popManaRect: ( Left: 708; Top: 146; Right: 765; Bottom: 203 );
      popHealthRect: ( Left: 711; Top: 258; Right: 759; Bottom: 348 );
      popSpellRect: ( Left: 337; Top: 547; Right: 371; Bottom: 582 );
-     popRosterRect: ( Left: 175; Top: 539; Right: 256; Bottom: 571 );
+     popRosterRect: ( Left: 101; Top: 491; Right: 192; Bottom: 509 );
      popParty1Rect: ( Left: 3; Top: 510; Right: 65; Bottom: 586 );
      popParty2Rect: ( Left: 80; Top: 510; Right: 151; Bottom: 586 );
-     popParty3Rect: ( Left: -1; Top: -1; Right: -1; Bottom: -1 );
-     popParty4Rect: ( Left: -1; Top: -1; Right: -1; Bottom: -1 );
+     popParty3Rect: ( Left: 166; Top: 510; Right: 233; Bottom: 586 );
+     popParty4Rect: ( Left: 248; Top: 510; Right: 319; Bottom: 586 );
     );
   cHD : TScreenResolutionData =
     (ScreenWidth : 1280;
@@ -183,21 +203,23 @@ const
      PreMapHeight: 720;
      GameWidth : 1183;
      GameHeight : 631;
-     GameMapWidth : 200;  // ??
-     GameMapHeight : 400; // ??
+     HearingRange : 450;
      SpellX : 508;
   	 SpellBarX : 1163;  // ??
 	   SpellBarY : 606;
-	   StatsX : 1803;
-	   StatsY : 966;
+	   StatsX : 1179;
+	   StatsY : 606;
+     NPCX : 0;
+     NPCY : 0;
 	   HelpBoxY : 575;
 	   MouseMsgX : 566;
+     PauseX : 628;
 	   BottomBarX : 564;  //??
 	   NPCBarY : 701;
    	 ManaEmptyX : 1179;
    	 LifeEmptyX : 1189;
 	   LogX : 1139; // ??
-     VisibilityFactor : 1.5; // Visibility factor used on Vision property
+     VisibilityFactor : 41/30; // Visibility factor used on Vision property 410/300
      CharacterMysticVision: 800;
      CharacterDistance: 375;
      CharacterRange: 650;
@@ -207,6 +229,7 @@ const
      spellbarFile: 'spellbarHD';
      sidebarFile: 'sidebarHD';
      bottombarFile: 'bottombarHD';
+     borderFile: 'gMainMenuOverlay720';
      IniIdent : 'HD';
      popInventoryRect: ( Left: 1206; Top: 429; Right: 1254; Bottom: 473 );
      popMapRect: ( Left: 1212; Top: 631; Right: 1263; Bottom: 675 );
@@ -233,21 +256,23 @@ const
      PreMapHeight: 1080;
      GameWidth : 1823;
      GameHeight : 997;  // 997?
-     GameMapWidth : 200;  // ??
-     GameMapHeight : 400; // ??
+     HearingRange : 525;
      SpellX : 508;
   	 SpellBarX : 1803;
 	   SpellBarY : 966;
-	   StatsX : 1803;
+	   StatsX : 1819;
 	   StatsY : 966;
+     NPCX : 0;
+     NPCY : 0;
 	   HelpBoxY : 935;
 	   MouseMsgX : 566;
+     PauseX : 628;
 	   BottomBarX : 564;
 	   NPCBarY : 1061;
 	   ManaEmptyX : 1819;
 	   LifeEmptyX : 1829;
 	   LogX : 1139;
-     VisibilityFactor : 7/3; // Visibility factor used on Vision property
+     VisibilityFactor : 9/4; // Visibility factor used on Vision property 675/300
      CharacterMysticVision: 1000;
      CharacterDistance: 775;
      CharacterRange: 950;
@@ -257,6 +282,7 @@ const
      spellbarFile: 'spellbarFullHD';
      sidebarFile: 'sidebarFullHD';
      bottombarFile: 'bottombarFullHD';
+     borderFile: 'gMainMenuOverlay1080';
      IniIdent : 'FullHD';
      popInventoryRect: ( Left: 1846; Top: 885; Right: 1894; Bottom: 931 );
      popMapRect: ( Left: 1852; Top: 991; Right: 1903; Bottom: 1035 );
@@ -296,7 +322,9 @@ const
 
 type
   TFacing = ( fNW, fNN, fNE, fEE, fSE, fSS, fSW, fWW );
-
+  {$SCOPEDENUMS ON}
+  TModSelection = (SoA, DoA, PoA, AoA, Caves, RoD, TSK, Nothing); //TODO: This should be dynamicly loaded - now only for readablity
+  {$SCOPEDENUMS OFF}
   TFacingHelper = record helper for TFacing
     function ToString : string;
   end;

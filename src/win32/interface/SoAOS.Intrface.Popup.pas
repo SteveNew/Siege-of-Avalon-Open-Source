@@ -41,6 +41,8 @@ uses
 
 type
   TPopup = class
+  const
+    Height = 20;
   private
     Surface : IDirectDrawSurface;
     Count : Integer;
@@ -65,7 +67,6 @@ uses
   Vcl.Graphics,
   Engine,
   Display,
-  MousePtr,
   SoAOS.Animation,
   AniDemo;
 
@@ -75,7 +76,7 @@ constructor TPopup.Create;
 begin
   inherited;
   Messages := TStringList.Create;
-  ExText.Open( 'Popup' );
+  ExText.OpenEncoded( 'Popup' );
   ExText.GetSection( Messages );
   ExText.Close;
   Count := 0;
@@ -92,24 +93,22 @@ procedure TPopup.Draw;
 var
   DC : HDC;
   MsgID : Integer;
-  Msg : string;
+  Msg : String;
   BM : TBitmap;
-const
-  Height = 20;
 begin
   Inc( Count );
   if ( Count >= 30 ) and MouseCursor.Enabled then
   begin
     Count := 0;
 //    GetCursorPos( P );
-    var P: TPoint := Mouse.CursorPos;
+    var P: TPoint := frmMain.ScreenToClient(Mouse.CursorPos);
     var SpellBarHidden: boolean := not frmMain.SpellBarActive;
 	//TODO: Adjust points to HD? Does disabled make a differnce?
     if ScreenMetrics.popInventoryRect.Contains(P) then MsgID := 1 //Inventory
     else if ScreenMetrics.popMapRect.Contains(P) then MsgID := 2 //Map
-    else if ScreenMetrics.popQuestRect.Contains(p) then MsgID := 3 //Quest
-    else if ScreenMetrics.popAdventureRect.Contains(P) then MsgID := 4 //Adventure
-    else if ScreenMetrics.popJournalRect.Contains(P) then MsgID := 5 //Journal
+//    else if ScreenMetrics.popQuestRect.Contains(p) then MsgID := 3 //Quest
+//    else if ScreenMetrics.popAdventureRect.Contains(P) then MsgID := 4 //Adventure
+//    else if ScreenMetrics.popJournalRect.Contains(P) then MsgID := 5 //Journal
     else if ScreenMetrics.popAwardsRect.Contains(P) and SpellBarHidden then MsgID := 6 //Awards
     else if ScreenMetrics.popMessageRect.Contains(P) and SpellBarHidden then MsgID := 7 //Message Area
     else if ScreenMetrics.popStatsRect.Contains(P) then MsgID := 8 //Player Stats
@@ -166,13 +165,13 @@ begin
             //            BM.Canvas.Font.Name:='fixedsys';
             BM.Canvas.Font.Style := [ fsBold ];
             var R:TRect := Rect( 0, 0, 0, Height );
-            DrawText( BM.Canvas.Handle, PChar( Msg ), Length( Msg ), R, DT_SINGLELINE or DT_CALCRECT or DT_NOPREFIX );
+            DrawText( BM.Canvas.Handle, PWideChar( Msg ), Length( Msg ), R, DT_SINGLELINE or DT_CALCRECT or DT_NOPREFIX );
             Inc( R.Right, 8 );
             R.Bottom := Height;
             FWidth := R.Right;
             BM.width := FWidth;
             BM.Height := Height;
-            DrawText( BM.Canvas.Handle, PChar( Msg ), Length( Msg ), R, DT_CENTER or DT_SINGLELINE or DT_VCENTER or DT_NOPREFIX );
+            DrawText( BM.Canvas.Handle, PWideChar( Msg ), Length( Msg ), R, DT_CENTER or DT_SINGLELINE or DT_VCENTER or DT_NOPREFIX );
 
             Surface := DDGetSurface( lpDD, FWidth, Height, $C0FFE0, True );
             Surface.GetDC( DC );

@@ -56,7 +56,8 @@ uses
   LogFile,
   Resource,
   DFX,
-  MousePtr;
+  AbstractMousePtr
+  ;
 
 procedure CreateGlobals;
 procedure FreeGlobals;
@@ -65,8 +66,7 @@ procedure RunScript( Me : TObject; Script : string );
 procedure Converse( ObjectRef : TObject; Conversation : string );
 function FormatFP( D : double ) : string;
 function UnFormatFP( S : string ) : double;
-procedure CheckCache;
-procedure GetChapters( INI : TINIFile );
+procedure GetChapters;
 function SymbolReplacement( const Script : string ) : string;
 
 var
@@ -81,9 +81,8 @@ var
   BaseLightType : longint;
   AppPath: string;
   SiegeINIFile: string;
+  SiegeINILanguageFile: string;
   GamesPath: string;
-//  MapsPath: string;
-  CachePath : string;
   MapKnown : boolean;
   Themes : TStringList;
   GameName : string;
@@ -92,7 +91,7 @@ var
   CurrentStartingPoint : string;
   TravelList : TStringList;
   PlotShadows : boolean;
-  PlotScreenRes : integer;
+  Hardmode : boolean; //Hardmode, no savegames on someone's own
   DefaultPants : TLayerResource;
   FemDefaultPants : TLayerResource;
   ElfDefaultPants : TLayerResource;
@@ -100,23 +99,19 @@ var
   WolfResource : TCharacterResource;
   GolemResource : TCharacterResource;
   SkeletonResource : TCharacterResource;
-  GIFToPOX : boolean;
   AllSpells : boolean;
-  Bikini : boolean;
   Quests : TStringList;
   Adventures : TStringList;
-  MouseCursor : TMousePtr;
-  ReadCache : boolean;
-  WriteCache : boolean;
+  MouseCursor : TAbstractMousePtr;
   GlobalBrightness : longint;
   UseDirectSound : boolean;
-  MaxCacheSize : int64;
   LoadingFromSaveFile : boolean;
   SpawnList : TList;
   Chapters : int64;
   TalkToMe : boolean;
   BodyRotResource : TResource;
   NoPageNumbers : boolean;
+  ScaleJournal: boolean; //Tagebuchskalierung
   UseSmallFont : boolean;
   NoTransit : boolean;
   SaveMsg : string;
@@ -129,6 +124,7 @@ var
 implementation
 
 uses
+  System.Generics.Collections,
   SoAOS.Types,
   SoAOS.AI,
   SoAOS.AI.Helper,
@@ -140,13 +136,6 @@ uses
   SoAOS.Effects,
   Display,
   Music;
-
-type
-  TCacheInfo = record
-    Name : ShortString;
-    Size : longint;
-    Date : TDateTime;
-  end;
 
 const
   MaxScriptEntry = 40;
@@ -172,7 +161,7 @@ begin
     PartManager := TPartManager.Create( ItemDB, XRefDB );
     TitlesManager := TTitlesDB.create;
     TitlesManager.LoadFromFile( TitlesDB );
-    NPCList := TList.create;
+    NPCList := TCharacterList.Create;
     NPCList.capacity := 5;
     Themes := TStringList.create;
     Themes.Sorted := true;
@@ -192,6 +181,9 @@ begin
     ChestMsg := ExText.GetText( 'Chest' );
     if ChestMsg = '' then
       ChestMsg := '>>> Previously missing items placed on ground <<<';
+    ExtExt.Close;
+
+    ExText.OpenEncoded( 'Engine' );
     SOLName := ExText.GetText( 'SOL' );
     if SOLName = '' then
       SOLName := 'Start of Level';
@@ -268,34 +260,13 @@ begin
   end;
 end;
 
-procedure GetChapters( INI : TINIFile );
+procedure GetChapters;
 var
-  List : TStringList;
   i : integer;
-  S, Key, Value : string;
-  KeyIndex : int64;
 begin
   Chapters := 1;
-  List := TStringList.create;
-  try
-    INI.ReadSectionValues( 'Chapters', List );
-    for i := 0 to List.count - 1 do
-    begin
-      try
-        S := List.Strings[ i ];
-        Key := Parse( S, 0, '=' );
-        Value := Parse( S, 1, '=' );
-        if ( lowercase( copy( Key, 1, 8 ) ) = 'chapter ' ) and ( lowercase( Value ) = 'available' ) then
-        begin
-          KeyIndex := StrToInt( copy( Key, 9, length( Key ) - 8 ) ) - 1;
-          Chapters := Chapters or ( 1 shl KeyIndex );
-        end;
-      except
-      end;
-    end;
-  finally
-    List.free;
-  end;
+  for i := 0 to 5 do
+    Chapters := Chapters or ( 1 shl i );
 end;
 
 function FormatFP( D : double ) : string;
@@ -334,9 +305,12 @@ function SymbolReplacement( const Script : string ) : string;
 var
   S, S0, S1, S2 : string;
   i, j : integer;
-  INI : TINIFile;
+  INI : TMemINIFile;
+  SayINI: TMemIniFile;
 begin
+  { TODO -cLocalize : Someday find a better way to handle the ANSI vs CP encoded need. }
   INI := nil;
+  SayINI := nil;
   result := Script;
   i := Pos( '#', result );
   while ( i > 0 ) do
@@ -344,15 +318,24 @@ begin
     S := Parse( result, 1, '#' );
     j := Length( S );
     if not assigned( INI ) then
-      INI := TINIFile.create( MapPath + 'symbols.ini' );
+      INI := TMemINIFile.create( MapPath + 'symbols.'+Language+'.ini', TEncoding.ANSI );
     S1 := Parse( S, 0, '.' );
     S2 := Parse( S, 1, '.' );
-    S0 := INI.ReadString( S1, S2, '' );
+    if AnsiSameText(S1, 'Say') then // Say section should be read with correct encoding - due to DrawText
+    begin
+      if not assigned( SayINI ) then
+        SayINI := TMemINIFile.create( MapPath + 'symbols.'+Language+'.ini', TEncoding.GetEncoding(INICodePage) );
+      S0 := SayINI.ReadString( S1, S2, '' );
+    end
+    else
+      S0 := INI.ReadString( S1, S2, '' );
     result := Copy( result, 1, i - 1 ) + S0 + Copy( result, i + j + 2, Length( result ) - i - j - 1 );
     i := Pos( '#', result );
   end;
   if assigned( INI ) then
     INI.free;
+  if assigned( SayINI ) then
+    SayINI.free;
 
   i := Pos( #13#10, result ); //Strip CRLFs
   while ( i > 0 ) do
@@ -485,7 +468,7 @@ begin
               if ObjectRef is TSpriteObject then
               begin
                 if TSpriteObject( ObjectRef ).PropertyExists( Event ) then
-                  RunScript( ObjectRef, TSpriteObject( ObjectRef ).Properties[ Event ] );
+                  RunScript( ObjectRef, TSpriteObject( ObjectRef ).Property_[ Event ] );
               end;
             end;
           end
@@ -496,7 +479,7 @@ begin
               if ObjectRef is TSpriteObject then
               begin
                 if TSpriteObject( ObjectRef ).PropertyExists( Event ) then
-                  RunScript( ObjectRef, TSpriteObject( ObjectRef ).Properties[ Event ] );
+                  RunScript( ObjectRef, TSpriteObject( ObjectRef ).Property_[ Event ] );
               end;
             end;
           end;
@@ -519,19 +502,19 @@ begin
                 else
                 begin
                   S2 := Parse( Parms, 0, '<' );
-                  IfFailed := StrToFloat( ObjectRef.Properties[ S2 ] ) >= StrToFloat( S1 );
+                  IfFailed := StrToFloat( ObjectRef.Property_[ S2 ] ) >= StrToFloat( S1 );
                 end;
               end
               else
               begin
                 S2 := Parse( Parms, 0, '>' );
-                IfFailed := StrToFloat( ObjectRef.Properties[ S2 ] ) <= StrToFloat( S1 );
+                IfFailed := StrToFloat( ObjectRef.Property_[ S2 ] ) <= StrToFloat( S1 );
               end;
             end
             else
             begin
               S2 := Parse( Parms, 0, '=' );
-              IfFailed := lowercase( ObjectRef.Properties[ S2 ] ) <> lowercase( S1 );
+              IfFailed := lowercase( ObjectRef.Property_[ S2 ] ) <> lowercase( S1 );
             end;
           end;
           if not IfFailed then
@@ -555,19 +538,19 @@ begin
                 else
                 begin
                   S2 := Parse( Parms, 0, '<' );
-                  IfFailed := StrToFloat( ObjectRef.Properties[ S2 ] ) < StrToFloat( S1 );
+                  IfFailed := StrToFloat( ObjectRef.Property_[ S2 ] ) < StrToFloat( S1 );
                 end;
               end
               else
               begin
                 S2 := Parse( Parms, 0, '>' );
-                IfFailed := StrToFloat( ObjectRef.Properties[ S2 ] ) > StrToFloat( S1 );
+                IfFailed := StrToFloat( ObjectRef.Property_[ S2 ] ) > StrToFloat( S1 );
               end;
             end
             else
             begin
               S2 := Parse( Parms, 0, '=' );
-              IfFailed := lowercase( ObjectRef.Properties[ S2 ] ) = lowercase( S1 );
+              IfFailed := lowercase( ObjectRef.Property_[ S2 ] ) = lowercase( S1 );
             end;
           end;
           if not IfFailed then
@@ -681,13 +664,13 @@ begin
         end
         else if Token = 'ifinparty' then
         begin
-          IfFailed := not ( NPCList.IndexOf( ObjectRef ) > 0 );
+          IfFailed := not ( NPCList.IndexOf( TCharacter(ObjectRef) ) > 0 );
           if not IfFailed then
             inc( IfLevel );
         end
         else if Token = 'ifnotinparty' then
         begin
-          IfFailed := ( NPCList.IndexOf( ObjectRef ) > 0 );
+          IfFailed := ( NPCList.IndexOf( TCharacter(ObjectRef) ) > 0 );
           if not IfFailed then
             inc( IfLevel );
         end
@@ -767,32 +750,20 @@ begin
           begin
             frmMain.ChangeFocus( player );
             while NPCList.Count > 1 do
-              if NPCList.Items[ 1 ] <> player then
+              if NPCList[ 1 ] <> player then
               begin
-                TCharacter( NPCList.Items[ 1 ] ).Alliance := '';
-                frmMain.RemoveFromParty( NPCList.Items[ 1 ] );
+                NPCList[ 1 ].Alliance := '';
+                frmMain.RemoveFromParty( NPCList[ 1 ] );
               end;
           end;
         end
         else if Token = 'freezeparty' then
         begin
-          if NPCList.Count > 1 then
-          begin
-            frmMain.ChangeFocus( player );
-            for iLoop := 0 to NPCList.Count - 1 do
-              if NPCList.Items[ iLoop ] <> player then
-              begin
-                TCharacter( NPCList.Items[ iLoop ] ).Frozen := true;
-              end;
-          end
+          NPCList.Freeze;
         end
         else if Token = 'unfreezeparty' then
         begin
-          for iLoop := 0 to NPCList.Count - 1 do
-            if NPCList.Items[ iLoop ] <> player then
-            begin
-              TCharacter( NPCList.Items[ iLoop ] ).Frozen := false;
-            end;
+          NPCList.UnFreeze;
         end
         else if Token = 'savegame' then
         begin
@@ -804,7 +775,7 @@ begin
           begin
             S0 := Parse( Parms, 0, '=' );
             S1 := Parse( Parms, 1, '=' );
-            ObjectRef.Properties[ S0 ] := S1;
+            ObjectRef.Property_[ S0 ] := S1;
           end;
         end
         else if ( Token = 'meander' ) then
@@ -867,7 +838,7 @@ begin
           if assigned( List ) then
           begin
             for k := 0 to List.count - 1 do
-              TGameObject( List.objects[ k ] ).Properties[ S0 ] := S1;
+              TGameObject( List.objects[ k ] ).Property_[ S0 ] := S1;
           end;
         end
         else if Token = 'say' then
@@ -1169,7 +1140,7 @@ begin
         else if Token = 'setmaxparty' then
         begin
           try
-            MaxPartyMembers := strtoint( Parms );
+            MaxPartyMembers := ScreenMetrics.PartyMemberSlots; // strtoint( Parms );
           except
           end;
         end
@@ -1183,9 +1154,7 @@ begin
         end
         else if Token = 'removequest' then
         begin
-          j := Quests.IndexOf( Parms );
-          if j >= 0 then
-            Quests.Delete( j );
+          frmMain.RemoveQuest( Parms );
         end
         else if Token = 'adventure' then
         begin
@@ -1267,8 +1236,8 @@ begin
                   break;
                 if List.objects[ k ] is TPathCorner then
                 begin
-                  TCharacter( NPCList.items[ j ] ).SetPos( TPathCorner( List.objects[ k ] ).X, TPathCorner( List.objects[ k ] ).Y, TPathCorner( List.objects[ k ] ).Z );
-                  TCharacter( NPCList.items[ j ] ).Stand;
+                  NPCList[ j ].SetPos( TPathCorner( List.objects[ k ] ).X, TPathCorner( List.objects[ k ] ).Y, TPathCorner( List.objects[ k ] ).Z );
+                  NPCList[ j ].Stand;
                   inc( j );
                 end;
               end;
@@ -1290,10 +1259,10 @@ begin
                   break;
                 if List.objects[ k ] is TPathCorner then
                 begin
-                  if TCharacter( NPCList.items[ j ] ) <> player then
+                  if NPCList[ j ] <> player then
                   begin
-                    TCharacter( NPCList.items[ j ] ).SetPos( TPathCorner( List.objects[ k ] ).X, TPathCorner( List.objects[ k ] ).Y, TPathCorner( List.objects[ k ] ).Z );
-                    TCharacter( NPCList.items[ j ] ).Stand;
+                    NPCList[ j ].SetPos( TPathCorner( List.objects[ k ] ).X, TPathCorner( List.objects[ k ] ).Y, TPathCorner( List.objects[ k ] ).Z );
+                    NPCList[ j ].Stand;
                   end;
                   inc( j );
                 end;
@@ -1446,166 +1415,6 @@ begin
     found := FindNext( SearchRec );
   end;
   FindClose( SearchRec );
-end;
-
-procedure CheckCache;
-var
-  F : file;
-//  INI: TINIFile;
-  FileList : TStringList;
-  TotalSize : int64;
-  Dir : string;
-  i, j : integer;
-  L : longint;
-//  L64: int64;
-  CacheList, pList, pList1, pList2 : ^TCacheInfo;
-  CacheItem : TCacheInfo;
-  Count : integer;
-begin
-  FileList := GetFileList( CachePath, '.zit' );
-  try
-    Count := FileList.count;
-    GetMem( CacheList, Count * sizeof( TCacheInfo ) );
-    pList := CacheList;
-    TotalSize := 0;
-    L := 0;
-    //Calculate TotalSize, Load Name and Size fields
-    for i := 0 to Count - 1 do
-    begin
-      pList^.Name := ShortString( ChangeFileExt( FileList.strings[ i ], '' ) );
-
-      if TFile.Exists(Dir + FileList.strings[ i ]) then
-      begin
-        AssignFile( F, Dir + FileList.strings[ i ] );
-        try
-          Reset( F, 1 );
-          L := filesize( F );
-          CloseFile( F );
-        except
-          L := 0;
-        end;
-      end;
-
-      if TFile.Exists(Dir + ChangeFileExt( FileList.strings[ i ], '.pit') ) then
-      begin
-        AssignFile( F, Dir + ChangeFileExt( FileList.strings[ i ], '.pit' ) );
-        try
-          Reset( F, 1 );
-          L := L + filesize( F );
-          CloseFile( F );
-        except
-        end;
-      end;
-
-      if TFile.Exists( Dir + ChangeFileExt( FileList.strings[ i ], '.dit' ) ) then
-      begin
-        AssignFile( F, Dir + ChangeFileExt( FileList.strings[ i ], '.dit' ) );
-        try
-          Reset( F, 1 );
-          L := L + filesize( F );
-          CloseFile( F );
-        except
-        end;
-      end;
-
-      if TFile.Exists( Dir + ChangeFileExt( FileList.strings[ i ], '.cit' ) ) then
-      begin
-        AssignFile( F, Dir + ChangeFileExt( FileList.strings[ i ], '.cit' ) );
-        try
-          Reset( F, 1 );
-          L := L + filesize( F );
-          if filesize( F ) > 12 then
-          begin
-            Seek( F, 12 );
-            BlockRead( F, pList^.Date, sizeof( TDateTime ) );
-          end
-          else
-          begin
-            pList^.Date := 0;
-          end;
-          CloseFile( F );
-        except
-        end;
-      end;
-//Log.Log(pList^.Name+' - '+DateTimeToStr(pList^.Date)+' ('+inttostr(L)+')');
-
-      pList^.Size := L;
-      TotalSize := TotalSize + L;
-      inc( pList );
-    end;
-  finally
-    FileList.free;
-  end;
-
-  if TotalSize > MaxCacheSize then
-  begin
-    Log.Log( 'Clearing cache...' );
-    //Load Date field
-//    INI:=TINIFile.create(DefaultPath + 'siege.ini');
-
-//    try
-    {  pList:=CacheList;
-      for i:=1 to Count do begin
-        S:=INI.ReadString('Cache',pList^.Name,'');
-        try
-          L64:=StrToInt64(S);
-        except
-          L64:=0;
-        end;
-        pList^.Date:=TDateTime(addr(L64)^);
-        inc(pList);
-      end;    }
-
-      //Sort by Date
-    pList := CacheList;
-    for i := 1 to Count - 1 do
-    begin
-      pList1 := pList;
-      pList2 := pList;
-      for j := i + 1 to Count do
-      begin
-        inc( pList1 );
-        if pList1.Date < pList2.Date then
-          pList2 := pList1;
-      end;
-      if pList2 <> pList then
-      begin
-        CacheItem := pList^;
-        pList^ := pList2^;
-        pList2^ := CacheItem;
-      end;
-      inc( pList );
-    end;
-
-    pList := CacheList;
-    while ( TotalSize > MaxCacheSize ) do
-    begin
-      Log.Log( '  ' + pList^.Name );
-      try
-        DeleteFile( Dir + pList^.Name + '.zit' );
-      except
-      end;
-      try
-        DeleteFile( Dir + pList^.Name + '.pit' );
-      except
-      end;
-      try
-        DeleteFile( Dir + pList^.Name + '.dit' );
-      except
-      end;
-      try
-        DeleteFile( Dir + pList^.Name + '.cit' );
-      except
-      end;
-      dec( TotalSize, pList^.Size );
-//        INI.DeleteKey('Cache',pList^.Name);
-      inc( pList );
-    end;
-//    finally
-//      INI.free
-//    end;
-  end;
-  FreeMem( CacheList );
 end;
 
 end.
