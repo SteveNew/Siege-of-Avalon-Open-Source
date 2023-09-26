@@ -72,8 +72,10 @@ begin
   FNumFrames := TSize.Create(Sheet.Width div CursorWidth, Sheet.Height div CursorHeight);
   FLayer := FRenderer.CreateLayerFromBitmap(Sheet, $FF00FF);
   FLayer.Enabled := False;
+  //Crash/Blackscreen after Startup, Matrix, ->C:/windows/SYSWOW64/D3DX10_41.dll
   FLayer.SetSourceRect(TRect.Create(0, 0, CursorWidth, CursorHeight));
   FLayer.SetDestRect(TRect.Create(0, 0, CursorWidth, CursorHeight));
+  //---
   FMouseThread := TMouseUpdaterThread.Create(Self);
   FMouseThread.Start;
 end;

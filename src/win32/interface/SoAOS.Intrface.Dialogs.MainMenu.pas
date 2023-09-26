@@ -350,9 +350,15 @@ begin
     pr2 := Rect(0, 0, 100, 17); // Modselect
     // Show Helpscreen/Controls
     if PtInRect(ApplyOffset(Rect(590, 470, 700, 495)), point(X, Y)) and
-      (AreYouSureBoxVisible = false) and (SelectModBoxNewVisible = false) and
-      (SelectModBoxLoadVisible = false) then
+    (AreYouSureBoxVisible = false) and (SelectModBoxNewVisible = false) and
+    (SelectModBoxLoadVisible = false) then
       ShowHelp;
+    // Show trophies
+    if PtInRect( ApplyOffset(Rect( 97, 464, 234, 495 )), point( X, Y ) ) and
+    ( modselection <> TModSelection.Nothing ) and (AreYouSureBoxVisible = false)
+    and (SelectModBoxNewVisible = false) and (SelectModBoxLoadVisible = false)
+    then
+      MenuChoice := 9;
     if (AreYouSureBoxVisible = false) and (HelpscreenShow = false) and
       (SelectModBoxNewVisible = false) and (SelectModBoxLoadVisible = false)
     then
@@ -377,7 +383,15 @@ begin
       end
       else if (MenuChoice = 2) and (Modallowed) then
       begin
-        SelectMod;
+        if button = mbleft then
+        SelectMod
+        else //mbright, skip modbox
+        begin
+          if (Story > TModSelection.TSK) or (Story < TModSelection.SoA) then
+          Story := TModSelection.SoA;
+          SetMod;
+          Close;
+        end;
         if (Story > TModSelection.TSK) or (Story < TModSelection.SoA) then
         // Just to be sure
           Story := TModSelection.SoA;
@@ -622,8 +636,13 @@ begin
     HelpscreenShow := false;
     DXModRand := SoAOS_DX_LoadBMP(InterfacePath + 'ModSelect.bmp', cInvisColor,
       width1, height1);
-    DXModSelect := SoAOS_DX_LoadBMP(InterfaceLanguagePath + 'ModBox.bmp', cInvisColor,
+    try
+      DXModSelect := SoAOS_DX_LoadBMP(InterfaceLanguagePath + 'ModBox.bmp', cInvisColor,
       width2, height2);
+      except
+      DXModSelect := SoAOS_DX_LoadBMP(InterfacePath + 'ModBox.bmp', cInvisColor,
+      width2, height2);
+    end;
     DXModDim := SoAOS_DX_LoadBMP(InterfacePath + 'Chablack.bmp', cInvisColor,
       width3, height3);
     //First need to dim Modbox(=DXModselect) if a mod isn't installed
@@ -687,42 +706,23 @@ begin
       Modmaps := 'maps';
     end;
     TModSelection.DoA:
-    begin
       Modname := 'Days';
-      Modgames := 'daysgames';
-      Modmaps := 'daysmaps';
-    end;
     TModSelection.PoA:
-    begin
       Modname := 'Pillars';
-      Modgames := 'pillarsgames';
-      Modmaps := 'pillarsmaps';
-    end;
     TModSelection.AoA:
-    begin
       Modname := 'Ashes';
-      Modgames := 'ashesgames';
-      Modmaps := 'ashesmaps';
-    end;
     TModSelection.Caves:
-    begin
       Modname := 'Caves';
-      Modgames := 'cavesgames';
-      Modmaps := 'cavesmaps';
-    end;
     TModSelection.RoD:
-    begin
       Modname := 'Rise';
-      Modgames := 'risegames';
-      Modmaps := 'risemaps';
-    end;
     TModSelection.TSK:
-    begin
       Modname := 'Kingdoms';
-      Modgames := 'kingdomsgames';
-      Modmaps := 'kingdomsmaps';
     end;
-  end;
+    if modname <> 'Siege' then
+    begin
+    Modgames := Modname + 'games';
+    Modmaps := Modname + 'maps';
+    end;
   except
     on E: Exception do
       Log.Log(FailName, E.Message, []);

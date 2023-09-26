@@ -755,7 +755,7 @@ begin
   t := aRect.Top/FViewportSize.Height*2 - 1.0;
   r := aRect.Right/FViewportSize.Width*2 - 1.0;
   b := aRect.Bottom/FViewportSize.Height*2 - 1.0;
-
+  //Mousecursor crash here, also pauseimage. Missing D3DX10_41.dll
   D3DXMatrixTranslation(T1, l, t, 0);
   D3DXMatrixScaling(S, (r - l)/2, (b - t)/2, 1.0);
   D3DXMatrixTranslation(T2, 1, 1, 0);
@@ -779,6 +779,7 @@ procedure TDXRenderLayer.SetSourceRect(aRect: TRect);
 var
   T1, S, Temp: TD3DMatrix;
 begin
+  //Mauszeigerabsturz beginnt ab hier, geht nicht weiter
   D3DXMatrixTranslation(T1, aRect.Left/FSize.Width, aRect.Top/FSize.Height, 0);
   D3DXMatrixScaling(S, aRect.Width/FSize.Width, aRect.Height/FSize.Height, 1.0);
   D3DXMatrixMultiplyTranspose(Temp, S, T1);

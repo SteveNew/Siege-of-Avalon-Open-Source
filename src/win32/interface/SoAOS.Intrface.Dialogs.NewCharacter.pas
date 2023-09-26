@@ -67,7 +67,9 @@ type
   strict private // actions
     procedure selectCharLeft;
     procedure selectCharRight;
+    procedure TutorialYesNo;
     procedure Gendernote; //SoA is not intended to be played as a woman
+    procedure ClearHairBeard; //Reset/update hairstyle and beard label
     procedure selectShirt(const val: Integer);
     procedure selectPants(const val: Integer);
     procedure selectHairColor(const val: Integer);
@@ -98,7 +100,9 @@ type
     DXCancel: IDirectDrawSurface;
     DXHardmode: IDirectDrawSurface;
     DXGenderNote: IDirectDrawSurface;
+    DXTutorialBox: IDirectDrawSurface;
     Genderboxopen: boolean;
+    Tutorialboxopen: boolean;
     InfoRect: array [0 .. 19] of TInformationRect;
     // was 35  //collision rects for information
     ArrowRect: array [0 .. 15] of TInformationRect;
@@ -123,7 +127,7 @@ type
     BoxOpen: TBoxEnum;
     LoopCounter, Spinner: Integer;
     DoAStart: boolean; // Days of Ahoul, Check if Race and Training is OK
-    txtMessage: array [0 .. 109] of string; //was 105
+    txtMessage: array [0 .. 110] of string; //was 105
     rLeftArrow, rRightArrow: TRect;
     rGenderNote: TRect;
 
@@ -241,7 +245,7 @@ begin
     FOnDraw := CharCreationDraw;
 
     ExText.Open('CharCreation');
-    for i := 0 to 109 do //was 105
+    for i := 0 to 110 do //was 105
       txtMessage[i] := ExText.GetText('Message' + inttostr(i));
 
     ChosenTraining := -1; // initialize training to nothing
@@ -449,6 +453,7 @@ begin
   updateClothing;
   if female then
   Gendernote;
+  ClearHairBeard;
   CreateCollisionRects;//reinit for beard or braided/normal hairstyle, but after updateclothing
 end;
 
@@ -464,6 +469,7 @@ begin
   updateClothing;
   if female then
   Gendernote;
+  ClearHairBeard;
   CreateCollisionRects;//reinit for beard or braided/normal hairstyle, but after updateclothing
 end;
 
@@ -485,6 +491,83 @@ begin
     ptext.PlotTextBlock(txtMessage[109], 528 + Offset.X + 12, 528 + Offset.X + 110,
     255 + Offset.Y + 13, 250);
     SoAOS_DX_BltFront;
+  except
+    on E: Exception do
+      Log.Log(FailName, E.Message, []);
+  end;
+end;
+
+procedure TCreation.TutorialYesNo;
+var
+  pr: TRect;
+  width1, height1: integer;
+const
+  FailName: string = 'TCreation.TutorialYesNo ';
+begin
+  Log.DebugLog(FailName);
+  try
+    Tutorialboxopen := true;
+    DXTutorialBox := SoAOS_DX_LoadBMP(InterfaceLanguagePath + 'ldChoosebox.bmp',
+      cInvisColor, width1, height1);
+    pr := Rect(0, 0, width1, height1);
+    lpDDSBack.BltFast(screenmetrics.ScreenWidth div 2 - width1 div 2,
+    screenmetrics.ScreenHeight div 2 - height1 div 2, DXTutorialBox, @pr,
+    DDBLTFAST_SRCCOLORKEY or DDBLTFAST_WAIT);
+    ptext.PlotTextBlock(txtMessage[110], screenmetrics.ScreenWidth div 2 -
+    width1 div 2 + 22, screenmetrics.ScreenWidth div 2 - width1 div 2 + 255,
+    screenmetrics.ScreenHeight div 2 - height1 div 2 + 20, 250);
+    SoAOS_DX_BltFront;
+  except
+    on E: Exception do
+      Log.Log(FailName, E.Message, []);
+  end;
+end;
+
+procedure TCreation.ClearHairBeard;
+var
+  pr: TRect;
+const
+  FailName: string = 'TCreation.Gendernote ';
+begin
+  Log.DebugLog(FailName);
+  try
+    if female then
+    begin //Beard label
+      DrawAlpha(DXBack, Rect(113, 406, 261, 434), Rect(0, 0, 25, 25), DXBlack,
+      false, 255);
+      if ixSelectedBeard = 0 then
+      pText.PlotTextCentered2(DXBack, txtMessage[107], 113, 261, 409, 250)
+      else
+      pText.PlotTextCentered2(DXBack, txtMessage[108], 113, 261, 409, 250);
+      if ixSelectedHairStyle = 3 then//male was bald, female now medium hair
+      begin //Hairstyle label
+        DrawAlpha(DXBack, Rect(113, 366, 261, 386), Rect(0, 0, 25, 25), DXBlack,
+        false, 255);
+        pText.PlotTextCentered2(DXBack, txtMessage[106] + txtMessage[2], 113, 261, 366, 250);
+      end;
+      pr := Rect(114, 366, 261, 434); //Update screen
+      lpDDSBack.BltFast(pr.Left + Offset.X, pr.Top + Offset.Y, DXBack, @pr,
+      DDBLTFAST_WAIT);
+    end
+    else //male
+    begin
+      DrawAlpha(DXBack, Rect(113, 406, 261, 434), Rect(0, 0, 25, 25), DXBlack,
+      false, 255);
+      if ixSelectedBeard = 0 then
+      pText.PlotTextCentered2(DXBack, txtMessage[3], 113, 261, 409, 250)
+      else
+      pText.PlotTextCentered2(DXBack, txtMessage[4], 113, 261, 409, 250);
+      if ixSelectedHairStyle = 3 then//female had medium hair, male is now bald
+      begin //Hairstyle label
+        DrawAlpha(DXBack, Rect(113, 366, 261, 386), Rect(0, 0, 25, 25), DXBlack,
+        false, 255);
+        pText.PlotTextCentered2(DXBack, txtMessage[23], 113, 261, 366, 250);
+      end;
+      pr := Rect(114, 366, 261, 434); //Update screen
+      lpDDSBack.BltFast(pr.Left + Offset.X, pr.Top + Offset.Y, DXBack, @pr,
+      DDBLTFAST_WAIT);
+    end;
+  SoAOS_DX_BltFront;
   except
     on E: Exception do
       Log.Log(FailName, E.Message, []);
@@ -623,14 +706,31 @@ begin
   Log.DebugLog(FailName);
   try
   if GenderBoxopen then
-  begin
-  if rGenderNote.Contains(point(X, Y)) then
     begin
-      //redraw the screen
-      paint;
-      GenderBoxopen := false;
-    end;
-  end
+    if rGenderNote.Contains(point(X, Y)) then
+      begin
+        //redraw the screen
+        paint;
+        GenderBoxopen := false; //reset
+      end;
+    end
+  else if tutorialboxopen then
+    begin
+      if PtInRect(ApplyOffset(Rect(437, 320, 489, 352)), point(X, Y)) then
+      begin
+        Tutorial := false;
+        Character.Name := CharacterName;
+        Tutorialboxopen := false; //reset
+        close;
+      end
+      else if PtInRect(ApplyOffset(Rect(303, 320, 355, 352)), point(X, Y)) then
+      begin
+        Tutorial := true;
+        Character.Name := CharacterName;
+        Tutorialboxopen := false; //reset
+        close;
+      end;
+    end
   else
   begin
     BoxClosed := false;
@@ -915,22 +1015,34 @@ begin
         // The new data is already saved- if we ever write a Cancel function then we can restore values
         // Exit the screen if the length of name is 1 or greater
         if (Length(Trim(CharacterName)) > 0) and (ChosenTraining > -1) then
-          if modselection <> TModSelection.DoA then // Not DoA
+        begin
+          if modselection = TModSelection.SoA then //SoA now has a Tutorial
           begin
-            Character.Name := CharacterName;
-            close;
+            if fileexists('maps/tutorial.lvl') then //Check for Patch 1.08
+              TutorialYesNo
+            else
+            begin
+              Character.Name := CharacterName;
+              Close;
+            end;
           end
-          else // DoA change of Race needs new selected Training
+          else if modselection = TModSelection.DoA then
+          // DoA change of Race needs new selected Training
           begin
             if not DoAStart then
-              PlotTextBlock(txtMessage[4], 500, 682, 239, 240,
-                UseSmallFont, True)
+            PlotTextBlock(txtMessage[4], 500, 682, 239, 240, UseSmallFont, True)
             else
             begin
               Character.Name := CharacterName;
               close;
             end;
           end
+          else // Every other story
+          begin
+            Character.Name := CharacterName;
+            close;
+          end;
+        end
         else
         begin // Hasnt entered name- tell player to enter name or pick training
           if BoxOpen = bxTraining then
@@ -985,7 +1097,7 @@ const
 begin
   Log.DebugLog(FailName);
   try
-  if not Genderboxopen then
+  if not Genderboxopen and not tutorialboxopen then
   begin
     // Clean up continue and cancel
     pr := DlgRect.dlgNewContinueRect;
@@ -1750,6 +1862,8 @@ const
 begin
   Log.DebugLog(FailName);
   try
+   if not genderboxopen and not tutorialboxopen then
+   begin
     // DebugPlot(Key);
     pr := Rect(300, 92, 448, 120);
     lpDDSBack.BltFast(300 + Offset.X, 92 + Offset.Y, DXBack, @pr,
@@ -1862,6 +1976,7 @@ begin
     // plot the Carat
     PlotText('|', CaratPosition + 310, 95, 240);
     SoAOS_DX_BltFront;
+   end;
   except
     on E: Exception do
       Log.Log(FailName + E.Message);

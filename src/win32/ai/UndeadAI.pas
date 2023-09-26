@@ -1924,6 +1924,9 @@ begin
           end;
           if player.TitleExists( 'Hunter' ) then
           begin
+            if player.Stealth > 70 then //limit set to 70
+            character.Mysticism := 70 + i
+            else
             character.Mysticism := player.Stealth + i;
             if character.hitpoints < ( ( player.strength * 2 ) + player.combat ) then
               character.HitPoints := ( ( player.strength * 2 ) + player.combat );
@@ -1931,6 +1934,9 @@ begin
           end;
           if player.TitleExists( 'Squire' ) then
           begin
+            if player.Combat > 70 then //limit set to 70
+            character.Mysticism := 70 + i
+            else
             character.Mysticism := player.Combat + i;
             if character.hitpoints < ( ( player.Coordination * 2 ) + player.stealth ) then
               character.HitPoints := ( ( player.Coordination * 2 ) + player.stealth );

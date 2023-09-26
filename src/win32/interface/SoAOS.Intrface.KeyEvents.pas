@@ -51,6 +51,7 @@ type
     class function ToggleShow(dialog: TDisplay): Boolean;
     class procedure ToggleSpell;
     class procedure ToggleXRay;
+    class procedure SlowDown; //Slowmotion e.g. in battles
     class procedure TwoWeapons; //Ashes of Avalon
     class procedure HealPotion; //Ashes of Avalon
     class procedure ManaPotion; //Ashes of Avalon
@@ -61,13 +62,23 @@ type
     class procedure ShowMenu;
     class procedure SpellHotKey(key: Word);
     class procedure SpellHotKeyPlus(key: Word);
+    class procedure AssignSpellHotKey(key: Word);
     class procedure TravelFast;  //SoA and AoA
 //    class procedure DemoOrDeath; // Testcode needs to go
   public
     class procedure TogglePause;
     class procedure FormKeyDown(Sender: TObject; var Key: Word;
       Shift: TShiftState);
+    class procedure Slower;
+    class procedure Faster;
   end;
+var
+  AdventureKey, BattleCryKey, CombatKey, InventoryKey, JournalKey, MapKey,
+  OptionsKey, PauseKey, QuestKey, QuickSaveKey, RosterKey, SlowMoKey,
+  Spellbarkey, StatisticKey, TitleKey, XRayKey, ManapotionKey,
+  HealthpotionKey: Word;
+  Slowmoactive: boolean;
+  Slowmomessage: string;
 
 implementation
 
@@ -87,6 +98,7 @@ uses
   Resource, //for TwoWeapons
   SoAOS.Animation,
   SoAOS.Effects,
+  SoAOS.Intrface.Text,
   DirectX,
   DXEffects;
 
@@ -115,13 +127,35 @@ begin
 end;
 
 //class procedure TKeyEvent.DemoOrDeath;
+////var
+////  i, n: Integer;
 //begin
-//  player.hitpoints := -1;
-//  player.trainingpoints := 10000;
-//  player.money := 10000;
-//  player.mana := 100;
-//  RunScript(Player, 'player.additem(MagicalMask)');
-//  RunScript(Player, 'addtitle(04maskgiven)');
+////  n := 0;
+////  for i:=0 to FigureInstances.count-1 do
+////  begin
+////    if (FigureInstances.Objects[i] is TCharacter) and (FigureInstances.Objects[i]<>Player) and
+////      Player.isAlly( TCharacter( FigureInstances.Objects[i] ) ) and not TCharacter( FigureInstances.Objects[i] ).Dead then
+////    begin
+////      frmMain.AddToParty(TAniFigure(FigureInstances.Objects[i]));
+////      inc(n);
+////      if n >= MaxPartyMembers then
+////        break;
+////    end;
+////  end;
+//
+////  player.hitpoints := -1;
+////  player.trainingpoints := 10000;
+////  player.money := 10000;
+////  player.mana := 100;
+////
+////  Adventures.Add('ch4-531');
+////  RunScript(Player, 'player.additem(MagicalMask)');
+////  RunScript(Player, 'addtitle(04maskgiven)');
+//                                                                    ;
+////     AddAdventure('a');
+////     AddQuest('a');
+////     AddLogEntry('a');
+////     end
 //end;
 
 class procedure TKeyEvent.FormKeyDown(Sender: TObject; var Key: Word;
@@ -137,47 +171,118 @@ begin
     case Key of
       VK_TAB: ShowPersistentMap := not ShowPersistentMap;
       VK_ESCAPE: ShowMenu; // ESC
-      VK_SPACE: ToggleCombat; // Space
-      48..57: SpellHotKey(Key); // 0-9 alternative to F-keys
-      65: if ToggleShow(DlgTitles) then frmMain.BeginTitles(Current); // A
-      66: Current.DoBattleCry; // B
-      67: if ToggleShow(DlgStatistics) then frmMain.BeginStatistics(Current); // C
-      68: ManaPotion; //D, only AoA
-      69: HealPotion; //E, only AoA
-      71: ScreenShot; // G
-      73: if ToggleShow(DlgInventory) then frmMain.BeginInventory(Current); // I
-      74: if ToggleShow(DlgJournal) then frmMain.BeginJournal; // J
-      76: if ToggleShow(DlgAdvLog) then frmMain.BeginAdvLog; // L
-      77: if ToggleShow(DlgMap) then frmMain.BeginMap(Current); // M
-      79: if ToggleShow(DlgOptions) then frmMain.BeginOptions(Current); // O
-      80, VK_PAUSE: TogglePause; // P or Pause
-      81: if ToggleShow(DlgQuestLog) then frmMain.BeginQuestLog; // Q
-      82: if ToggleShow(DlgRoster) then frmMain.BeginRoster(nil); // R
-      83: ToggleSpell; // S
+      //VK_SPACE: ToggleCombat; // Space
+      48..57: begin
+                if not frmmain.SpellBarActive then
+                SpellHotKey(Key) // 0-9 alternative to F-keys
+                else
+                AssignSpellHotKey(key);
+              end;
+      //65: if ToggleShow(DlgTitles) then frmMain.BeginTitles(Current); // A
+      //66: Current.DoBattleCry; // B
+      //67: if ToggleShow(DlgStatistics) then frmMain.BeginStatistics(Current); // C
+//      68: DemoOrDeath; //D test code
+      //68: ManaPotion; //D, only AoA
+      //69: HealPotion; //E, only AoA
+      VK_MULTIPLY: ScreenShot;
+      //73: if ToggleShow(DlgInventory) then frmMain.BeginInventory(Current); // I
+      //74: if ToggleShow(DlgJournal) then frmMain.BeginJournal; // J
+      //76: if ToggleShow(DlgAdvLog) then frmMain.BeginAdvLog; // L
+      //77: if ToggleShow(DlgMap) then frmMain.BeginMap(Current); // M
+      //79: if ToggleShow(DlgOptions) then frmMain.BeginOptions(Current); // O
+      //VK_PAUSE: TogglePause; // P or Pause
+      //81: if ToggleShow(DlgQuestLog) then frmMain.BeginQuestLog; // Q
+      //82: if ToggleShow(DlgRoster) then frmMain.BeginRoster(nil); // R
+      //83: ToggleSpell; // S
       84: TravelFast; // T
-//      87: WeaponSwitch; ; // W - Reserved for short/long distance weapons?
-      88: ToggleXRay; // X
-//      89: DemoOrDeath; //Y test code
-      90: TwoWeapons; //Z, only AoA
-      //  90: HDZoom; // Z - Reserved for future? HD Zoom function
-      114..124: SpellhotkeyPlus(key); //F3-F12,
+      87: TwoWeapons; // W, only AoA
+      //88: ToggleXRay; // X
+      //86: SlowDown; // V
+      //90: HDZoom; // Z - Reserved for future? HD Zoom function
+      114..124: begin
+                  if not frmmain.SpellBarActive then
+                  SpellhotkeyPlus(key) //F3-F12,
+                  else
+                  AssignSpellHotKey(key);
+                end;
       VK_F1: if ToggleShow(DlgShow) then frmMain.BeginHelp; // F1
-      VK_F2: QuickSave; // F2
-      VK_OEM_PLUS, VK_ADD: AdjustGlobalBrightness(10);
-      VK_OEM_MINUS, VK_SUBTRACT: AdjustGlobalBrightness(-10);
+      //VK_F2: QuickSave; // F2
+      VK_ADD: AdjustGlobalBrightness(10);
+      VK_SUBTRACT: AdjustGlobalBrightness(-10);
     end;
-
-    // TODO: Remove DEBUG keys...unless they work
-    { else if (Key=114) or (Key=115) then begin     // F3 - F4 Debugmode
-      if CurrDbgLvl=0 then begin
-      CurrDbgLvl:=3;
-      ShowQuickMessage('Debug On',150);
-      end
-      else begin
-      CurrDbgLvl:=0;
-      ShowQuickMessage('Debug Off',150);
-      end;
-      end }
+    //since "Case" doesn't allow variables, "if" and "else" is needed
+    if (key = CombatKey) then
+    begin
+      ToggleCombat;
+    end
+    else if (key = TitleKey) then
+    begin
+      if ToggleShow(DlgTitles) then frmMain.BeginTitles(Current);
+    end
+    else if (key = StatisticKey) then
+    begin
+      if ToggleShow(DlgStatistics) then frmMain.BeginStatistics(Current);
+    end
+    else if (key = InventoryKey) then
+    begin
+      if ToggleShow(DlgInventory) then frmMain.BeginInventory(Current);
+    end
+    else if (key = JournalKey) then
+    begin
+      if ToggleShow(DlgJournal) then frmMain.BeginJournal;
+    end
+    else if (key = AdventureKey) then
+    begin
+      if ToggleShow(DlgAdvLog) then frmMain.BeginAdvLog;
+    end
+    else if (key = MapKey) then
+    begin
+      if ToggleShow(DlgMap) then frmMain.BeginMap(Current);
+    end
+    else if (key = OptionsKey) then
+    begin
+      if ToggleShow(DlgOptions) then frmMain.BeginOptions(Current);
+    end
+    else if (key = QuestKey) then
+    begin
+      if ToggleShow(DlgQuestLog) then frmMain.BeginQuestLog;
+    end
+    else if (key = RosterKey) then
+    begin
+      if ToggleShow(DlgRoster) then frmMain.BeginRoster(nil);
+    end
+    else if (key = SpellbarKey) then
+    begin
+      ToggleSpell;
+    end
+    else if (key = XRayKey) then
+    begin
+      ToggleXRay;
+    end
+    else if (key = SlowMoKey) then
+    begin
+      Slowdown;
+    end
+    else if (key = QuickSaveKey) then
+    begin
+      Quicksave;
+    end
+    else if (key = PauseKey) then
+    begin
+      TogglePause;
+    end
+    else if (key = BattleCryKey) then
+    begin
+      Current.DoBattleCry;
+    end
+    else if (key = ManapotionKey) then
+    begin
+      Manapotion;
+    end
+    else if (key = HealthpotionKey) then
+    begin
+      Healpotion;
+    end;
   except
     on E: Exception do
       Log.Log(FailName, E.Message, []);
@@ -335,6 +440,8 @@ begin
 
       frmMain.Active := False;
       frmMain.SaveGameScreenShot;
+      //Reset Slowmo
+      Faster;
       PostMessage(frmMain.Handle, WM_StartMainMenu, 0, 0); // Restart the intro
     end;
 end;
@@ -366,6 +473,40 @@ if Assigned( Current.HotKey[ key - 113 + 10 ] ) then
         frmMain.DrawSpellGlyphs;
       (*if key = 121 then  //F10 abfangen, Damit die Menüfunktion (Kontextmenü) nicht ausgeführt wird, (nur bei ddraw.dll mit libwine.dll und wined3d.dll)
         key := 0;*)
+end;
+
+class procedure TKeyEvent.AssignSpellHotKey(key: word);
+var
+  i: integer;
+begin
+  if SpellToAssign <> nil then
+  begin
+    if (key > 47) and (key < 58) then
+    begin
+      Current.HotKey[ key - 47 ] := SpellToAssign;
+      for i := 1 to 20 do
+      begin
+        if i <> key - 47 then
+        begin
+          if Current.HotKey[ key - 47 ] = Current.HotKey[ i ] then
+          Current.HotKey[ i ] := nil;
+        end;
+      end;
+    end;
+    if (key > 113) and (key < 124) then
+    begin
+      Current.HotKey[ key - 113 + 10 ] := SpellToAssign;
+      for i := 1 to 20 do
+      begin
+        if i <> key - 113 + 10 then
+        begin
+          if Current.HotKey[ key - 113 + 10 ] = Current.HotKey[ i ] then
+          Current.HotKey[ i ] := nil;
+        end;
+      end;
+    end;
+  frmMain.DrawSpellGlyphs; //updating
+  end;
 end;
 
 class procedure TKeyEvent.ToggleCombat;
@@ -491,6 +632,42 @@ begin
   frmMain.XRayOn := not frmMain.XRayOn;
   if Assigned(Current) then
     TCharacter(Current).AutoTransparent := frmMain.XRayOn;
+end;
+
+class procedure TKeyEvent.SlowDown;
+begin
+  if not Slowmoactive then
+  Slower
+  else
+  Faster;
+end;
+
+class procedure TKeyEvent.Slower;
+begin
+  game.interval := frmmain.interval + 15;
+  ExText.Open( 'Engine' );
+  Slowmomessage := ExText.GetText( 'Slowmo' );
+  if Slowmomessage = '' then
+    Slowmomessage := 'Slowmo active!';
+  ExText.Close;
+  DlgText.PlotF13Block(frmmain.OverlayB, Slowmomessage, ScreenMetrics.MouseMsgX,
+  ScreenMetrics.MouseMsgX + 196, 77, 200);
+  Slowmoactive := true;
+end;
+
+class procedure TKeyEvent.Faster;
+var
+   DC: HDC;
+begin
+     game.interval := frmmain.interval;
+     frmmain.OverlayB.GetDC(DC);
+     try
+        BitBlt(DC, ScreenMetrics.BottomBarX, 82, 202, 20,
+          frmmain.imgBottomBar.Canvas.Handle, ScreenMetrics.BottomBarX, 82, SRCCOPY);
+     finally
+        frmmain.OverlayB.ReleaseDC(DC);
+     end;
+     Slowmoactive := false;
 end;
 
 class procedure TKeyEvent.TravelFast;

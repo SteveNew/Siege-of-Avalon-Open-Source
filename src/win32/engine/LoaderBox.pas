@@ -94,8 +94,8 @@ const
 begin
   Log.DebugLog(FailName);
   try
-    BltFx.dwSize := SizeOf( BltFx ); //RGB(244,164,4)
-    BltFx.dwFillColor := SoAOS_DX_ColorMatch( lpDDSFront, cLoadBackColor );  //TODO: Make const RGB(100,100,255) blue, RGB(244,164,4) yellow, RGB( 32, 128, 16 ) green
+    BltFx.dwSize := SizeOf( BltFx ); //RGB(50,25,0) brown, RGB(100,100,255) blue, RGB(244,164,4) yellow, RGB( 32, 128, 16 ) green
+    BltFx.dwFillColor := SoAOS_DX_ColorMatch( lpDDSFront, ScreenMetrics.loadbarcolor );
     inherited;
   except
     on E : Exception do
@@ -123,7 +123,6 @@ end;
 
 procedure TLoaderBox.Init;
 var
-  BltFx1 : TDDBLTFX;
   i : integer;
   pr : TRect;
 const
@@ -133,31 +132,18 @@ begin
   try
     if Loaded then
       Exit;
-
     OldValue := 0;
-
     DXBox := SoAOS_DX_LoadBMP( FileName, cInvisColor, DlgWidth, DlgHeight );
-    BltFx1.dwSize := SizeOf( BltFx1 );
-    BltFx1.dwFillColor := SoAOS_DX_ColorMatch( DXBox, cLoadColor ); // RGB( 205, 205, 205 )
-
     if ScreenMetrics.borderFile<>'' then
       lpDDSBack.BltFast( 0, 0, frmMain.FillBorder, nil, DDBLTFAST_SRCCOLORKEY or DDBLTFAST_WAIT );
-
     pr := Rect( 0, 0, DlgWidth, DlgHeight );
     lpDDSBack.BltFast( Offset.X, Offset.Y, DXBox, @pr, DDBLTFAST_SRCCOLORKEY or DDBLTFAST_WAIT );
- { for i:=0 to 9 do begin
-     DrawSub(lpDDSBack,rect(50+i-5,500+i-5,750,500+i+1-5),rect(50+i-5,500+i-5,750,500+i+1-5),DXBox,False,150-i*10);
-     DrawSub(lpDDSBack,rect(50+i-5,500+i-5,50+i-5+1,550),rect(50+i-5,500+i-5,50+i-5+1,550),DXBox,False,150-i*10);
-     lpDDSBack.Blt(rect(59-i-5,550+i-5,750,550+i+1-5),nil,rect(59-i-5,550+i-5,750,550+i+1-5),DDBLT_COLORFILL + DDBLT_WAIT, BltFx);
-     DrawAlpha(lpDDSBack,rect(59-i-5,550+i-5,750,550+i+1-5),rect(59-i-5,550+i-5,750,550+i+1-5),DXBox,False,200-i*10);
-  end; }
     for i := 0 to 25 do
     begin
       DrawSub( lpDDSBack, ApplyOffset(rect( 55, 505 + i, 745, 505 + i + 1 )), rect( 55, 505 + i, 745, 505 + i + 1 ), DXBox, False, 100 - i * 3 );
     end;
-
     lpDDSFront_Flip( nil, DDFLIP_WAIT );
-    SoAOS_DX_BltFastWaitXY( lpDDSFront, Rect( 0, 0, 800, 600 ) );  //NO HD
+    SoAOS_DX_BltFastWaitXY( lpDDSFront, Rect( 0, 0, ScreenMetrics.ScreenWidth, ScreenMetrics.ScreenHeight ) );
   except
     on E : Exception do
       Log.log( FailName + E.Message );
@@ -171,7 +157,6 @@ begin
   Log.DebugLog(FailName);
   try
     DXBox := nil;
-
     inherited;
   except
     on E : Exception do
@@ -188,17 +173,14 @@ const
 begin
   Log.DebugLog(FailName);
   try
-  //Value:=round(CurrentValue*(200.0/MaxValue));
-//  Value:=round(CurrentValue*(680.0/MaxValue));
     Value := ( CurrentValue * 680 ) div MaxValue;
     if Value > OldValue then
     begin
-     //lpDDSFront.Blt(rect(47+250,194+169,Value+47+250,212+169),nil,rect(47+250,194+169,Value+47+250,212+169),DDBLT_COLORFILL + DDBLT_WAIT, BltFx);
-//     lpDDSFront.Blt(rect(60,510,Value+60,525),nil,rect(50,510,Value+60,525),DDBLT_COLORFILL + DDBLT_WAIT, BltFx);
       pr := ApplyOffset( Rect( OldValue + 60, 510, Value + 60, 525 ) );
       pr0 := Rect( 0, 0, 0, 0 );
-      lpDDSFront.Blt( @pr, nil, @pr0, DDBLT_COLORFILL + DDBLT_WAIT, @BltFx );
+      lpDDSback.Blt( @pr, nil, @pr0, DDBLT_COLORFILL + DDBLT_WAIT, @BltFx );
       OldValue := Value;
+      SoAOS_DX_BltFront; //Fix for loadbar visible
     end;
   except
     on E : Exception do

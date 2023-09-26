@@ -802,7 +802,7 @@ var
   res: HRESULT;
   guidStr : String;
 begin
-  if (IsWindows7 and (not Windowed)) or (ScreenMetrics.ForceD3DFullscreen and (not Windowed)) then
+  (*if (IsWindows7 and (not Windowed)) or (ScreenMetrics.ForceD3DFullscreen and (not Windowed)) then
   begin
     D3DFullscreen := True;
     Windowed := True;
@@ -810,6 +810,19 @@ begin
   else
   begin
     D3DFullscreen := False;
+  end;*)
+  if not windowed then
+  begin
+      if not AltCursor then //=BluePixelFix, Altcursor + BPF only work combined
+      begin
+        D3DFullscreen := true;
+        Windowed := True;
+      end
+      else //->Blue Pixel Fix only works in not windowed mode
+      begin
+        D3DFullscreen := false;
+        //Windowed := false;
+      end;
   end;
 
   FillChar(ddsd, sizeof(ddsd), 0);
@@ -892,7 +905,7 @@ begin
   ZeroMemory(@ddsd, SizeOf(ddsd));
   if Windowed then
   begin
-    D3D11REnderer := TDXRenderer.Create(Handle, ResW, ResH, RefreshRate, not D3DFullscreen, VSync, MaxFPS);
+    D3D11Renderer := TDXRenderer.Create(Handle, ResW, ResH, RefreshRate, not D3DFullscreen, VSync, MaxFPS);
 
     if D3D11Renderer = nil then
     begin
@@ -924,7 +937,7 @@ begin
     end
   end
   else
-  begin
+  begin //only win7 default ddraw.dll (=none) and Win10 "Win10BPFDdraw.dll" work
     {$IFDEF DX7}
     res := lpDD.SetDisplayMode(ResW, ResH, BPP, 60, 0);
     {$ELSE}
@@ -2213,6 +2226,7 @@ begin
       for i := X1 to X2 do
       begin
         XA := i * FMap.TileWidth - OffsetX;
+        if (YA >= 0) and (XA >= 0) then //Fix for ddraw.dll and libwine
         CopyTile(lpDDSBack, p, XA + Left, YA + Top, Layer, @R);
         Inc(p);
       end;
@@ -2273,7 +2287,7 @@ begin
           YA := FMap.FItemList[i].Y - OffsetY + Top;
           Clip1(X1, X2, XA, R.Left, R.Right);
           Clip1(Y1, Y2, YA, R.Top, R.Bottom);
-
+          if (YA >= 0) and (XA >= 0) then //Fix for ddraw.dll and libwine
           lpDDSBack.BltFast(XA, YA, FMap.Zones[FMap.FItemList[i].Zone]
             .FItemImages, @R, DDBLTFAST_SRCCOLORKEY or DDBLTFAST_WAIT);
         end;

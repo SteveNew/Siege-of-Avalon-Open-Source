@@ -275,7 +275,7 @@ begin
       begin
         New( pInventoryItem );
         pInventoryItem.PItem := TCharacter( OtherOb ).Inventory[ i ];
-        pInventoryItem.InvX := TCharacter( OtherOb ).Inventory[ i ].InvX * 18 + 418;
+        pInventoryItem.InvX := TCharacter( OtherOb ).Inventory[ i ].InvX * 18 + 417;
         pInventoryItem.InvY := TCharacter( OtherOb ).Inventory[ i ].InvY * 26 + 42;
         pInventoryItem.WhoHasThis := 2; //the character/container on the right;
         ItemList.Add( pInventoryItem );
@@ -665,7 +665,8 @@ begin
           DXDirty.BltFast( 0, 0, lpDDSBack, @pr, DDBLTFAST_WAIT );
         end;
       end
-      else
+      else if (X > 291 + ItemList[ CurrentSelectedItem ].W + Offset.X) then
+      //fix for item mixup left to right side after closing the this dialog
       begin //check right side
       //check left inventory side
         B1 := true; //((X - (pTempItems(ItemList.Items[CurrentSelectedItem]).W div 2) > (GridRightMinX-25)) and (Y - (pTempItems(ItemList.Items[CurrentSelectedItem]).H div 2) > (GridRightMinY-25))); //is it on the grid?
@@ -1337,7 +1338,6 @@ begin
       gWidth := TContainer( OtherOb ).GridWidth * 2;
       gHeight := TContainer( OtherOb ).GridHeight * 2;
     end; //endif
-
    //Clear the Array
     for i := 0 to 20 do
     begin

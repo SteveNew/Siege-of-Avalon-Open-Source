@@ -127,6 +127,7 @@ uses
   SoAOS.Types,
   SoAOS.Graphics.Draw,
   SoAOS.Animation,
+  Engine, //for BigFont adjustment in russian language
   AniDemo;
 
 { TGameText }
@@ -230,12 +231,26 @@ begin
     if Assigned( DXSurface ) then
       DXSurface := nil;
     if Lowercase( Screenname ) = 'inventory' then
-      fileName := 'fntInvFont.bmp'
+    begin
+      if (Language = 'russian') and (UseSmallfont = false) then
+      fileName := 'fntInvFontBig.bmp'
+      else
+      fileName := 'fntInvFont.bmp';
+    end
     else if Lowercase( Screenname ) = 'statistics' then
-      fileName := 'fntStatFont.bmp'
+    begin
+      if (Language = 'russian') and (UseSmallfont = false) then
+      fileName := 'fntStatFontBig.bmp'
+      else
+      fileName := 'fntStatFont.bmp';
+    end
     else if Lowercase( Screenname ) = 'createchar' then
+    begin
+      if (Language = 'russian') and (UseSmallfont = false) then
+      fileName := 'fntGoldFontBig.bmp'
+      else
       fileName := 'fntGoldFont.bmp';
-
+    end;
     DXSurface := SoAOS_DX_LoadBMP( InterfaceLanguagePath + fileName, cInvisColor );
   except
     on E : Exception do
@@ -316,6 +331,17 @@ begin
       while not Eof( F ) do
       begin
         Read( F, Letter[ i ].sx, Letter[ i ].sy, Letter[ i ].sw, Letter[ i ].sh, Letter[ i ].AdjPrev, Letter[ i ].AdjNext, Letter[ i ].AdjTop );
+        //Russian BigFont adjustment, gold/inv/statfont.bmp increased by 1.25
+        if (Language = 'russian') and (UseSmallfont = false) then
+        begin
+        Letter[ i ].sx := round(Letter[ i ].sx * 1.25);
+        Letter[ i ].sy := round(Letter[ i ].sy * 1.25);
+        Letter[ i ].sw := round(Letter[ i ].sw * 1.25);
+        Letter[ i ].sh := round(Letter[ i ].sh * 1.25);
+        Letter[ i ].AdjPrev := round(Letter[ i ].AdjPrev * 1.25);
+        Letter[ i ].AdjNext:= round(Letter[ i ].AdjNext * 1.25);
+        Letter[ i ].AdjTop := round(Letter[ i ].AdjTop * 1.25);
+        end;
         i := i + 1;
         if i > 255 then
           break;
@@ -1262,8 +1288,8 @@ var
   LastSpace : integer;
   LineBreak : array[ 0..50 ] of integer;
   daString : RawByteString;
-  bytes: RawByteString;
   //bytes: TBytes;
+  bytes: RawByteString;
 const
   FailName : string = 'TGameText.BreakTextIntoAStringList';
 begin
@@ -1274,9 +1300,9 @@ begin
     TheLength := 0;
     LastSpace := 0;
     LineBreak[ 0 ] := 9999; //in case there are no line breaks, we initalize to an absurdly high number
-    bytes := sentence;
     //Otherwise loss of the first letter of the item description
     //bytes := TEncoding.ANSI.GetBytes(Sentence);
+    bytes := sentence;
     while i <= Length( bytes ) do
     begin
       j := ord( bytes[ i ] );

@@ -338,7 +338,10 @@ begin
     if ScreenMetrics.borderFile<>'' then
       lpDDSBack.BltFast( 0, 0, TfrmMain(frmMain).FillBorder, nil, DDBLTFAST_SRCCOLORKEY or DDBLTFAST_WAIT );
     pr := Rect( 0, 0, DlgWidth, DlgHeight );
-    lpDDSBack.BltFast( Offset.X, Offset.Y, DXBack, @pr, DDBLTFAST_SRCCOLORKEY or DDBLTFAST_WAIT );
+    if ( ScreenMetrics.IniIdent = 'FullHD' ) and ScaleJournal then
+      DrawAlpha(lpDDSBack, rect( Offset.X - 200, Offset.Y - 150, 1000 + Offset.X, 750 + Offset.Y ), Rect( 0, 0, DlgWidth, DlgHeight ), DXBack, true, 255 )
+    else
+      lpDDSBack.BltFast( Offset.X, Offset.Y, DXBack, @pr, DDBLTFAST_SRCCOLORKEY or DDBLTFAST_WAIT );
   //Plot buttons
   //pText.PlotText('Previous',300,570,240);
   //pText.PlotText('Next',450,570,240);
@@ -400,7 +403,7 @@ begin
         pr := Rect( 0, 0, BM.width, BM.Height );
         //Scale 50%
         if ( ScreenMetrics.IniIdent = 'FullHD' ) and ScaleJournal then
-        DrawAlpha(lpDDSBack, rect( PicXY.X + Offset.X - 200, PicXY.Y - 150 + Offset.Y, PicXY.X + 1000 + Offset.X, PicXY.Y + 750 + Offset.Y ), Rect( 0, 0, width, Height ), DXPic, true, 255 )
+        DrawAlpha(lpDDSBack, rect( PicXY.X + Offset.X - 200, PicXY.Y - 150 + Offset.Y, PicXY.X + 1000 + Offset.X, PicXY.Y + 750 + Offset.Y ), Rect( 0, 0, BM.width, BM.height ), DXPic, true, 255 )
         else
         lpDDSBack.BltFast( PicXY.X + Offset.X, PicXY.Y + Offset.Y, DXPic, @pr, DDBLTFAST_SRCCOLORKEY or DDBLTFAST_WAIT );
         if LogText <> '' then

@@ -443,6 +443,17 @@ begin
             end;
           end;
         end
+        else if ( Token = 'dogroupaction' ) then
+        begin
+          S1 := Parse( Parms, 0, ',' );
+          S2 := Parse( Parms, 1, ',' );
+          List := GetGroup( nil, S1 );
+          if assigned( List ) and (ObjectRef is TSpriteObject) then
+          begin
+            for k := 0 to List.count - 1 do
+              TSpriteObject( List.objects[ k ] ).DoAction( S2 );
+          end;
+        end
         else if Token = 'doeffect' then
         begin
           if assigned( ObjectRef ) then
@@ -895,6 +906,10 @@ begin
         begin
           frmMain.ShowEnding;
         end
+        else if Token = 'showjournal' then
+        begin
+           frmmain.BeginJournal;
+        end
         else if Token = 'showmessage' then
         begin
           S1 := Parse( Parms, 0, ',' ); //Message
@@ -1140,7 +1155,10 @@ begin
         else if Token = 'setmaxparty' then
         begin
           try
-            MaxPartyMembers := ScreenMetrics.PartyMemberSlots; // strtoint( Parms );
+          if Modselection = TModSelection.SoA then
+            MaxPartyMembers := ScreenMetrics.PartyMemberSlots // strtoint( Parms );
+          else //eg. PoA Chapter 4, max 3 companions
+            MaxPartyMembers := strtoint( Parms );
           except
           end;
         end
@@ -1222,6 +1240,60 @@ begin
                 TSpriteObject( ObjectRef ).FindPathTo( TGameObject( Object1 ).X, TGameObject( Object1 ).Y, nil, 64 );
             end;
           end;
+        end
+        else if Token = 'groupmove' then
+        begin
+          S1 := Parse( Parms, 0, ',' ); //Group
+          S2 := Parse( Parms, 1, ',' ); //Pathcorner
+          List := GetGroup( nil, S1 );
+          //Object1 := GetGUID( S2 );
+          Group := GetGroup( nil, S2 );
+          if assigned( List ) and assigned( Group ) then
+            begin
+              for j := 0 to List.count - 1 do
+              begin
+                if List.Objects[ j ] is TCharacter then
+                begin
+                k := random( Group.count );
+                TCharacter( List.Objects[ j ] ).WalkTo( TGameObject(  Group.objects[ k ] ).X, TGameObject( Group.objects[ k ] ).Y, 64 );
+                //TCharacter( List.Objects[ j ] ).WalkTo( TGameObject( Object1 ).X, TGameObject( Object1 ).Y, 64 );
+                end;
+              end;
+            end;
+        end
+        else if Token = 'runto' then
+        begin
+          if assigned( ObjectRef ) and ( ObjectRef is TSpriteObject ) then
+          begin
+            Object1 := GetGUID( Parms );
+            if assigned( Object1 ) then
+            begin
+              if ObjectRef is TCharacter then
+                TCharacter( ObjectRef ).RunTo( TGameObject( Object1 ).X, TGameObject( Object1 ).Y, 64 )
+              else if ( ObjectRef is TGameObject ) then
+                TSpriteObject( ObjectRef ).FindPathTo( TGameObject( Object1 ).X, TGameObject( Object1 ).Y, nil, 64 );
+            end;
+          end;
+        end
+        else if Token = 'grouprun' then
+        begin
+          S1 := Parse( Parms, 0, ',' ); //Group
+          S2 := Parse( Parms, 1, ',' ); //Pathcorner
+          List := GetGroup( nil, S1 );
+          //Object1 := GetGUID( S2 );
+          Group := GetGroup( nil, S2 );
+          if assigned( List ) and assigned( Group ) then
+            begin
+              for j := 0 to List.count - 1 do
+              begin
+                if List.Objects[ j ] is TCharacter then
+                begin
+                k := random( Group.count );
+                TCharacter( List.Objects[ j ] ).RunTo( TGameObject(  Group.objects[ k ] ).X, TGameObject( Group.objects[ k ] ).Y, 64 );
+                //TCharacter( List.Objects[ j ] ).WalkTo( TGameObject( Object1 ).X, TGameObject( Object1 ).Y, 64 );
+                end;
+              end;
+            end;
         end
         else if Token = 'teleport' then
         begin
@@ -1311,6 +1383,14 @@ begin
                 TCharacter( Objectref ).Cast( TSpriteObject( Object1 ) );
             end;
           end;
+        end
+        else if Token = 'spellcheck' then //AoA, Purgatory no summon spells
+        begin
+          if assigned( ObjectRef ) and ( ObjectRef is TCharacter ) then
+          begin
+            if not TCharacter( Objectref ).ValidateSpells then
+            frmmain.DrawCurrentSpell;
+          end
         end
         else if Token = 'endif' then
         begin

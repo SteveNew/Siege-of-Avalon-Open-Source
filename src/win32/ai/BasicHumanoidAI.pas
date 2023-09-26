@@ -2695,9 +2695,16 @@ begin
                 if AdjustedPartyHitPoints then
                 begin
                   if NPCList.Count > 1 then
-                    character.HitPoints := ( ( player.Perception * 2 ) * ( NPCList.Count / 2 ) )
+                  begin
+                    if player.TitleExists ('NoPartytoEnemyHP') then
+                    character.HitPoints := ( ( player.Perception * 2 ) )
+                    else
+                    character.HitPoints := ( ( player.Perception * 2 ) * ( NPCList.Count / 2 ) );
+                  end
                   else
+                  begin
                     character.HitPoints := ( ( player.Perception * 2 ) );
+                  end;
                 end
                 else
                   character.HitPoints := ( ( player.Perception * 2 ) * NPCList.Count ); // Original
@@ -2745,9 +2752,16 @@ begin
                 if AdjustedPartyHitPoints then
                 begin
                   if NPCList.Count > 1 then
-                    character.HitPoints := ( ( player.Coordination * 2 ) * ( NPCList.Count / 2 ) )
+                  begin
+                    if player.TitleExists ('NoPartytoEnemyHP') then
+                    character.HitPoints := ( ( player.Coordination * 2 ) )
+                    else
+                    character.HitPoints := ( ( player.Coordination * 2 ) * ( NPCList.Count / 2 ) );
+                  end
                   else
+                  begin
                     character.HitPoints := ( ( player.Coordination * 2 ) );
+                  end;
                 end
                 else
                   character.HitPoints := ( ( player.Coordination * 2 ) * NPCList.Count ); // Original
@@ -2790,9 +2804,16 @@ begin
                 if AdjustedPartyHitPoints then
                 begin
                   if NPCList.Count > 1 then
-                    character.HitPoints := ( ( player.Strength * 2 ) * ( NPCList.Count / 2 ) )
+                  begin
+                    if player.TitleExists ('NoPartytoEnemyHP') then
+                    character.HitPoints := ( ( player.Strength * 2 ) )
+                    else
+                    character.HitPoints := ( ( player.Strength * 2 ) * ( NPCList.Count / 2 ) );
+                  end
                   else
+                  begin
                     character.HitPoints := ( ( player.Strength * 2 ) );
+                  end;
                 end
                 else
                   character.HitPoints := ( ( player.Strength * 2 ) * NPCList.Count ); // Original
@@ -3489,9 +3510,16 @@ begin
                 if AdjustedPartyHitPoints then
                 begin
                   if NPCList.Count > 1 then
-                    character.HitPoints := ( ( player.Perception * 2 ) * ( NPCList.Count / 2 ) )
+                  begin
+                    if player.TitleExists ('NoPartytoEnemyHP') then
+                    character.HitPoints := ( ( player.Perception * 2 ) )
+                    else
+                    character.HitPoints := ( ( player.Perception * 2 ) * ( NPCList.Count / 2 ) );
+                  end
                   else
+                  begin
                     character.HitPoints := ( ( player.Perception * 2 ) );
+                  end;
                 end
                 else
                   character.HitPoints := ( ( player.Perception * 2 ) * NPCList.Count ); // Original
@@ -3513,9 +3541,16 @@ begin
                 if AdjustedPartyHitPoints then
                 begin
                   if NPCList.Count > 1 then
-                    character.HitPoints := ( ( player.Coordination * 2 ) * ( NPCList.Count / 2 ) )
+                  begin
+                    if player.TitleExists ('NoPartytoEnemyHP') then
+                    character.HitPoints := ( ( player.Coordination * 2 ) )
+                    else
+                    character.HitPoints := ( ( player.Coordination * 2 ) * ( NPCList.Count / 2 ) );
+                  end
                   else
+                  begin
                     character.HitPoints := ( ( player.Coordination * 2 ) );
+                  end;
                 end
                 else
                   character.HitPoints := ( ( player.Coordination * 2 ) * NPCList.Count ); // Original
@@ -3537,9 +3572,16 @@ begin
                 if AdjustedPartyHitPoints then
                 begin
                   if NPCList.Count > 1 then
-                    character.HitPoints := ( ( player.Strength * 2 ) * ( NPCList.Count / 2 ) )
+                  begin
+                    if player.TitleExists ('NoPartytoEnemyHP') then
+                    character.HitPoints := ( ( player.Strength * 2 ) )
+                    else
+                    character.HitPoints := ( ( player.Strength * 2 ) * ( NPCList.Count / 2 ) );
+                  end
                   else
+                  begin
                     character.HitPoints := ( ( player.Strength * 2 ) );
+                  end;
                 end
                 else
                   character.HitPoints := ( ( player.Strength * 2 ) * NPCList.Count ); // Original
@@ -4083,7 +4125,10 @@ begin
     Character.DoAction( 'Cast' );
 
     FSummonSpawnSource.Clone( TObject( NewGuard ), 'SG' + IntToStr( ( Random( 24 ) + 1 ) * ( Random( 9 ) + 1 ) ) );
-    NewGuard.SetPos( Character.track.X + ( Random( 150 ) - 100 ) + 50, Character.track.Y + ( Random( 150 ) - 100 ) + 50, Character.z );
+    if character.titleexists('Summontoplayer') then
+    NewGuard.SetPos( Character.track.X + ( Random( 100 ) - 75 ) + 25, Character.track.Y + ( Random( 100 ) - 75 ) + 25, Character.z )
+    else
+    NewGuard.SetPos( Character.X + ( Random( 100 ) - 75 ) + 25, Character.Y + ( Random( 100 ) - 75 ) + 25, Character.z );
     NewGuard.HitPoints := 20;
     NewGuard.SpecialEffect := seNone;
     NewGuard.Highlightable := true;
@@ -4986,9 +5031,16 @@ begin
                   if AdjustedPartyHitPoints then
                   begin
                     if NPCList.Count > 1 then
-                      character.HitPoints := ( ( player.Perception * 2 ) * ( NPCList.Count / 2 ) )
+                    begin
+                      if player.TitleExists ('NoPartytoEnemyHP') then
+                      character.HitPoints := ( ( player.Perception * 2 ) )
+                      else
+                      character.HitPoints := ( ( player.Perception * 2 ) * ( NPCList.Count / 2 ) );
+                    end
                     else
+                    begin
                       character.HitPoints := ( ( player.Perception * 2 ) );
+                    end;
                   end
                   else
                     character.HitPoints := ( ( player.Perception * 2 ) * NPCList.Count ); // Original
@@ -5003,6 +5055,9 @@ begin
           begin
             character.Wounds := 0;
             Character.Drain := 0;
+            if player.Stealth > 70 then //limit set to 70
+            character.Mysticism := 53 + i //( ( 70 * 3 ) div 4 ) + i
+            else
             character.Mysticism := ( ( player.Stealth * 3 ) div 4 ) + i;
             character.perception := ( ( player.Coordination * 3 ) div 4 ) + i;
             character.Coordination := ( ( player.Coordination * 3 ) div 4 ) + i;
@@ -5013,9 +5068,16 @@ begin
                 if AdjustedPartyHitPoints then
                 begin
                   if NPCList.Count > 1 then
-                    character.HitPoints := ( ( player.Strength * 2 ) * ( NPCList.Count / 2 ) )
+                  begin
+                    if player.TitleExists ('NoPartytoEnemyHP') then
+                    character.HitPoints := ( ( player.Strength * 2 ) )
+                    else
+                    character.HitPoints := ( ( player.Strength * 2 ) * ( NPCList.Count / 2 ) );
+                  end
                   else
+                  begin
                     character.HitPoints := ( ( player.Strength * 2 ) );
+                  end;
                 end
                 else
                   character.HitPoints := ( ( player.Strength * 2 ) * NPCList.Count ); // Original
@@ -5028,6 +5090,9 @@ begin
 
             character.Wounds := 0;
             Character.Drain := 0;
+            if player.Combat > 70 then //limit set to 70
+            character.Mysticism := 53 + i
+            else
             character.Mysticism := ( ( player.Combat * 3 ) div 4 ) + i;
             character.perception := ( ( player.Strength * 3 ) div 4 ) + i;
             character.Coordination := ( ( player.Strength * 3 ) div 4 ) + i;
@@ -5039,9 +5104,16 @@ begin
                 if AdjustedPartyHitPoints then
                 begin
                   if NPCList.Count > 1 then
-                    character.HitPoints := ( ( player.Coordination * 2 ) * ( NPCList.Count / 2 ) )
+                  begin
+                    if player.TitleExists ('NoPartytoEnemyHP') then
+                    character.HitPoints := ( ( player.Coordination * 2 ) )
+                    else
+                    character.HitPoints := ( ( player.Coordination * 2 ) * ( NPCList.Count / 2 ) );
+                  end
                   else
+                  begin
                     character.HitPoints := ( ( player.Coordination * 2 ) );
+                  end;
                 end
                 else
                   character.HitPoints := ( ( player.Coordination * 2 ) * NPCList.Count ); // Original

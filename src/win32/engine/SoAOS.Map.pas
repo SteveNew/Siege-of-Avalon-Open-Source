@@ -235,7 +235,7 @@ type
 
   TAniMap = class(TComponent)
   const
-    ItemListSize = 32767;
+    ItemListSize = 65534;//32767;
   private
     FWidth: Longint;
     FHeight: Longint;

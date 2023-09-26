@@ -1103,10 +1103,12 @@ begin
     PlotTextCentered( a, x1, x2, i, Alpha );
     i := i + 24;
     str( round( Character.hitpoints ), a );
-    PlotTextCentered( a, x1, x2, i, Alpha );
+    str( round( Character.hitpoints - character.wounds ), b );
+    PlotTextCentered( b + '/' + a, x1 + 10, x2 + 10, i, Alpha );
     i := i + 24;
     str( round( Character.mana ), a );
-    PlotTextCentered( a, x1, x2, i, Alpha );
+    str( round( Character.mana - character.drain ), b );
+    PlotTextCentered( b + '/' + a, x1 + 10, x2 + 10, i, Alpha );
     i := i + 24; //Show too, because it's no longer zero in basevalues
     str( round( Character.Hitrecovery ), a );
     PlotTextCentered( a, x1, x2, i, Alpha );

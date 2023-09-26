@@ -2047,9 +2047,20 @@ begin
     if ReadyToAttack then
     begin //hit him then
       try
+        if (Character.wounds >= (Character.Hitpoints * 0.75)) and
+        (Character.TitleExists('Heal')) then
+        begin //if low health, heal first
+          if Character.CurrentSpell <> TSpell( Spells.Objects[ Spells.IndexOf( 'Heal' ) ] ) then
+          Character.CurrentSpell := TSpell( Spells.Objects[ Spells.IndexOf( 'Heal' ) ] );
+          if ( character.Mana - character.Drain ) >= Character.CurrentSpell.Drain( Character ) then
+          character.Cast(character);
+        end
+      else
+      begin
         Character.Attack( Character.Track );
         ReadyToAttack := False;
         Walking := False;
+      end;
       except
         on E : Exception do
           Log.log( 'Error Companion AttackMelee2: ' + E.Message );
@@ -5710,7 +5721,9 @@ begin
   try
     if ( FrameCount mod 40 ) = 0 then
     begin
-      if Current.Stealth < 1 then
+      if character.TitleExists( 'IgnoreStealth' ) then
+        istealth := 0
+      else if Current.Stealth < 1 then
         istealth := 0
       else
         iStealth := ( current.stealth / game.IStealthFactor ); //war div, ergibt aber nur Ganzzahlen, also =0 oder =1

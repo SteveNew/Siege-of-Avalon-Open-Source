@@ -99,6 +99,7 @@ uses
   SoAOS.Intrface.Dialogs.Options in 'interface\SoAOS.Intrface.Dialogs.Options.pas',
   Scroll in 'engine\Scroll.pas',
   Statistics in 'interface\Statistics.pas',
+  Trophies in 'interface\Trophies.pas',
   SoAOS.StrUtils in 'engine\SoAOS.StrUtils.pas',
   MMTimer in 'engine\MMTimer.pas',
   SoAOS.Types in 'engine\SoAOS.Types.pas',

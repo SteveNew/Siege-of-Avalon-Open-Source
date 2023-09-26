@@ -73,6 +73,8 @@ type
     FPlotDirty : boolean; //plot cleanup or no?
     WAdj, HAdj, OldWAdj, OldHAdj : integer;
     FEnabled : boolean;
+    PtrWidth : integer;  //removed the constant value
+    PtrHeight : integer; //init in .Create for AltCursor function
     procedure MouseTimerEvent( Sender : TObject );
   protected
     procedure SetPlotDirty( const Value : boolean ); override;
@@ -100,8 +102,8 @@ uses
   AniDemo;
 
 const
-  PtrWidth = 32;
-  PtrHeight = 32;
+  //PtrWidth = 32;
+  //PtrHeight = 32;
   SheetWidth = 6;
 
 { TMousePtr }
@@ -116,6 +118,16 @@ begin
   Log.DebugLog( FailName );
   try
     inherited;
+    if not AltCursor then
+    begin
+    PtrWidth := 32;
+    PtrHeight := 32;
+    end
+    else
+    begin
+    PtrWidth := 1; //0 leads to crash, 1 doesn't attract attention
+    PtrHeight := 1;
+    end;
     DXMousePtr := SoAOS_DX_LoadBMP( InterfacePath + 'siegecursorsheet.bmp', cTransparent );
     DXDirty := DDGetSurface( lpDD, PtrWidth, PtrHeight, cTransparent, true );
   //pre-load Dirty

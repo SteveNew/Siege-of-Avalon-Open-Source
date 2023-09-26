@@ -341,8 +341,8 @@ begin
   Log.DebugLog( FailName );
   try
 
-    result.X := 19 * 32;
-    result.Y := 32;
+    result.X := 20 * 32;
+    result.Y := 0;
 
   except
     on E : Exception do
@@ -626,8 +626,8 @@ const
 begin
   Log.DebugLog( FailName );
   try
-    result.X := 23 * 32;
-    result.Y := 32;
+    result.X := 4 * 32;
+    result.Y := 0;
 
   except
     on E : Exception do

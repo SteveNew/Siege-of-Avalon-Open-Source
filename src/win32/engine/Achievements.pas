@@ -39,7 +39,7 @@ begin
   FAchievements.Add('01happywizard', 'ACH_FETCH_THE_AMULET');
   FAchievements.Add('01recovered', 'ACH_FETCH_THE_CHALICE');
   FAchievements.Add('02estonequestcomp', 'ACH_RETRIEVE_THE_EARTHSTONE');
-  FAchievements.Add('02traitorquestcomp', 'ACH_LETTER_FROM_A_TRAITOR');
+  //FAchievements.Add('02traitorquestcomp', 'ACH_LETTER_FROM_A_TRAITOR'); //delete
   FAchievements.Add('02pqcompleted', 'ACH_WHO_POISONED_THE_KING');
   FAchievements.Add('02ringdeliv', 'ACH_RETURN_TRACYS_RING');
   FAchievements.Add('02weldonnopass', 'ACH_CHANGING_OF_THE_GUARD');
@@ -62,15 +62,30 @@ begin
   FAchievements.Add('04learnedcamo|04learnedfocus|04learnedsw', 'ACH_SCOUTMASTERS_TRAINING_TASKS');
   FAchievements.Add('04ramdestroyed', 'ACH_DESTROY_THE_RAM');
   FAchievements.Add('04odead', 'ACH_KILL_OVORON');
-  //My idea: Mithras ONDie: player.iftitle(Hardmode);player.addtitle(06Hart);endif;
-  //FAchievements.Add('06Hart', 'ACH_HARDMODE');
   // Extra SNEG
   FAchievements.Add('01EndChapter', 'ACH_ACT1');
   FAchievements.Add('02endofch2', 'ACH_ACT2');
   FAchievements.Add('03battlewon', 'ACH_ACT3');
   FAchievements.Add('04endofch4', 'ACH_ACT4');
   FAchievements.Add('05endofch5', 'ACH_ACT5');
-  FAchievements.Add('stop', 'ACH_ACT6');
+  FAchievements.Add('06MithrasDead', 'ACH_ACT6'); //player doesn't get title 'stop'
+  //Version 1.5, new achievments
+  FAchievements.Add('02killedosla', 'ACH_OSLA_SERVANT'); //Osla as traitor, 02traitorquestcomp
+  FAchievements.Add('02itherdead', 'ACH_ITHER_SERVANT'); //Ither as traitor, 02traitorquestcomp
+  FAchievements.Add('04LoveLetter', 'ACH_AHOUL_LOVE'); //Darg and Kallden quest, wagons travelling ->supply camp
+  FAchievements.Add('05ApprenticeIcharas', 'ACH_ICHARAS'); //Title 05ApprenticeIcharas need to be added to pehlic.cnv, ->Icharas promotion
+  FAchievements.Add('05epromotedpc', 'ACH_WIZARD_QUEST'); //Become a wizard
+  FAchievements.Add('05AGFree', 'ACH_ASTRAL_GUARDIAN_FREE'); //Astralguardian free
+  FAchievements.Add('6firepotion', 'ACH_FIREGULLET'); //Firegullet for Gentza
+  FAchievements.Add('master of mystic arts|energy control|mind control', 'ACH_WIZARD_MASTER'); //Wizard, last training
+  FAchievements.Add('master of the shadows|transcendent will|phantom movements', 'ACH_SHADOW_MASTER'); //Ranger, last training
+  FAchievements.Add('Combat Mastery', 'ACH_KNIGHT_OF_LIGHT'); //Knight, last training
+  FAchievements.Add('06foundphelappr', 'ACH_PHELICS_NEW_APPRENTICE'); //Send Arion to Phelic
+  FAchievements.Add('06rsgiven', 'ACH_MEMORIAL_SWORD'); //Receive Roth's sword
+  FAchievements.Add('06Bonniesafe', 'ACH_SAVE_YOUR_LOVE'); //Meet Bonnie in 6village02.lvl
+  FAchievements.Add('06smreturn', 'ACH_SCOUTMASTER_RETURN'); //Meet the Scoutmaster in 6village05.lvl
+  FAchievements.Add('06howareyougentlemen', 'ACH_LITTLE_COWARD'); //Meet Holt in 6southgatesub1.lvl
+  FAchievements.Add('06Hart', 'ACH_HARDMODE'); //Beat the game in Hardmode
 end;
 
 destructor TAchievements.Destroy;

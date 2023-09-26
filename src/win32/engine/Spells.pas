@@ -729,9 +729,11 @@ begin
     Exit;
   if not MakeCastEffect(FrostEffect, 'Frost') then
     Exit;
-  if (Modselection <> TModSelection.SoA) and
-    (not MakeCastEffect(FrostEffect2, 'FrostCast')) then
-    Exit; // BlizzardLvl1 (but not in SoA) und Iceblock
+  (*if (Modselection <> TModSelection.SoA) and (Modselection <> TModSelection.Nothing)
+  and (not MakeCastEffect(FrostEffect2, 'FrostCast')) then
+    Exit; // BlizzardLvl1 (but not in SoA) und Iceblock *)
+  if not MakeCastEffect( FrostEffect2, 'FrostCast' ) then
+    exit;
   if not MakeCastEffect(LightningEffect, 'shockblu') then
     Exit;
   if not MakeCastEffect(ShrapnelEffect, 'shrapnelcast') then
@@ -754,12 +756,16 @@ begin
   MakeCastEffect(ManaThiefEffect, 'ManaThiefCast');
   MakeCastEffect(GreatHandEffect, 'GreatHandCast');
   MakeCastEffect(GreatWolfEffect, 'GreatWolfCast');
-  if (Modselection <> TModSelection.SoA) and
-    (not MakeCastEffect(PoisonAuraEffect, 'ChargeSpell4')) then
+  if not MakeCastEffect( PoisonAuraEffect, 'ChargeSpell4' ) then
+    exit;
+  if not MakeCastEffect( IllusionEffect, 'WindShearCast' ) then
+    exit;
+  (*if (Modselection <> TModSelection.SoA) and (Modselection <> TModSelection.Nothing)
+  and (not MakeCastEffect(PoisonAuraEffect, 'ChargeSpell4')) then
     Exit;
-  if (Modselection <> TModSelection.SoA) and
-    (not MakeCastEffect(IllusionEffect, 'WindShearCast')) then
-    Exit;
+  if (Modselection <> TModSelection.SoA) and (Modselection <> TModSelection.Nothing)
+  and (not MakeCastEffect(IllusionEffect, 'WindShearCast')) then
+    Exit;  *)
   if not MakeCastEffect(BigFire, 'FireCast(LVL3)') then
     Exit;
   BigFire.SpecialEffect := seAdd;
@@ -818,14 +824,28 @@ begin
   MakeSpell(ManaThief, TManaThief);
   MakeSpell(GreatHand, TGreatHand);
   MakeSpell(GreatWolf, TGreatWolf);
-  if (Modselection <> TModSelection.SoA) and (not MakeSpell(Bloodlust, TBloodlust)) then
+  if not MakeSpell( Bloodlust, TBloodlust ) then
+    exit;
+  if not MakeSpell( IceBlock, TIceBlock ) then
+  exit;
+  if not MakeSpell( PoisonAura, TPoisonAura ) then
+  exit;
+  if not MakeSpell( Illusion, TIllusion ) then
+  exit;
+  (*if (Modselection <> TModSelection.SoA) and (Modselection <> TModSelection.Nothing)
+  and (not MakeSpell(Bloodlust, TBloodlust)) then
     Exit;
-  if (Modselection <> TModSelection.SoA) and (not MakeSpell(IceBlock, TIceBlock)) then
+  if (Modselection <> TModSelection.SoA) and (Modselection <> TModSelection.Nothing)
+  and (not MakeSpell(IceBlock, TIceBlock)) then
     Exit;
-  if (Modselection<>TModSelection.SoA) and (not MakeSpell(PoisonAura, TPoisonAura)) then
+  if (Modselection<>TModSelection.SoA) and (Modselection <> TModSelection.Nothing)
+  and (not MakeSpell(PoisonAura, TPoisonAura)) then
     Exit;
-  if (Modselection<>TModSelection.SoA) and (not MakeSpell(Illusion, TIllusion)) then
-    Exit;
+  if (Modselection<>TModSelection.SoA) and (Modselection <> TModSelection.Nothing)
+  and (not MakeSpell(Illusion, TIllusion)) then
+    Exit;  *)
+
+
   if not MakeSpell(FlameStrike, TFlameStrike) then
     Exit;
   if not MakeSpell(Blizzard, TBlizzard) then
@@ -1786,12 +1806,12 @@ begin
   try
     if Source.TitleExists('DeepFreeze') then
     begin
-      result.X := 3 * 32;
+      result.X := 9 * 32;
       result.Y := 32;
     end
     else if Source.TitleExists('Freeze') then
     begin
-      result.X := 3 * 32;
+      result.X := 9 * 32;
       result.Y := 32;
     end
     else
@@ -2174,11 +2194,11 @@ begin
           PathCount := 50; // war 40
           DoDamage := false;
         end;
-        if PathCount > 10 + (Source.Mysticism div 3) + (Source.Mysticism div 3)
-          + 3 then // ( Source.Mysticism div 3 ) + ( Source.Mysticism div 3 ) + 3 ergänzt, else entfernt
+        if PathCount > 10 + (Source.Mysticism div 3) + (Source.Perception div 3) + 3 then
+        // ( Source.Mysticism div 3 ) + ( Source.Perception div 3 ) + 3 ergänzt, else entfernt
         begin
-          PathCount := 10 + (Source.Mysticism div 3) + (Source.Mysticism div 3)
-            + 3; // ( Source.Mysticism div 3 ) + ( Source.Mysticism div 3 ) + 3 ergänzt
+          PathCount := 10 + (Source.Mysticism div 3) + (Source.Perception div 3) + 3;
+          // ( Source.Mysticism div 3 ) + ( Source.Perception div 3 ) + 3 ergänzt
           DoDamage := false;
         end;
         // else
@@ -2293,13 +2313,12 @@ begin
                 begin
                   PathCount := 50; // war 40
                 end;
-                if PathCount > 10 + (Source.Mysticism div 3) +
-                  (Source.Mysticism div 3) + 3 then
-                // div 3 ) + ( Source.Mysticism div 3 ) + 3 ergänzt, else entfernt
+                if PathCount > 10 + (Source.Mysticism div 3) + (Source.Perception div 3) + 3 then
+                // div 3 ) + ( Source.Perception div 3 ) + 3 ergänzt, else entfernt
                 begin
                   PathCount := 10 + (Source.Mysticism div 3) +
-                    (Source.Mysticism div 3) + 3;
-                  // div 3 ) + ( Source.Mysticism div 3 ) + 3 ergänzt
+                    (Source.Perception div 3) + 3;
+                  // div 3 ) + ( Source.Perception div 3 ) + 3 ergänzt
                 end;
                 // else
                 // NewDoDamage := true;
@@ -2760,8 +2779,8 @@ begin
   try
     if Source.TitleExists('Forked lightning') then
     begin
-      result.X := 24 * 32;
-      result.Y := 0;
+      result.X := 12 * 32;
+      result.Y := 32;
     end
     else if Source.TitleExists('lightning') then
     begin
@@ -2770,8 +2789,8 @@ begin
     end
     else
     begin
-      result.X := 6 * 32;
-      result.Y := 0;
+      result.X := 10 * 32;
+      result.Y := 32;
     end;
   except
     on E: Exception do
@@ -3024,7 +3043,7 @@ begin
   Log.DebugLog(FailName);
   try
 
-    result.X := 10 * 32;
+    result.X := 3 * 32;
     result.Y := 32;
 
   except
@@ -3785,17 +3804,17 @@ begin
 
     if Source.TitleExists('Infuse') then
     begin
-      result.X := 9 * 32;
-      result.Y := 32;
+      result.X := 12 * 32;
+      result.Y := 0;
     end
     else if Source.TitleExists('Energy') then
     begin
-      result.X := 10 * 32;
+      result.X := 11 * 32;
       result.Y := 0;
     end
     else
     begin
-      result.X := 11 * 32;
+      result.X := 10 * 32;
       result.Y := 0;
     end;
 
@@ -3936,7 +3955,7 @@ begin
       with NewCharacter do
       begin
         Master := Source;
-        Duration := Source.Mysticism * 50;
+        Duration := ( 8 + Source.Mysticism ) * 50; //+8 for scouts and warriors
         Name := 'Rat';
         BaseUnArmedDamage.Piercing.Min := 1;
         BaseUnArmedDamage.Piercing.Max := 6;
@@ -3950,6 +3969,7 @@ begin
         Coordination := 15;
         HitPoints := 5 + Source.Mysticism / 10;
         Combat := 10 + Source.Mysticism div 5;
+        Stealth := 100; //no detection, since it's just a rat...
         AI := TMeander.Create;
         PartyAI := 'meander';
         FAIMode := aiParty;
@@ -4262,10 +4282,10 @@ begin
     inttostr(8 + round(Source.Mysticism / 8)));
   Replace(result, 'c', '0-8');
 
-  result := 'Wolf mit ' + inttostr(15 + round(Source.Mysticism / 5)) + ' Leben';
+  (*result := 'Wolf mit ' + inttostr(15 + round(Source.Mysticism / 5)) + ' Leben';
 
   result := result + ' ' + inttostr(2 + round(Source.Mysticism / 12)) + '-' +
-    inttostr(8 + round(Source.Mysticism / 8)) + ' Stechen, ' + '0-8 Schneiden';
+    inttostr(8 + round(Source.Mysticism / 8)) + ' Stechen, ' + '0-8 Schneiden';*)
 end;
 
 function TSummonWolf.GetLoaded: Boolean;
@@ -4379,7 +4399,7 @@ begin
       begin
         Master := Source;
         Duration := (Source.Mysticism * 50) - 5;
-        Name := 'Steingolem';
+        Name := 'Golem';
         BaseUnArmedDamage.Piercing.Min := 0;
         BaseUnArmedDamage.Piercing.Max := 4;
         BaseUnArmedDamage.Crushing.Min := 3 + Source.Mysticism / 10;
@@ -4492,11 +4512,11 @@ begin
   Replace(result, 'c', '1-6');
   Replace(result, 'd', inttostr(3 + round(Source.Mysticism / 10)) + '-' +
     inttostr(10 + round(Source.Mysticism / 6)));
-  result := 'Golem mit ' + inttostr(15 + round(Source.Mysticism / 5)) +
+  (*result := 'Golem mit ' + inttostr(15 + round(Source.Mysticism / 5)) +
     ' Leben';
   result := result + ' ' + '0-4 Stechen, ' + '1-6 Schneiden, ' +
     inttostr(3 + round(Source.Mysticism / 10)) + '-' +
-    inttostr(10 + round(Source.Mysticism / 6)) + ' Quetschen';
+    inttostr(10 + round(Source.Mysticism / 6)) + ' Quetschen';*)
 end;
 
 function TSummonGolem.GetLoaded: Boolean;
@@ -4995,7 +5015,7 @@ begin
     Effect.Duration := (5 + Source.Mysticism) * 40;
     Effect.AnimationDuration := Effect.Duration * Resource.FrameMultiplier;
     Effect.Power := Source.Mysticism;
-    Effect.tag := 30;
+    Effect.tag := 35;
     Effect.DoAction('Default', NewTarget.Facing);
 
     for i := 0 to FigureInstances.count - 1 do
@@ -5091,8 +5111,8 @@ begin
   Log.DebugLog(FailName);
   try
 
-    result.X := 24 * 32;
-    result.Y := 32;
+    result.X := 6 * 32;
+    result.Y := 0;
 
   except
     on E: Exception do
@@ -5289,7 +5309,7 @@ begin
   Log.DebugLog(FailName);
   try
 
-    result.X := 4 * 32;
+    result.X := 23 * 32;
     result.Y := 0;
 
   except
@@ -5507,8 +5527,8 @@ begin
   Log.DebugLog(FailName);
   try
 
-    result.X := 12 * 32;
-    result.Y := 32;
+    result.X := 21 * 32;
+    result.Y := 0;
 
   except
     on E: Exception do
@@ -5520,7 +5540,8 @@ function TDeathSpell.GetInfo(Source: TCharacter): string;
 begin
   result := InfoText;
   if Source.TitleExists('Power Death') then
-    result := 'Sofortiger Tod'
+    Replace(result, 'a', inttostr(Source.Mysticism * 10) + '-' +
+      inttostr(Source.Mysticism * 20))
   else
     Replace(result, 'a', inttostr(round(Source.Mysticism / 2)) + '-' +
       inttostr(Source.Mysticism));
@@ -6121,8 +6142,8 @@ begin
   Log.DebugLog(FailName);
   try
 
-    result.X := 20 * 32;
-    result.Y := 0;
+    result.X := 23 * 32;
+    result.Y := 32;
 
   except
     on E: Exception do
@@ -6503,8 +6524,8 @@ begin
   Log.DebugLog(FailName);
   try
 
-    result.X := 19 * 32;
-    result.Y := 32;
+    result.X := 20 * 32;
+    result.Y := 0;
 
   except
     on E: Exception do
@@ -7234,11 +7255,12 @@ const
 begin
   Log.DebugLog(FailName);
   try
+
+    result.X := 17 * 32;
     if Source.TitleExists('IceLarge') then
-      result.X := 12 * 32
+      result.Y := 32
     else
-      result.X := 17 * 32;
-    result.Y := 0;
+      result.Y := 0;
 
   except
     on E: Exception do
@@ -7363,7 +7385,7 @@ begin
     Effect2.StatModifier.Strength := -5;
     Effect2.StatModifier.Constitution := -4;
     Effect2.Duration := 5 + Source.Mysticism * 8;
-    Effect2.tag := 30;
+    Effect2.tag := 38;
     Effect2.DoAction('Default', NewTarget.Facing);
     with NewTarget do
     begin
@@ -7434,8 +7456,8 @@ const
 begin
   Log.DebugLog(FailName);
   try
-    result.X := 17 * 32;
-    result.Y := 32;
+    result.X := 24 * 32;
+    result.Y := 0;
   except
     on E: Exception do
       Log.Log(FailName, E.Message, []);
@@ -7613,7 +7635,7 @@ const
 begin
   Log.DebugLog(FailName);
   try
-    result.X := 22 * 32;
+    result.X := 24 * 32;
     result.Y := 32;
   except
     on E: Exception do
@@ -7909,11 +7931,11 @@ const
 begin
   Log.DebugLog(FailName);
   try
+    result.X := 19 * 32;
     if Source.TitleExists('Explosion') then
-      result.X := 19 * 32
+      result.Y := 32
     else
-      result.X := 21 * 32;
-    result.Y := 0;
+      result.Y := 0;
 
   except
     on E: Exception do
@@ -8040,11 +8062,11 @@ begin
         NewProjectile.Damage.Cutting.Min := 5;
         NewProjectile.Damage.Cutting.Max := 8;
         NewProjectile.Damage.Cold.Min := Source.Mysticism / 10;
-        NewProjectile.Damage.Cold.Max := Source.Mysticism / 4;
-        NewProjectile.DamageRadius := 2;
+        NewProjectile.Damage.Cold.Max := Source.Mysticism / 5;
+        NewProjectile.DamageRadius := 0;
         NewProjectile.Duration := Source.Mysticism * 10;
         NewProjectile.TrackingDegree := Source.Mysticism / 30;
-        NewProjectile.Speed := 13 + Source.Mysticism / 30; // war 12
+        NewProjectile.Speed := 12 + Source.Mysticism / 30;
       end
       else
       begin
@@ -8180,7 +8202,7 @@ begin
   begin
     Replace(result, 'a', inttostr(1 + Source.Mysticism div 8));
     Replace(result, 'b', inttostr(round(Source.Mysticism / 10)) + '-' +
-      inttostr(round(Source.Mysticism / 4)));
+      inttostr(round(Source.Mysticism / 5)));
     Replace(result, 'c', '5 - 8');
   end
   else
@@ -8285,7 +8307,7 @@ begin
     Effect.Reflect := Source.TitleExists('Reflect');
     Effect.Resource := Resource;
     Effect.AnimationDuration := 8 * Resource.FrameMultiplier;
-    Effect.Duration := Source.Mysticism * 20;
+    Effect.Duration := ( 8 + Source.Mysticism ) * 20; //+ 8 for Scout and Knight
     Effect.Power := Source.Mysticism * 10;
     TReflectEffect(Effect).HitResource := HitResource;
     Effect.tag := 183;
@@ -8379,11 +8401,12 @@ const
 begin
   Log.DebugLog(FailName);
   try
+
+    result.X := 22 * 32;
     if Source.TitleExists('Reflect') then
-      result.X := 23 * 32
+      result.Y := 32
     else
-      result.X := 22 * 32;
-    result.Y := 0;
+      result.Y := 0;
 
   except
     on E: Exception do

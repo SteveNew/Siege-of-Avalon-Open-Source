@@ -33,7 +33,8 @@ unit SoAOSExtSetting;
 interface
 
 uses
-  Anidemo, // für Modname
+  Anidemo, //for Modname
+  Winapi.URLMon, //for Update Check, SoAmigos
   Winapi.Windows, Winapi.Messages, System.SysUtils, System.Variants,
   System.Classes, System.UITypes,
   Vcl.Graphics, Vcl.Controls, Vcl.Forms, Vcl.Dialogs, Vcl.StdCtrls,
@@ -48,20 +49,86 @@ type
     imgBack: TImage;
     tmrScroll: TTimer;
     lblLanguage: TStaticText;
-    StaticText3: TStaticText;
     lblMonitor: TStaticText;
     lblResolution: TStaticText;
     imgCheck: TImage;
     VersionLabel: TLabel;
+    imgCheckJournal: TImage;
+    lblBrightness: TStaticText;
+    imgCheckBigFont: TImage;
+    imgPlay: TImage;
+    imgCloseX: TImage;
+    imgCheckCustomDDraw: TImage;
+    lblDDrawVersion: TStaticText;
+    ImgCheckCursor: TImage;
+    ImgPlayAlt: TImage;
+    imgkeyback: TImage;
+    lblKeyCombat: TLabel;
+    lblKeyBattleCry: TLabel;
+    lblKeyXRay: TLabel;
+    lblKeySlowmo: TLabel;
+    lblKeyQuicksave: TLabel;
+    lblKeyInventory: TLabel;
+    lblKeyStatistics: TLabel;
+    lblKeyTitles: TLabel;
+    lblKeyMap: TLabel;
+    lblKeyPause: TLabel;
+    lblKeySpellbar: TLabel;
+    lblKeyRoster: TLabel;
+    lblKeyQuest: TLabel;
+    lblKeyAdventure: TLabel;
+    lblKeyJournal: TLabel;
+    lblKeyOptions: TLabel;
+    lblKeyManapotion: TLabel;
+    lblKeyHealthpotion: TLabel;
+    imgRebindKeys: TImage;
+    lblHintforkeys: TLabel;
+    KeyPlaceholder: TImage;
+    imgMovies: TImage;
+    imgCheckUpdate: TImage;
+    imgCheckingUpdates: TImage;
+    CheckUpdateTimer: TTimer;
+    lblUpdateText: TStaticText;
     procedure FormCreate(Sender: TObject);
     procedure tmrScrollTimer(Sender: TObject);
+    procedure tmrCheckUpdateTimer(Sender: TObject);
     procedure imgBackClick(Sender: TObject);
     procedure Done(r: integer; windowed: Boolean);
     procedure FormDestroy(Sender: TObject);
     procedure FormShow(Sender: TObject);
-    procedure StaticText3Click(Sender: TObject);
+    procedure CloseClick(Sender: TObject);
     procedure FormCloseQuery(Sender: TObject; var CanClose: Boolean);
     procedure imgCheckClick(Sender: TObject);
+    procedure imgCheckBigFontClick(Sender: TObject);
+    procedure imgCheckJournalClick(Sender: TObject);
+    procedure imgMoviesClick(Sender: TObject);
+    procedure SetBigFont;
+    procedure SetScaleJournal;
+    procedure MoviesOnOff;
+    procedure UpdateBrightness;
+    procedure CheckforUpdates;
+    procedure LaunchyMouseMove(Sender: TObject; Shift: TShiftState; X, Y: Integer);
+    procedure imgPlayMouseDown(Sender: TObject; Button: TMouseButton;
+      Shift: TShiftState; X, Y: Integer);
+    procedure imgPlayAltMouseDown(Sender: TObject; Button: TMouseButton;
+      Shift: TShiftState; X, Y: Integer);
+    procedure imgCheckUpdateMouseDown(Sender: TObject; Button: TMouseButton;
+      Shift: TShiftState; X, Y: Integer);
+    procedure RemapKeyMouseDown(Sender: TObject; Button: TMouseButton;
+      Shift: TShiftState; X, Y: Integer);
+    procedure imgCheckCustomDDrawClick(Sender: TObject);
+    procedure SetCustomDDraw;
+    procedure ImgCheckCursorClick(Sender: TObject);
+    procedure SetCursor;
+    procedure WriteKeystoAltSiegeINI;
+    procedure imgRebindKeysClick(Sender: TObject);
+    procedure BringKeysToFront;
+    procedure BringKeysToBack;
+    procedure GetKeylabels;
+    function TranslateKey(key: word): string; //e.g. 32 ->string Space
+    procedure AssignKeyReturn;
+    procedure FormKeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);
+    property OnMouseMove;
   private
     { Private declarations }
     FLanguages: TStringList;
@@ -78,6 +145,14 @@ type
     FCurrentResolution: string;
     FCurrentResolutionIdx: integer;
 
+    FUseSmallFont: string;
+    FScaleJournalFullHD: string;
+    FMovies: string;
+    FBrightness: integer;
+    FCustomDDrawDLL: string;
+    FDDrawVersion: string;
+    FCursor: string;
+
     FScrollDirLeft: Boolean;
     FScrollText: string;
     FScrollFullText: string;
@@ -86,6 +161,17 @@ type
     FInterfacePath: string;
 
     monitorCnt: integer;
+
+    KeyToAssign: integer;
+    KeyAdventure, KeyBattleCry, KeyCombat, KeyInventory, KeyJournal, KeyMap,
+    KeyPause, KeyOptions, KeyQuest, KeyQuicksave, KeyRoster, KeySlowmo,
+    KeySpellbar, KeyStatistics, KeyTitles, KeyXRay, KeyManapotion,
+    KeyHealthpotion: word;
+
+    VersionCheckURL: string;
+    CheckMonth: integer; //= month 1-12
+    AutoCheck: boolean;
+    UpdateTimerSwitchOn: Boolean; //two states: Show check image, then check
 
     function AppHookFunc(var Message: TMessage): Boolean;
     procedure SetResolutionSupport(lpszDeviceName: LPCWSTR);
@@ -140,6 +226,40 @@ begin
   end;
 end;
 
+
+procedure TfrmLaunchSetting.LaunchyMouseMove(Sender: TObject; Shift: TShiftState;
+  X, Y: Integer);
+begin
+  if Rect(497, 22, 529, 48).Contains(imgBack.ScreenToClient(Mouse.cursorpos))
+  then
+    imgCloseX.visible := true
+  else
+    imgCloseX.visible := false;
+  if not imgkeyback.visible and not imgCheckingUpdates.visible then
+  begin
+    if Rect(400, 320, 520, 385).Contains(imgBack.ScreenToClient(Mouse.cursorpos))
+    then
+      imgPlay.visible := true
+    else
+      imgPlay.visible := false;
+    if Rect(416, 263, 516, 318).Contains(imgBack.ScreenToClient(Mouse.cursorpos))
+    and fileexists('SoAStarter.exe') then
+      imgPlayAlt.visible := true
+    else
+      imgPlayAlt.visible := false;
+    if Rect(370, 21, 490, 49).Contains(imgBack.ScreenToClient(Mouse.cursorpos))
+    then
+      imgRebindKeys.visible := true
+    else
+      imgRebindKeys.visible := false;
+    if Rect(290, 20, 355, 48).Contains(imgBack.ScreenToClient(Mouse.cursorpos))
+    then
+      imgCheckUpdate.visible := true
+    else
+      imgCheckUpdate.visible := false;
+  end;
+end;
+
 procedure TfrmLaunchSetting.Done(r: integer; windowed: Boolean);
 var
   INI, DaysINI, PillarsINI, AshesINI, CavesINI, RiseINI, KingdomsINI: TIniFile;
@@ -174,6 +294,33 @@ begin
       INI.WriteBool('Settings', 'ForceD3DFullscreen', FForceD3DFullscreen);
       INI.WriteBool('Settings', 'D3DVSync', FVSync);
       INI.WriteString('Settings', 'DeviceName', FCurrentDevice);
+      INI.WriteString('Settings', 'UseSmallFont', FUseSmallFont);
+      INI.WriteString('Settings', 'ScaleJournalFullHD', FScaleJournalFullHD);
+      INI.WriteString('Settings', 'Showintro', FMovies);
+      INI.WriteString('Settings', 'Showoutro', FMovies);
+      INI.WriteInteger('Settings', 'Brightness', FBrightness);
+      INI.WriteString('Settings', 'CustomDDrawDLL', FCustomDDrawDLL);
+      INI.WriteString('Settings', 'DDrawVersion', FDDrawVersion);
+      INI.WriteString('Settings', 'AltCursor', FCursor);
+      //set the assigned keys
+      INI.WriteInteger('keyboard', 'adventure', KeyAdventure);
+      INI.WriteInteger('keyboard', 'battlecry', KeyBattleCry);
+      INI.WriteInteger('keyboard', 'combat', KeyCombat);
+      INI.WriteInteger('keyboard', 'inventory', KeyInventory);
+      INI.WriteInteger('keyboard', 'journal', KeyJournal);
+      INI.WriteInteger('keyboard', 'map', KeyMap);
+      INI.WriteInteger('keyboard', 'pause', KeyPause);
+      INI.WriteInteger('keyboard', 'options', KeyOptions);
+      INI.WriteInteger('keyboard', 'quest', KeyQuest);
+      INI.WriteInteger('keyboard', 'quicksave', KeyQuicksave);
+      INI.WriteInteger('keyboard', 'roster', KeyRoster);
+      INI.WriteInteger('keyboard', 'slowmo', KeySlowmo);
+      INI.WriteInteger('keyboard', 'spellbar', KeySpellbar);
+      INI.WriteInteger('keyboard', 'statistic', KeyStatistics);
+      INI.WriteInteger('keyboard', 'title', KeyTitles);
+      INI.WriteInteger('keyboard', 'xray', KeyXRay);
+      INI.WriteInteger('keyboard', 'Manapotion', KeyManapotion);
+      INI.WriteInteger('keyboard', 'Healthpotion', KeyHealthpotion);
       // Mods only have 2 localizations (English und german)
       if (FCurrentLanguage <> 'German') then
       begin
@@ -183,10 +330,10 @@ begin
           PillarsINI.WriteString('Settings', 'LanguagePath', 'english');
         if fileexists('ashes.ini') then
           AshesINI.WriteString('Settings', 'LanguagePath', 'english');
-        if fileexists('rise.ini') then
-          RiseINI.WriteString('Settings', 'LanguagePath', 'english');
         if fileexists('caves.ini') then
           CavesINI.WriteString('Settings', 'LanguagePath', 'english');
+        if fileexists('rise.ini') then
+          RiseINI.WriteString('Settings', 'LanguagePath', 'english');
         if fileexists('kingdoms.ini') then
           KingdomsINI.WriteString('Settings', 'LanguagePath', 'english');
       end
@@ -198,12 +345,42 @@ begin
           PillarsINI.WriteString('Settings', 'LanguagePath', 'german');
         if fileexists('ashes.ini') then
           AshesINI.WriteString('Settings', 'LanguagePath', 'german');
-        if fileexists('rise.ini') then
-          RiseINI.WriteString('Settings', 'LanguagePath', 'german');
         if fileexists('caves.ini') then
           CavesINI.WriteString('Settings', 'LanguagePath', 'german');
+        if fileexists('rise.ini') then
+          RiseINI.WriteString('Settings', 'LanguagePath', 'german');
         if fileexists('kingdoms.ini') then
           KingdomsINI.WriteString('Settings', 'LanguagePath', 'german');
+      end;
+      if fileexists('days.ini') then
+      begin
+        DaysINI.WriteString('Settings', 'UseSmallFont', FUseSmallFont);
+        DaysINI.WriteInteger('Settings', 'Brightness', FBrightness);
+      end;
+      if fileexists('pillars.ini') then
+      begin
+        PillarsINI.WriteString('Settings', 'UseSmallFont', FUseSmallFont);
+        PillarsINI.WriteInteger('Settings', 'Brightness', FBrightness);
+      end;
+      if fileexists('ashes.ini') then
+      begin
+        AshesINI.WriteString('Settings', 'UseSmallFont', FUseSmallFont);
+        AshesINI.WriteInteger('Settings', 'Brightness', FBrightness);
+      end;
+      if fileexists('caves.ini') then
+      begin
+        CavesINI.WriteString('Settings', 'UseSmallFont', FUseSmallFont);
+        CavesINI.WriteInteger('Settings', 'Brightness', FBrightness);
+      end;
+      if fileexists('rise.ini') then
+      begin
+        RiseINI.WriteString('Settings', 'UseSmallFont', FUseSmallFont);
+        RiseINI.WriteInteger('Settings', 'Brightness', FBrightness);
+      end;
+      if fileexists('kingdoms.ini') then
+      begin
+        KingdomsINI.WriteString('Settings', 'UseSmallFont', FUseSmallFont);
+        KingdomsINI.WriteInteger('Settings', 'Brightness', FBrightness);
       end;
       INI.UpdateFile;
     except
@@ -217,6 +394,35 @@ begin
     INI.Free;
   end;
   ModalResult := mrOk;
+end;
+
+procedure TfrmLaunchSetting.WriteKeystoAltSiegeINI;
+var
+SoAModsINI: TIniFile;
+begin
+  SoAModsINI := TIniFile.Create(ExtractFilePath(Application.ExeName) + 'SoAMods.ini');
+  try
+    SoAModsINI.WriteInteger('keyboard', 'adventure', KeyAdventure);
+    SoAModsINI.WriteInteger('keyboard', 'battlecry', KeyBattleCry);
+    SoAModsINI.WriteInteger('keyboard', 'combat', KeyCombat);
+    SoAModsINI.WriteInteger('keyboard', 'inventory', KeyInventory);
+    SoAModsINI.WriteInteger('keyboard', 'journal', KeyJournal);
+    SoAModsINI.WriteInteger('keyboard', 'map', KeyMap);
+    SoAModsINI.WriteInteger('keyboard', 'pause', KeyPause);
+    SoAModsINI.WriteInteger('keyboard', 'options', KeyOptions);
+    SoAModsINI.WriteInteger('keyboard', 'quest', KeyQuest);
+    SoAModsINI.WriteInteger('keyboard', 'quicksave', KeyQuicksave);
+    SoAModsINI.WriteInteger('keyboard', 'roster', KeyRoster);
+    SoAModsINI.WriteInteger('keyboard', 'slowmo', KeySlowmo);
+    SoAModsINI.WriteInteger('keyboard', 'spellbar', KeySpellbar);
+    SoAModsINI.WriteInteger('keyboard', 'statistic', KeyStatistics);
+    SoAModsINI.WriteInteger('keyboard', 'title', KeyTitles);
+    SoAModsINI.WriteInteger('keyboard', 'xray', KeyXRay);
+    SoAModsINI.WriteInteger('keyboard', 'Manapotion', KeyManapotion);
+    SoAModsINI.WriteInteger('keyboard', 'Healthpotion', KeyHealthpotion);
+  finally
+    SoAModsINI.free;
+  end;
 end;
 
 class function TfrmLaunchSetting.Execute: TModalResult;
@@ -256,7 +462,30 @@ var
   Png: TPngImage;
   Bmp: TBitmap;
   BlendFn: TBlendFunction;
+  year, month, day: word;
 begin
+  imgBack.OnMouseMove := LaunchyMouseMove;
+  //Key click events
+  imgkeyBack.OnMouseDown := RemapKeyMouseDown;
+  lblKeyAdventure.OnMouseDown := RemapKeyMouseDown;
+  lblKeyBattleCry.OnMouseDown := RemapKeyMouseDown;
+  lblKeyCombat.OnMouseDown := RemapKeyMouseDown;
+  lblKeyInventory.OnMouseDown := RemapKeyMouseDown;
+  lblKeyJournal.OnMouseDown := RemapKeyMouseDown;
+  lblKeyMap.OnMouseDown := RemapKeyMouseDown;
+  lblKeyPause.OnMouseDown := RemapKeyMouseDown;
+  lblKeyOptions.OnMouseDown := RemapKeyMouseDown;
+  lblKeyQuest.OnMouseDown := RemapKeyMouseDown;
+  lblKeyQuicksave.OnMouseDown := RemapKeyMouseDown;
+  lblKeyRoster.OnMouseDown := RemapKeyMouseDown;
+  lblKeySlowmo.OnMouseDown := RemapKeyMouseDown;
+  lblKeySpellbar.OnMouseDown := RemapKeyMouseDown;
+  lblKeyStatistics.OnMouseDown := RemapKeyMouseDown;
+  lblKeyTitles.OnMouseDown := RemapKeyMouseDown;
+  lblKeyXRay.OnMouseDown := RemapKeyMouseDown;
+  lblKeyManapotion.OnMouseDown := RemapKeyMouseDown;
+  lblKeyHealthpotion.OnMouseDown := RemapKeyMouseDown;
+
   Png := TPngImage.Create;
   Png.LoadFromResourceName(hInstance, 'startupback');
   Bmp := TBitmap.Create;
@@ -288,31 +517,8 @@ begin
   SendMessageTimeout(HWND_BROADCAST, WM_FONTCHANGE, 0, 0, SMTO_NORMAL,
     100, nil);
   Application.ProcessMessages;
-  // Evtl unnötig und nicht initialisiert...
-  case modselection of
-    TModSelection.SoA:
-      INI := TIniFile.Create(ExtractFilePath(Application.ExeName) +
-        'siege.ini');
-    TModSelection.DoA:
-      INI := TIniFile.Create(ExtractFilePath(Application.ExeName) + 'days.ini');
-    TModSelection.PoA:
-      INI := TIniFile.Create(ExtractFilePath(Application.ExeName) +
-        'pillars.ini');
-    TModSelection.AoA:
-      INI := TIniFile.Create(ExtractFilePath(Application.ExeName) +
-        'ashes.ini');
-    TModSelection.Caves:
-      INI := TIniFile.Create(ExtractFilePath(Application.ExeName) +
-        'caves.ini');
-    TModSelection.RoD:
-      INI := TIniFile.Create(ExtractFilePath(Application.ExeName) + 'rise.ini');
-    TModSelection.TSK:
-      INI := TIniFile.Create(ExtractFilePath(Application.ExeName) +
-        'kingdoms.ini');
-  else
-    INI := TIniFile.Create(ExtractFilePath(Application.ExeName) + 'siege.ini');
-  end;
 
+  INI := TIniFile.Create(ExtractFilePath(Application.ExeName) + 'siege.ini');
   try
     FCurrentLanguage := INI.ReadString('Settings', 'LanguagePath', cNoLanguage);
     if FCurrentLanguage = '' then
@@ -324,6 +530,55 @@ begin
     FVSync := INI.ReadBool('Settings', 'D3DVSync', True);
     FCurrentDevice := INI.ReadString('Settings', 'DeviceName', '');
     FCurrentResolution := INI.ReadString('Settings', 'ScreenResolution', '600');
+    FScaleJournalFullHD := INI.ReadString('Settings', 'ScaleJournalFullHD', 'false');
+    imgCheckJournal.Visible := strtobool( FScaleJournalFullHD );
+    FMovies := INI.ReadString('Settings', 'Showintro', 'true');
+    imgMovies.Visible := not strtobool( FMovies );
+    FUseSmallFont := INI.ReadString('Settings', 'UseSmallFont', 'true');
+    imgCheckBigFont.Visible := not strtobool( FUseSmallFont );
+    FBrightness := INI.ReadInteger('Settings', 'Brightness', 0);
+    FCustomDDrawDLL := INI.ReadString('Settings', 'CustomDDrawDLL', 'false');
+    imgCheckCustomDDraw.Visible := strtobool(FCustomDDrawDLL);
+    if imgCheckCustomDDraw.visible then
+    lblDDrawVersion.visible := true
+    else
+    lblDDrawVersion.visible := false;
+    FDDrawVersion := INI.ReadString('Settings', 'DDrawVersion', 'standard');
+    if not fileexists(FDDrawVersion + 'Ddraw.dll') then
+    FDDrawVersion := 'None';
+    FCursor := INI.ReadString('Settings', 'AltCursor', 'false');
+    imgCheckCursor.Visible := strtobool(FCursor);
+    //get the assigned keys
+    KeyAdventure := INI.ReadInteger('keyboard', 'adventure', 76);
+    KeyBattleCry := INI.ReadInteger('keyboard', 'battlecry', 66);
+    KeyCombat := INI.ReadInteger('keyboard', 'combat', 32);
+    KeyInventory := INI.ReadInteger('keyboard', 'inventory', 73);
+    KeyJournal := INI.ReadInteger('keyboard', 'journal', 74);
+    KeyMap := INI.ReadInteger('keyboard', 'map', 77);
+    KeyPause := INI.ReadInteger('keyboard', 'pause', 80);
+    KeyOptions := INI.ReadInteger('keyboard', 'options', 79);
+    KeyQuest := INI.ReadInteger('keyboard', 'quest', 81);
+    KeyQuicksave := INI.ReadInteger('keyboard', 'quicksave', 113);
+    KeyRoster := INI.ReadInteger('keyboard', 'roster', 82);
+    KeySlowmo := INI.ReadInteger('keyboard', 'slowmo', 86);
+    KeySpellbar := INI.ReadInteger('keyboard', 'spellbar', 83);
+    KeyStatistics := INI.ReadInteger('keyboard', 'statistic', 67);
+    KeyTitles := INI.ReadInteger('keyboard', 'title', 65);
+    KeyXRay := INI.ReadInteger('keyboard', 'xray', 88);
+    KeyManapotion := INI.ReadInteger('keyboard', 'Manapotion', 68);
+    KeyHealthpotion := INI.ReadInteger('keyboard', 'Healthpotion', 69);
+    VersionCheckURL := INI.ReadString('Settings', 'versionurl', '');
+    AutoCheck := INI.ReadBool('Settings', 'Autocheck', true);
+    CheckMonth := INI.ReadInteger('Settings', 'Checkmonth', 1);
+    //AutoUpdate every first of a month
+    DecodeDate(Now, Year, Month, Day);
+    if AutoCheck and (Month <> CheckMonth) then
+    begin
+      UpdateTimerSwitchOn := true;
+      CheckUpdateTimer.Enabled := true;
+      CheckMonth := Month;
+      INI.WriteInteger('Settings', 'Checkmonth', CheckMonth);
+    end;
   finally
     INI.Free;
   end;
@@ -335,8 +590,8 @@ begin
   begin
     if FileExists(dir + '\Text.ini') then
     begin
-      langStr := AnsiLowerCase(Copy(dir, dir.LastIndexOf(PathDelim) + 2));
-      FLanguages.Add(AnsiUpperCase(langStr[1]) + Copy(langStr, 2));
+    langStr := AnsiLowerCase(Copy(dir, dir.LastIndexOf(PathDelim) + 2));
+    FLanguages.Add(AnsiUpperCase(langStr[1]) + Copy(langStr, 2));
     end;
   end;
   if FLanguages.Count = 0 then // no languages - other than english
@@ -403,6 +658,99 @@ begin
   lblResolution.Caption := FResolutions.KeyNames[FCurrentResolutionIdx];
   lblMonitor.Font.Name := 'BlackChancery';
   lblMonitor.Caption := FMonitors.KeyNames[FCurrentDeviceIdx];
+  lblBrightness.Font.Name := 'BlackChancery';
+  lblBrightness.Caption := inttostr( FBrightness );
+  lblDDrawVersion.Font.Name := 'BlackChancery';
+  lblDDrawVersion.Caption := FDDrawVersion;
+  lblUpdateText.Font.Name := 'BlackChancery';
+  //key labels Font
+  lblKeyAdventure.Font.Name:= 'BlackChancery';
+  lblKeyBattleCry.Font.Name:= 'BlackChancery';
+  lblKeyCombat.Font.Name:= 'BlackChancery';
+  lblKeyInventory.Font.Name:= 'BlackChancery';
+  lblKeyJournal.Font.Name:= 'BlackChancery';
+  lblKeyMap.Font.Name:= 'BlackChancery';
+  lblKeyPause.Font.Name:= 'BlackChancery';
+  lblKeyOptions.Font.Name:= 'BlackChancery';
+  lblKeyQuest.Font.Name:= 'BlackChancery';
+  lblKeyQuicksave.Font.Name:= 'BlackChancery';
+  lblKeyRoster.Font.Name:= 'BlackChancery';
+  lblKeySlowmo.Font.Name:= 'BlackChancery';
+  lblKeySpellbar.Font.Name:= 'BlackChancery';
+  lblKeyStatistics.Font.Name:= 'BlackChancery';
+  lblKeyTitles.Font.Name:= 'BlackChancery';
+  lblKeyXRay.Font.Name:= 'BlackChancery';
+  lblKeyManapotion.Font.Name:= 'BlackChancery';
+  lblKeyHealthpotion.Font.Name:= 'BlackChancery';
+  lblHintforkeys.Font.Name:= 'BlackChancery';
+  GetKeylabels;
+end;
+
+procedure TfrmLaunchSetting.imgPlayAltMouseDown(Sender: TObject;
+  Button: TMouseButton; Shift: TShiftState; X, Y: Integer);
+begin
+  if fileexists('SoAStarter.exe') then
+  ShellExecute(Handle, 'open', 'SoAStarter.exe', nil, nil, SW_SHOWNORMAL)
+  else
+  log.log('Cannot find alternate Version (SoAStarter.exe).');
+  //Save keys to SoAMods.ini for alternate Version
+  WriteKeystoAltSiegeINI;
+  ModalResult := mrCancel;
+end;
+
+procedure TfrmLaunchSetting.imgCheckUpdateMouseDown(Sender: TObject;
+  Button: TMouseButton; Shift: TShiftState; X, Y: Integer);
+begin
+  UpdateTimerSwitchOn := true;
+  CheckUpdateTimer.Enabled := true;
+end;
+
+procedure TfrmLaunchSetting.CheckforUpdates;
+var
+  Versionfile, Destination: PChar;
+  F: Textfile;
+  VNumber: string;
+  Event, EventText: string;
+  Res: HResult;
+begin
+  Versionfile := PChar(VersionCheckURL);//'https://siege-of-avalon.org/VersionNumber.txt';
+  Destination := 'VersionNumber.txt'; //Standard App Path
+  Res := UrlDownloadToFile(nil, Versionfile, Destination, 0, nil);
+  if res <> S_OK then
+  begin
+    MessageDlg('Servers are currently not available!', mtinformation, [mbOk], 0);
+    lblUpdateText.visible := false;
+    imgCheckingUpdates.visible := false;
+  end
+  else
+  begin
+    if Fileexists('VersionNumber.txt') then
+    begin
+      AssignFile (F, 'VersionNumber.txt');
+      Reset(F);
+      ReadLN(F, VNumber);
+      ReadLN(F, Event);
+      ReadLN(F, EventText);
+      CloseFile(F);
+    end
+    else
+      VNumber := VersionLabel.Caption;
+    if (VNumber <> VersionLabel.Caption) then
+    begin
+      if (Event = 'Event') then
+        lblUpdateText.Caption := EventText
+      else
+        lblUpdateText.Caption := 'New Version available. Please download the latest patch from www.Soamigos.de!';
+    end
+    else
+      lblUpdateText.Caption := 'No new Version available!';
+  end;
+end;
+
+procedure TfrmLaunchSetting.imgPlayMouseDown(Sender: TObject;
+  Button: TMouseButton; Shift: TShiftState; X, Y: Integer);
+begin
+    Done(FCurrentResolution.ToInteger, not imgCheck.Visible);
 end;
 
 procedure TfrmLaunchSetting.imgCheckClick(Sender: TObject);
@@ -411,10 +759,311 @@ begin
   SetResolutionSupport(PWideChar(FCurrentDevice));
 end;
 
+procedure TfrmLaunchSetting.imgCheckBigFontClick(Sender: TObject);
+begin
+  imgCheckBigFont.Visible := not imgCheckBigFont.Visible;
+  SetBigFont;
+end;
+
+procedure TfrmLaunchSetting.imgCheckJournalClick(Sender: TObject);
+begin
+  imgCheckJournal.Visible := not imgCheckJournal.Visible;
+  SetScaleJournal;
+end;
+
+procedure TfrmLaunchSetting.imgMoviesClick(Sender: TObject);
+begin
+  imgMovies.Visible := not imgMovies.Visible;
+  MoviesOnOff;
+end;
+
+procedure TfrmLaunchSetting.imgCheckCustomDDrawClick(Sender: TObject);
+begin
+  imgCheckCustomDDraw.visible := not imgCheckCustomDDraw.visible;
+  SetCustomDDraw;
+end;
+
+procedure TfrmLaunchSetting.ImgCheckCursorClick(Sender: TObject);
+begin
+  imgCheckCursor.visible := not imgCheckCursor.visible;
+  SetCursor;
+end;
+
+procedure TfrmLaunchSetting.imgRebindKeysClick(Sender: TObject);
+begin
+  BringKeysToFront;
+end;
+
+procedure TfrmLaunchSetting.SetBigFont;
+begin
+  if strtobool(FUseSmallFont) then
+  FUseSmallFont := 'false'
+  else
+  FUseSmallFont := 'true';
+end;
+
+procedure TfrmLaunchSetting.SetScaleJournal;
+begin
+  if strtobool(FScaleJournalFullHD) then
+  FScaleJournalFullHD := 'false'
+  else
+  FScaleJournalFullHD := 'true';
+end;
+
+procedure TfrmLaunchSetting.MoviesOnOff;
+begin
+  if strtobool(FMovies) then
+  FMovies := 'false'
+  else
+  FMovies := 'true';
+end;
+
+procedure TfrmLaunchSetting.UpdateBrightness;
+begin
+  lblBrightness.Caption := inttostr( FBrightness );
+end;
+
+procedure TfrmLaunchSetting.SetCustomDDraw;
+begin
+  if strtobool(FCustomDDrawDLL) then
+    FCustomDDrawDLL := 'false'
+  else
+    FCustomDDrawDLL := 'true';
+  lblDDrawVersion.visible := strtobool(FCustomDDrawDLL);
+end;
+
+procedure TfrmLaunchSetting.SetCursor;
+begin
+  if strtobool(FCursor) then
+  FCursor := 'false'
+  else
+  begin
+    FCursor := 'true';
+    MessageDlg('You could also "Play Alt Version"', mtinformation, [mbOk], 0);
+    FCustomDDrawDLL := FCursor;
+    imgCheckCustomDDraw.visible := strtobool(FCustomDDrawDLL);
+    lblDDrawVersion.visible := strtobool(FCustomDDrawDLL);
+    //Win10
+    if not (TOSVersion.Major = 6) and not (TOSVersion.Minor = 1) then
+    if fileexists ('W10BPFDdraw.dll') then
+      FDDrawVersion := 'W10BPF'
+    else
+      FDDrawVersion := 'None';
+    //Win7
+    if (TOSVersion.Major = 6) and (TOSVersion.Minor = 1) then
+      FDDrawVersion := 'None';
+    lblDDrawVersion.caption := FDDrawVersion;
+  end;
+end;
+
+procedure TfrmLaunchSetting.BringKeysToFront;
+begin
+  imgkeyback.visible := true;
+  lblKeyAdventure.visible := true;
+  lblKeyBattleCry.visible := true;
+  lblKeyCombat.visible := true;
+  lblKeyInventory.visible := true;
+  lblKeyJournal.visible := true;
+  lblKeyMap.visible := true;
+  lblKeyPause.visible := true;
+  lblKeyOptions.visible := true;
+  lblKeyQuest.visible := true;
+  lblKeyQuicksave.visible := true;
+  lblKeyRoster.visible := true;
+  lblKeySlowmo.visible := true;
+  lblKeySpellbar.visible := true;
+  lblKeyStatistics.visible := true;
+  lblKeyTitles.visible := true;
+  lblKeyXRay.visible := true;
+  lblKeyManapotion.visible := true;
+  lblKeyHealthpotion.visible := true;
+  KeyToAssign := 0; //Just to be sure
+end;
+
+procedure TfrmLaunchSetting.BringKeysToBack;
+begin
+  imgkeyback.visible := false;
+  lblKeyAdventure.visible := false;
+  lblKeyBattleCry.visible := false;
+  lblKeyCombat.visible := false;
+  lblKeyInventory.visible := false;
+  lblKeyJournal.visible := false;
+  lblKeyMap.visible := false;
+  lblKeyPause.visible := false;
+  lblKeyOptions.visible := false;
+  lblKeyQuest.visible := false;
+  lblKeyQuicksave.visible := false;
+  lblKeyRoster.visible := false;
+  lblKeySlowmo.visible := false;
+  lblKeySpellbar.visible := false;
+  lblKeyStatistics.visible := false;
+  lblKeyTitles.visible := false;
+  lblKeyXRay.visible := false;
+  lblKeyManapotion.visible := false;
+  lblKeyHealthpotion.visible := false;
+end;
+
+procedure TfrmLaunchSetting.GetKeylabels;
+begin
+  lblKeyAdventure.caption := TranslateKey(KeyAdventure);
+  lblKeyBattleCry.caption := TranslateKey(KeyBattleCry);
+  lblKeyCombat.caption := TranslateKey(KeyCombat);
+  lblKeyInventory.caption := TranslateKey(KeyInventory);
+  lblKeyJournal.caption := TranslateKey(KeyJournal);
+  lblKeyMap.caption := TranslateKey(KeyMap);
+  lblKeyPause.caption := TranslateKey(KeyPause);
+  lblKeyOptions.caption := TranslateKey(KeyOptions);
+  lblKeyQuest.caption := TranslateKey(KeyQuest);
+  lblKeyQuicksave.caption := TranslateKey(KeyQuicksave);
+  lblKeyRoster.caption := TranslateKey(KeyRoster);
+  lblKeySlowmo.caption := TranslateKey(KeySlowmo);
+  lblKeySpellbar.caption := TranslateKey(KeySpellbar);
+  lblKeyStatistics.caption := TranslateKey(KeyStatistics);
+  lblKeyTitles.caption := TranslateKey(KeyTitles);
+  lblKeyXRay.caption := TranslateKey(KeyXRay);
+  lblKeyManapotion.caption := TranslateKey(KeyManapotion);
+  lblKeyHealthpotion.caption := TranslateKey(KeyHealthpotion);
+end;
+
+function TfrmLaunchSetting.TranslateKey(key: word): string;
+begin
+  case key of
+  32: result := 'Space';
+  113: result := 'F2';
+  186: result := ';|Ü';
+  187: result := '+';
+  188: result := ',';
+  189: result := '-';
+  190: result := '.';
+  191: result := '/|#';
+  192: result := '`|Ö';
+  219: result := '[|ß';
+  220: result := '\|^';
+  221: result := ']|´';
+  222: result := '"|Ä';
+  else
+    result := Char(key);
+  end;
+end;
+
+procedure TfrmLaunchSetting.AssignKeyReturn;
+begin
+  KeyPlaceholder.visible := false;
+  KeyPlaceholder.Left := 320; //Return to standard, just to be sure
+  KeyPlaceholder.top := 200;
+  KeyToAssign := 0;
+  GetKeylabels;
+  lblHintforkeys.caption := '';
+  lblHintforkeys.visible := false;
+end;
+
+procedure TfrmLaunchSetting.RemapKeyMouseDown(Sender: TObject;
+  Button: TMouseButton; Shift: TShiftState; X, Y: Integer);
+var
+  i: integer;
+begin
+  if imgkeyback.visible and (KeyToAssign = 0) then
+  for i := 0 to 17 do
+  begin
+  if Rect(120+100*(i mod 3),38+25*(i div 3),152+100*(i mod 3),53+25*(i div 3)).
+  Contains(imgkeyback.ScreenToClient(Mouse.cursorpos)) then
+   begin
+   KeyPlaceholder.visible := true;
+   KeyPlaceholder.Left := 120+100*(i mod 3);
+   KeyPlaceholder.Top := 38+25*(i div 3);
+   lblHintforkeys.visible := true;
+   lblHintforkeys.caption := 'Press a key... Esc=Back.';
+   KeyToAssign := i + 1;
+   end;
+  end;
+end;
+
+procedure TfrmLaunchSetting.FormKeyDown(Sender: TObject; var Key: Word;
+Shift: TShiftState);
+begin
+  if imgkeyback.visible then
+  begin
+    if (KeyToAssign = 0) then
+    begin
+      if (key = 27) then //esc
+      BringKeysToBack;
+    end
+    else
+    begin
+      if (key = 27) then //esc
+      begin
+        AssignKeyReturn;
+      end
+      else if ((key > 64) and (key < 91)) or (key = 113) or (key = 32) or
+      ((key > 185) and (key < 193)) or ((key > 218) and (key < 223)) then
+      //A-Z or F2 or Spacebar or , . - + ü ö ä # ^ ß ´
+      begin
+        case key of //reserved ones: T, W, Y (or rather Z)
+          84: lblHintforkeys.caption:= 'T, W and Y/Z are reserved.';
+          87: lblHintforkeys.caption:= 'T, W and Y/Z are reserved.';
+          90: lblHintforkeys.caption:= 'T, W and Y/Z are reserved.';
+          else
+          begin
+            if (key<>KeyAdventure) and (key<>KeyBattleCry) and (key<>KeyCombat)
+            and (key<>KeyInventory) and (key<>KeyJournal) and (key<>KeyMap) and
+            (key<>KeyOptions) and (key<>KeyPause) and (key<>KeyQuest) and
+            (key<>KeyQuicksave) and (key<>KeyRoster) and (key<>KeySlowmo) and
+            (key<>KeySpellbar) and (key<>KeyStatistics) and (key<>KeyTitles) and
+            (key<>KeyXRay) and (key<>KeyManapotion) and (key<>KeyHealthpotion)
+            then
+            begin
+              case KeyToAssign of
+              1: KeyCombat := key;
+              2: KeyInventory := key;
+              3: KeyQuest := key;
+              4: KeyXRay := key;
+              5: KeyStatistics := key;
+              6: KeyAdventure := key;
+              7: KeySlowmo := key;
+              8: KeyTitles := key;
+              9: KeyJournal := key;
+              10: KeyQuicksave := key;
+              11: KeyMap := key;
+              12: KeyOptions := key;
+              13: KeySpellbar := key;
+              14: KeyRoster := key;
+              15: KeyPause := key;
+              16: KeyBattleCry := key;
+              17: KeyManapotion := key;
+              18: KeyHealthpotion := key;
+              else
+              end;
+              AssignKeyReturn;
+            end
+            else
+            lblHintforkeys.caption := 'This key is the same or already used.';
+          end;
+        end;
+      end;
+    end;
+  end;
+end;
+
 procedure TfrmLaunchSetting.imgBackClick(Sender: TObject);
 var
   lInterfacePath: string;
+  DDrawList: Tstringlist; //standard, win7, winwine, none
+  FDDrawIdx: integer;
 begin
+ if imgCheckingUpdates.visible then
+ begin
+   lblUpdateText.visible := false;
+   imgCheckingUpdates.visible := false;
+ end;
+ if imgkeyback.visible then  //keyassigning
+  begin
+  if (KeyToAssign = 0) and
+  not Rect(0, 0, 400, 230).Contains(imgBack.ScreenToClient(Mouse.cursorpos))
+  then
+   BringKeysToBack;
+  end
+ else
+ begin
   lInterfacePath := FInterfacePath;
   if FCurrentLanguage <> cNoLanguage then
     lInterfacePath := IncludeTrailingPathDelimiter(TPath.Combine(FInterfacePath,
@@ -463,12 +1112,90 @@ begin
     SetResolutionSupport(PWideChar(FCurrentDevice));
   end;
 
-  // Let's Play
-  if Rect(400, 320, 520, 385).Contains(imgBack.ScreenToClient(Mouse.cursorpos))
+  //Use alternate Cursor
+  if Rect(493, 52, 519, 78).Contains(imgBack.ScreenToClient(Mouse.cursorpos))
   then
   begin
-    Done(FCurrentResolution.ToInteger, not imgCheck.Visible);
+    imgCheckCursor.visible := not imgCheckCursor.visible;
+    SetCursor;
   end;
+
+  //Use CustomDDrawDLL
+  if Rect(493, 82, 519, 108).Contains(imgBack.ScreenToClient(Mouse.cursorpos))
+  then
+  begin
+    imgCheckCustomDDraw.visible := not imgCheckCustomDDraw.visible;
+    SetCustomDDraw;
+  end;
+
+  //Which DDrawVersion
+  DDrawList := TStringList.Create;
+  if fileexists ('StandardDdraw.dll') then
+  DDrawList.Add('Standard');
+  if fileexists ('Win7Ddraw.dll') then
+    DDrawList.Add('Win7');
+  if fileexists ('WinWineDdraw.dll') then
+    DDrawList.Add('WinWine');
+  if fileexists ('W10BPFDdraw.dll') then
+    DDrawList.Add('W10BPF');
+  DDrawList.Add('None');
+  FDDrawIdx := DDrawList.IndexOf(FDDrawVersion);
+  try
+  if imgCheckCustomDDraw.visible then
+  begin
+    if Rect(375, 116, 400, 131).Contains(imgBack.ScreenToClient(Mouse.cursorpos))
+    then
+      FDDrawVersion := ScrollText(false, FDDrawIdx, DDrawList, lblDDrawVersion);
+    if Rect(475, 116, 500, 131).Contains(imgBack.ScreenToClient(Mouse.cursorpos))
+    then
+      FDDrawVersion := ScrollText(true, FDDrawIdx, DDrawList, lblDDrawVersion);
+  end;
+  finally
+    DDrawList.Free;
+  end;
+
+  //BigFont
+  if Rect(493, 154, 519, 180).Contains(imgBack.ScreenToClient(Mouse.cursorpos))
+  then
+  begin
+    imgCheckBigFont.Visible := not imgCheckBigFont.Visible;
+    SetBigFont;
+  end;
+
+  //ScaleJournalFullHD
+  if Rect(493, 194, 519, 220).Contains(imgBack.ScreenToClient(Mouse.cursorpos))
+  then
+  begin
+    imgCheckJournal.Visible := not imgCheckJournal.Visible;
+    SetScaleJournal;
+  end;
+
+  //DisableMovies
+  if Rect(337, 194, 363, 220).Contains(imgBack.ScreenToClient(Mouse.cursorpos))
+  then
+  begin
+    imgMovies.Visible := not imgMovies.Visible;
+    MoviesOnOff;
+  end;
+
+  //Brightness
+  if Rect(196, 372, 208, 384).Contains(imgBack.ScreenToClient(Mouse.cursorpos))
+  then
+  begin
+    FBrightness := FBrightness - 10;
+    if FBrightness < 0 then
+    FBrightness := 0;
+    UpdateBrightness;
+  end;
+  if Rect(260, 372, 272, 384).Contains(imgBack.ScreenToClient(Mouse.cursorpos))
+  then
+  begin
+    FBrightness := FBrightness + 10;
+    if FBrightness > 100 then
+    FBrightness := 100;
+    UpdateBrightness;
+  end;
+ end; //end not keyassigning
 end;
 
 function TfrmLaunchSetting.ScrollText(const goLeft: Boolean; var idx: integer;
@@ -553,7 +1280,7 @@ begin
   lblResolution.Caption := FResolutions.KeyNames[FCurrentResolutionIdx];
 end;
 
-procedure TfrmLaunchSetting.StaticText3Click(Sender: TObject);
+procedure TfrmLaunchSetting.CloseClick(Sender: TObject);
 begin
   ModalResult := mrCancel;
 end;
@@ -575,6 +1302,22 @@ begin
     FScrollText := Copy(FScrollText, 1, Length(FScrollText) - 1);
     FScrollControl.Caption := Copy(FScrollText, Length(FScrollText) -
       Length(FScrollFullText));
+  end;
+end;
+
+procedure TfrmLaunchSetting.tmrCheckUpdateTimer(Sender: TObject);
+begin
+  if UpdateTimerSwitchOn then
+  begin
+    imgCheckingUpdates.visible := true;
+    lblUpdateText.visible:= true;
+    lblUpdateText.Caption := 'Checking for Updates...';
+    UpdateTimerSwitchOn := false;
+  end
+  else
+  begin
+    CheckUpdateTimer.Enabled := false;
+    CheckforUpdates;
   end;
 end;
 

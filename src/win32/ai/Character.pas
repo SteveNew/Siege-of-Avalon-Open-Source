@@ -556,6 +556,8 @@ type
     FDeathSound: string;
     FPainSound: string;
     FBattleCry: string;
+    FWalkSound: string;
+    FRunSound: string;
     BattleCries: TDynamicSmallIntArray;
     FOnEquipmentChange: TNotifyEvent;
     FMoney: longint;
@@ -608,6 +610,10 @@ type
     procedure SetDeathSound(const Value: string);
     procedure SetPainSound(const Value: string);
     procedure SetBattleCry(const Value: string);
+    procedure SetWalkSound(const Value: string);
+    procedure SetRunSound(const Value: string);
+    procedure PlayRWSound(const Sounds: TDynamicSmallIntArray; X, Y: longint;
+    vol: integer); //sound based on stealth value
     procedure SetFrozen(const Value: boolean);
     procedure SetCombatMode(const Value: boolean);
     procedure SetDead(const Value: boolean);
@@ -640,6 +646,8 @@ type
   public
     PainSounds: TDynamicSmallIntArray;
     DeathSounds: TDynamicSmallIntArray;
+    WalkSounds: TDynamicSmallIntArray;
+    RunSounds: TDynamicSmallIntArray;
     InPain: boolean;
     BaseResistance: TDamageResistanceProfile;
     BaseUnArmedDamage: TDamageProfile;
@@ -808,6 +816,8 @@ type
     property DeathSound: string read FDeathSound write SetDeathSound;
     property PainSound: string read FPainSound write SetPainSound;
     property BattleCry: string read FBattleCry write SetBattleCry;
+    property WalkSound: string read FWalkSound write SetWalkSound;
+    property RunSound: string read FRunSound write SetRunSound;
     property Name: string read GetName write FName;
     property Frozen: boolean read FFrozen write SetFrozen;
     property CombatMode: boolean read FCombatMode write SetCombatMode;
@@ -2362,6 +2372,8 @@ begin
       SoundLib.FreeSound(DeathSounds);
       SoundLib.FreeSound(PainSounds);
       SoundLib.FreeSound(BattleCries);
+      SoundLib.FreeSound(WalkSounds);
+      SoundLib.FreeSound(RunSounds);
     end;
     inherited;
 
@@ -3451,6 +3463,7 @@ const
   FailName: string = 'TCharacter.PathStep';
 var
   OldDelay: longint;
+  volume: integer;
 begin
   log.DebugLog(FailName);
   try
@@ -3461,6 +3474,19 @@ begin
       OldDelay := 0;
     PlayScript(MoveMode + Facing.ToString, ScriptFrame, smRepeat);
     Delay := OldDelay;
+    if (FrameCount mod 8 = 0) then
+    begin
+      if stealth < 1 then
+      volume := 100
+      else if stealth > 100 then
+      volume := 0
+      else
+      volume := 100 - stealth;
+      if MoveMode = 'Walk' then
+      PlayRWSound(WalkSounds, Self.X, Self.Y, volume);
+      if MoveMode = 'Run' then
+      PlayRWSound(RunSounds, Self.X, Self.Y, volume);
+    end;
 
   except
     on E: Exception do
@@ -4249,6 +4275,10 @@ begin
     List.add(S);
     S := 'battlecry=' + BattleCry;
     List.add(S);
+    S := 'walksounds=' + WalkSound;
+    List.add(S);
+    S := 'runsounds=' + RunSound;
+    List.add(S);
     S := 'dead=' + BoolToStr(FDead, True);
     List.add(S);
     S := 'deadcount=' + IntToStr(FDeadCount);
@@ -4643,6 +4673,10 @@ begin
       result := PainSound
     else if S = 'battlecry' then
       result := BattleCry
+    else if S = 'Walksounds' then
+      result := WalkSound
+    else if S = 'runsounds' then
+      result := RunSound
     else if S = 'partycount' then
       result := IntToStr(NPCList.Count - 1)
     else if S = 'currentspell' then
@@ -5061,6 +5095,8 @@ begin
             BattleCry := Value
           else if S = 'deadcount' then
             FDeadCount := StrToInt(Value)
+          else if S = 'runsounds' then
+            RunSound := Value
           else
             NoProp := true;
         end;
@@ -5086,6 +5122,8 @@ begin
             else
               PrevAIMode := ainone;
           end
+          else if S = 'walksounds' then
+            WalkSound := Value
           else
             NoProp := true;
         end;
@@ -6060,6 +6098,7 @@ begin
       Titles.objects[i] := TObject(Modifier);
       CalcStats;
       TriggerAchievements(Title);
+      DlgTrophies.SetTrophy(Title);
     end;
 
   except
@@ -6664,6 +6703,93 @@ begin
   end;
 end;
 
+procedure TCharacter.SetWalkSound(const Value: string);
+var
+  SoundCount: Integer;
+const
+  FailName: string = 'TCharacter.SetWalkSound';
+begin
+  log.DebugLog(FailName);
+  try
+
+    if assigned(SoundLib) then
+    begin
+      if assigned(WalkSounds) then
+        SoundLib.FreeSound(WalkSounds);
+      WalkSounds := SoundLib.OpenSound(Value, 1, SoundCount);
+    end;
+    FWalkSound := Value;
+
+  except
+    on E: Exception do
+      log.log(FailName, E.Message, []);
+  end;
+end;
+
+procedure TCharacter.SetRunSound(const Value: string);
+var
+  SoundCount: Integer;
+const
+  FailName: string = 'TCharacter.SetRunSound';
+begin
+  log.DebugLog(FailName);
+  try
+
+    if assigned(SoundLib) then
+    begin
+      if assigned(RunSounds) then
+        SoundLib.FreeSound(RunSounds);
+      RunSounds := SoundLib.OpenSound(Value, 1, SoundCount);
+    end;
+    FRunSound := Value;
+
+  except
+    on E: Exception do
+      log.log(FailName, E.Message, []);
+  end;
+end;
+
+procedure TCharacter.PlayRWSound(const Sounds: TDynamicSmallIntArray;
+  X, Y: longint; vol: integer);
+var
+  D: Double;
+  PanD: longint;
+  Volume, Pan: Integer;
+  HearingRange: longint;
+const
+  FailName: string = 'TCharacter.PlayRWSound';
+begin
+  log.DebugLog(FailName);
+  try
+    if not assigned(Sounds) then
+      exit;
+    HearingRange := ScreenMetrics.HearingRange;
+    if (HearingRange <= 0) or (Current=nil) then
+      exit;
+    PanD := X - Current.X;
+    D := sqrt(sqr(PanD) + 2 * sqr(Y - Current.Y));
+    if D > HearingRange then
+      exit;
+    if D <= 1 then
+    begin
+      Volume := vol;
+      Pan := 0;
+    end
+    else
+    begin
+      Volume := round(vol * (HearingRange - D) / HearingRange);
+      Pan := (PanD * 10000) div HearingRange;
+    end;
+    if MasterSoundVolume = 0 then
+      Volume := 0;
+    if assigned(SoundLib) then
+      SoundLib.PlaySound(Sounds, 0, Volume, Pan, 100);
+  except
+    on E: Exception do
+      log.log(FailName, E.Message, []);
+  end;
+end;
+
 procedure TCharacter.Init;
 var
   Script: TScript;
@@ -6710,7 +6836,23 @@ begin
     end;
 
     AntiPathEnabled := not TitleExists('NoAntiPath');
-
+    if (TCharacterResource(Resource).NakedName = 'HumanMaleLayers\BaseHumanMale.gif')
+    or (TCharacterResource(Resource).NakedName = 'HumanMaleLayers\BaseAhoul.gif')
+    or (TCharacterResource(Resource).NakedName = 'HumanMaleLayers\BaseShaman.gif')
+    or (TCharacterResource(Resource).NakedName = 'HumanMaleLayers\BaseSkeleton.gif')
+    or (TCharacterResource(Resource).NakedName = 'HumanFemaleLayers\BaseHumanFemale.gif')
+    or (TCharacterResource(Resource).NakedName = 'HumanFemale2Layers\BaseHumanFemale.gif')
+    or (TCharacterResource(Resource).NakedName = 'ElfmaleLayers\BaseElf.gif')
+    or (TCharacterResource(Resource).NakedName = 'DwarfMaleLayers\BaseDwarfMale.gif')
+    or (Alliance = 'ahoul') then
+    //for mithrasandguards, a bit clunky, but only solution without filechanges
+    //or: (TCharacterResource(Resource).FileName = 'spriteobject\...\.gif')
+    begin
+      if WalkSound = '' then
+        WalkSound := 'WalkS';
+      if RunSound = '' then
+        RunSound := 'RunS';
+    end;
     CalcStats;
 
     if WillBeDisabled then
@@ -6759,7 +6901,6 @@ var
   p: PStatModifier;
 begin
   NewObject := TCharacter.Create(X, Y, Z, Frame, Enabled);
-
   TCharacter(NewObject).Spawned := true;
   TCharacter(NewObject).Resource := Resource;
   TCharacter(NewObject).GUID := NewGUID;
@@ -6798,6 +6939,8 @@ begin
   TCharacter(NewObject).DeathSound := FDeathSound;
   TCharacter(NewObject).PainSound := FPainSound;
   TCharacter(NewObject).BattleCry := FBattleCry;
+  TCharacter(NewObject).WalkSound := FWalkSound;
+  TCharacter(NewObject).RunSound := FRunSound;
   TCharacter(NewObject).FMoney := FMoney;
   TCharacter(NewObject).FName := FName;
   TCharacter(NewObject).FFrozen := FFrozen;
@@ -6830,6 +6973,9 @@ begin
   TCharacter(NewObject).BaseDefense := BaseDefense;
   TCharacter(NewObject).FrameCount := FrameCount;
   TCharacter(NewObject).IdleAI := IdleAI;
+  //Voreworm no bodyrot effect
+  if TCharacter(NewObject).IdleAI = 'worm' then
+  TCharacter(NewObject).Spawned := false;
   TCharacter(NewObject).CombatAI := CombatAI;
   TCharacter(NewObject).PartyAI := PartyAI;
   TCharacter(NewObject).OnDie := OnDie;
@@ -7979,10 +8125,18 @@ begin
             FigureInstances.objects[j] := NewItem;
           end
           else
-          begin
-            NewItem.free;
+          begin //Fix for missing items, when no more empty slots available.
+            NewItem.Enabled := true;
+            NewItem.Setpos(X, Y, Z);
+            NewItem.Resource := PartManager.GetLayerResource
+              (NewItem.LayeredImage);
+            NewItem.GUID := 'Item' + inttostr(random(1000000));
+            j := FigureInstances.add(NewItem.GUID);
+            FigureInstances.objects[j] := NewItem;
+            //NewItem.free;
             log.log('*** Error: Item (' + S +
-              ') could not be added to inventory for ' + GUID);
+              ') could not be added to inventory for ' + GUID +
+              '. Dropped on ground instead.');
           end;
         end
         else
@@ -12834,6 +12988,9 @@ begin
         end;
       end;
     end;
+    //faster vanishing when dead, duration 500 = master.mysticism 10
+    if (dead=true) and (duration > 500) then
+    duration := 500;
     if Enabled then
       inherited;
 

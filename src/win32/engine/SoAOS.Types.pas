@@ -46,9 +46,7 @@ const
 /// <summary> RGB color consts to improve readbility </summary>
   cTransparent     = TColors.Fuchsia;   // Fuchsia/Magenta transparent
   cInvisColor      = TColors.Cyan;   // Aqua/Cyan transparent
-  cLoadBackColor   = $00108020;   // ??
-  cLoadColor       = $00CDCDCD;   // ??
-  cHealthColor     = $001F1F5F;
+  cHealthColor     = $001F1F5F;  //order->00 + BGR
   cManaColor       = $00B09730;
   cTalkRedColor    = TColors.Red;  // Angry
   cTalkWhiteColor  = TColors.White;
@@ -111,6 +109,7 @@ type
     sidebarFile: string;
     bottombarFile: string;
     borderFile: string;
+    loadbarcolor: TColor;
 //    MagicRange: integer;
     IniIdent: string;
     popInventoryRect: TRect;
@@ -177,6 +176,7 @@ const
      sidebarFile: 'sidebar';
      bottombarFile: 'bottombar';
      borderFile: '';
+     LoadbarColor: $00001932;
      IniIdent : 'Original';
      popInventoryRect: ( Left: 726; Top: 429; Right: 772; Bottom: 473 );
      popMapRect: ( Left: 732; Top: 511; Right: 781; Bottom: 555 );
@@ -230,6 +230,7 @@ const
      sidebarFile: 'sidebarHD';
      bottombarFile: 'bottombarHD';
      borderFile: 'gMainMenuOverlay720';
+     LoadbarColor: $00FF6464;
      IniIdent : 'HD';
      popInventoryRect: ( Left: 1206; Top: 429; Right: 1254; Bottom: 473 );
      popMapRect: ( Left: 1212; Top: 631; Right: 1263; Bottom: 675 );
@@ -283,6 +284,7 @@ const
      sidebarFile: 'sidebarFullHD';
      bottombarFile: 'bottombarFullHD';
      borderFile: 'gMainMenuOverlay1080';
+     LoadbarColor: $0004A4F4;
      IniIdent : 'FullHD';
      popInventoryRect: ( Left: 1846; Top: 885; Right: 1894; Bottom: 931 );
      popMapRect: ( Left: 1852; Top: 991; Right: 1903; Bottom: 1035 );

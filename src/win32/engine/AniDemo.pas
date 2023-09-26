@@ -93,6 +93,7 @@ uses
   SoAOS.Intrface.Transit,
   SoAOS.Animation,
   GameLibIntegration,
+  Trophies,
   AddKickNPC,
   MfPlayerClass,
   MousePtr,
@@ -111,6 +112,7 @@ const
   WM_StartTimer = WM_USER + 9;
   WM_EndTimer = WM_USER + 10;
   WM_StartTransit = WM_USER + 11;
+  WM_StartTrophies = WM_USER + 12;
 
   WM_InitDDraw = WM_APP + 20;
   WM_InitGame = WM_APP + 21;
@@ -150,6 +152,7 @@ type
     procedure WMStartMainMenu(var Message: TWMNoParams);
       message WM_StartMainMenu;
     procedure WMStartOptions(var Message: TWMNoParams); message WM_StartOptions;
+    procedure WMStartTrophies( var Message : TWMNoParams ); message WM_StartTrophies;
     procedure WMStartNew(var Message: TWMNoParams); message WM_StartNew;
     procedure WMStartLoad(var Message: TWMNoParams); message WM_StartLoad;
     procedure WMStartSave(var Message: TWMNoParams); message WM_StartSave;
@@ -240,12 +243,13 @@ type
 
     FActive: Boolean;
     InTimerLoop: Boolean;
-    Interval: Integer;
+    //Interval: Integer; //moved to public for slowdown in keyevents
     NewPartyMember: TCharacter;
     SongDuration: Integer;
 
     FShowIntro: Boolean;
     FShowOutro: Boolean;
+    FPlayFirstTime: Boolean; //ShowHistory when started new game the first time
     FOpeningMovie: string;
     FClosingMovie: string;
 
@@ -261,6 +265,7 @@ type
     procedure CloseCreateDialog(Sender: TObject);
     procedure CloseIntroDialog(Sender: TObject);
     procedure CloseOptions(Sender: TObject);
+    procedure CloseTrophies( Sender : TObject );
     procedure CloseLoad(Sender: TObject);
     procedure CloseSave(Sender: TObject);
     procedure CloseIntroJournal(Sender: TObject);
@@ -284,6 +289,7 @@ type
     FadeIn, FadeOut: Integer;
     XRayOn: Boolean;
     Paused: Boolean;
+    Interval: Integer;
     MouseMessage: string;
     HLFigure: TAniFigure;
     OverlayB: IDirectDrawSurface;
@@ -376,8 +382,11 @@ var
   DlgLoot: TLootCorpse; // Moved for KeyEvens from ForceNotReadOnly
   DlgObjInventory: TObjInventory; // Moved for KeyEvens from ForceNotReadOnly
   DlgMerchant: TMerchant; // Moved for KeyEvens from ForceNotReadOnly
+  DlgTrophies: TTrophies;
   DlgIntro: TIntro;
   // Moved to public since Mainmenu.pas needs access to it. Have a look at " DlgIntro.Captions[ 8 ].Enabled := false; "
+  DlgText: TGameText;
+  // Moved to public since Keyevents needs access to it. Slowmo info in textbox
   Modselection: TModSelection;
   // 0=SoA, 1=DoA, 2=PoA, 3=AoA, 4=Caves, 5=RoD, 6=TsK
   Modname: string; // .ini
@@ -390,10 +399,19 @@ var
   ShowEnemyHealthBar: Boolean;
   CustomDDrawDLL: Boolean;
   // Rule is to use SoADDraw.dll or win32/ddraw.dll on win7 - this option will load ddraw.dll within appdir.
+  DDrawVersion: string; //'standard' (formerly soa), 'win7', 'winwine', 'none'
+  //AMD Problems with D3DMousecursor, only windowed mode (except screenwidth = resolution)
+  //because screen- and mousecursor get asynchron in stretched fullscreen
+  AltCursor: boolean;
+  Tutorial: boolean;
+  SpellToAssign: TSpell; //For quickswitching spells when spellbar open
+  Eventactive: boolean;
   frmMain: TfrmMain;
 
 const
   TempGame = '~Temp';
+  crSoACursorStandard = 1; //for AltCursor
+  crSoACursorLoad = 2; //for AltCursor
 
 procedure ForceNotReadOnly(const FileName: string);
 
@@ -405,6 +423,7 @@ uses
   SoAOS.AI,
   SoAOS.AI.Helper,
   SoAOS.Intrface.KeyEvents,
+  SoAOS.Intrface.Text, //Showing amount of Crowns after looting
   SoAOS.SysUtils,
   System.Types,
   DFX,
@@ -421,8 +440,8 @@ var
   DlgNPC: TNPCBehavior;
   DlgLoad: TLoadGame;
   DlgCreation: TCreation;
-  // DlgIntro : TIntro;
-  DlgText: TGameText;
+  //DlgIntro : TIntro;
+  //DlgText: TGameText;
 
 procedure TfrmMain.CloseAllDialogs(Sender: TObject);
 var
@@ -521,6 +540,8 @@ begin
       DlgOptions.Release;
       SaveOptions;
     end;
+    if DlgTrophies.Loaded then
+       DlgTrophies.Release;
 
     Game.OnMouseDown := AniView1MouseDown;
     Game.OnMouseMove := nil;
@@ -529,7 +550,7 @@ begin
     OnMouseDown := FormMouseDown;
     OnMouseMove := FormMouseMove;
     DisableConsole := False;
-    if (Sender <> DlgConverse) then
+    if (Sender <> DlgConverse) and (Sender <> DlgLoot) then
       ShowQuickMessage('', 1);
     if DoNotRestartTimer then
       DoNotRestartTimer := False
@@ -578,6 +599,8 @@ begin
       DlgJournal.Release;
     if DlgOptions.Loaded then
       DlgOptions.Release;
+    if DlgTrophies.Loaded then
+      DlgTrophies.Release;
     if DlgLoad.Loaded then
       DlgLoad.Release;
     if DlgProgress.Loaded then
@@ -615,6 +638,9 @@ procedure TfrmMain.CloseCreateDialog(Sender: TObject);
 var
   i, j: Integer;
   INI: TIniFile;
+  INILanguage: TIniFile;
+  S: string;
+  List: TArray<string>;
 const
   FailName: string = 'Main.CloseCreateDialog';
 begin
@@ -760,6 +786,12 @@ begin
       Player.Property_['HeadLayer'] :=
         TCharacterResource(Player.Resource).HeadName;
 
+      //StartEvent
+      if Eventactive then
+      begin
+        player.addtitle('CurrentEventActive');
+      end;
+
       if hardmode then
       begin
         Player.addtitle('HardMode');
@@ -803,6 +835,10 @@ begin
         Player.DeathSound := INI.ReadString('Character', 'DeathSounds', '');
       if Player.BattleCry = '' then
         Player.BattleCry := INI.ReadString('Character', 'BattleCry', '');
+      if Player.WalkSound = '' then
+        Player.WalkSound := INI.ReadString('Character', 'WalkSounds', 'WalkS');
+      if Player.RunSound = '' then
+        Player.RunSound := INI.ReadString('Character', 'RunSounds', 'RunS');
       // Need to set/get the correct "Player" name not the nakedname resource
       INI.WriteString('Character', 'Resource',
         ChangeFileExt(ExtractFileName(TCharacterResource(Player.Resource)
@@ -826,6 +862,8 @@ begin
     Transitionscreen := '';
     DeathScreen := '';
     MaxPartyMembers := ScreenMetrics.PartyMemberSlots; // Original 2
+    if Tutorial then
+    LVLFile := 'maps\tutorial.lvl'; //Play the tutorial
     if not LoadMapFile(True, False) then
       Exit;
 
@@ -837,7 +875,25 @@ begin
     Game.ForceRefresh := True;
     FSpellBarActive := False;
     ClearOverlayB;
-    BeginJournal;
+    if Tutorial then //OKeepL2: Invistriggerscript Journalentry(x) + showjournal
+    CloseAllDialogs(nil)
+    else
+    begin
+      INILanguage := TIniFile.Create(SiegeINILanguageFile);
+      try
+        S := INILanguage.ReadString('Settings', 'JournalIntro', '');
+        if S <> '' then
+        begin
+        List := S.Split([',']);
+        for i := 0 to Length(List) - 1 do
+          AdventureLog1.AddLogEntry(List[i] + '.jrn');
+        end;
+      finally
+      INILanguage.Free;
+      end;
+      BeginJournal;
+    end;
+
 
   except
     on E: Exception do
@@ -896,6 +952,23 @@ begin
   except
     on E: Exception do
       Log.Log(FailName, E.Message, []);
+  end;
+end;
+
+procedure TfrmMain.CloseTrophies( Sender : TObject );
+const
+  FailName : string = 'Main.CloseTrophies';
+begin
+{$IFDEF DODEBUG}
+  if ( CurrDbgLvl >= DbgLvlSevere ) then
+    Log.LogEntry( FailName );
+{$ENDIF}
+  try
+    DlgTrophies.Release;
+    PostMessage( Handle, WM_StartMainMenu, 0, 0 ); //Restart the intro
+  except
+    on E : Exception do
+      Log.log( FailName, E.Message, [ ] );
   end;
 end;
 
@@ -971,7 +1044,9 @@ begin
           ScreenMetrics := cOriginal;
         end;
       end;
+
       ScreenMetrics.Windowed := Windowed;
+
       ScreenMetrics.ForceD3DFullscreen := INI.ReadBool('Settings',
         'ForceD3DFullscreen', False);
     finally
@@ -1049,6 +1124,8 @@ var
   PopupEnabled: Boolean;
   Windowed: Boolean;
   PlotScreenRes: Integer;
+  Eventmonth, Eventyear: integer;
+  year, month, day: word;
 const
   FailName: string = 'Main.FormInit';
 begin
@@ -1189,19 +1266,19 @@ begin
           'ItemDB', ItemDB));
         TitlesDB := TPath.GetFullPath(INILanguage.ReadString('Settings',
           'TitlesDB', TitlesDB));
-        UseSmallFont :=
-          (LowerCase(INILanguage.ReadString('Settings', 'UseSmallFont', 'true'))
-          = 'true');
       finally
         INILanguage.Free;
       end;
 
       XRefDB := TPath.GetFullPath(INI.ReadString('Settings', 'XRefDB', XRefDB));
-
       Log.Log('Item DB=' + ItemDB);
       Log.Log('XRef DB=' + XRefDB);
       Log.Log('Titles DB=' + TitlesDB);
       Log.flush;
+
+      //for simplicity in SoAOSExtSetting smallfont moved back to siege.ini
+      UseSmallFont := (LowerCase(INI.ReadString('Settings', 'UseSmallFont',
+        'true')) = 'true');
 
       TalkToMe := (LowerCase(INI.ReadString('Settings', 'TalkToMe', ''))
         = 'true');
@@ -1380,6 +1457,36 @@ begin
       PopupEnabled := (LowerCase(INI.ReadString('Settings', 'Popup', 'true'))
         = 'true');
 
+      //assigning keys
+      CombatKey := INI.ReadInteger('keyboard', 'combat', 32);
+      BattleCryKey := INI.ReadInteger('keyboard', 'battlecry', 66);
+      TitleKey := INI.ReadInteger('keyboard', 'title', 65);
+      StatisticKey := INI.ReadInteger('keyboard', 'statistic', 67);
+      InventoryKey := INI.ReadInteger('keyboard', 'inventory', 73);
+      JournalKey := INI.ReadInteger('keyboard', 'journal', 74);
+      AdventureKey := INI.ReadInteger('keyboard', 'adventure', 76);
+      MapKey := INI.ReadInteger('keyboard', 'map', 77);
+      PauseKey := INI.ReadInteger('keyboard', 'pause', 80);
+      OptionsKey := INI.ReadInteger('keyboard', 'options', 79);
+      QuestKey := INI.ReadInteger('keyboard', 'quest', 81);
+      RosterKey := INI.ReadInteger('keyboard', 'roster', 82);
+      Spellbarkey := INI.ReadInteger('keyboard', 'spellbar', 83);
+      XRayKey := INI.ReadInteger('keyboard', 'xray', 88);
+      SlowMoKey := INI.ReadInteger('keyboard', 'slowmo', 86);
+      QuickSaveKey := INI.ReadInteger('keyboard', 'quicksave', 113);
+      ManapotionKey := INI.ReadInteger('keyboard', 'Manapotion', 68);
+      HealthpotionKey := INI.ReadInteger('keyboard', 'Healthpotion', 69);
+
+      Eventmonth := INI.ReadInteger('Settings', 'EvMonth', 13); //No Standardevent
+      EventYear := INI.ReadInteger('Settings', 'EvYear', 2024);
+      DecodeDate(Now, Year, Month, Day);
+      //StartEvent in CloseCreateDialog and CloseLoad
+      if (month = Eventmonth) and (Year = EventYear) then
+      //Ambassador from Aratoy in Innerbailey's Tavern active with a Quest for you
+        Eventactive := true
+      else
+        Eventactive := false;
+
     finally
       INI.Free;
     end;
@@ -1398,8 +1505,16 @@ begin
 
     SetCursorPos(frmMain.Left + (frmMain.Width div 2),
       frmMain.Top + (frmMain.Height div 2));
-    Screen.Cursor := crNone;
-
+    if not AltCursor then
+      Screen.Cursor := crNone
+    else
+    begin
+      screen.cursors[crSoACursorStandard] := LoadCursorFromFile
+      (PChar(Interfacepath + 'SoACursorStandard.cur'));
+      screen.cursors[crSoACursorLoad] := LoadCursorFromFile
+      (PChar(Interfacepath + 'SoACursorLoad.cur'));
+      Screen.Cursor := crSoACursorStandard;
+    end;
     if PixelFormat = pf555 then
       Log.Log('Using 555 Driver')
     else if PixelFormat = pf565 then
@@ -1410,7 +1525,26 @@ begin
 
     Log.Log('Loading cursor');
     Log.flush;
-    MouseCursor := TD3DMousePtr.Create(D3D11Renderer);
+    if not AltCursor then
+    try
+      MouseCursor := TD3DMousePtr.Create(D3D11Renderer);
+    except
+      MouseCursor := TMousePtr.Create;
+      INI := TIniFile.Create(SiegeINIFile);
+      try
+        INI.writestring('settings', 'AltCursor', 'true');
+      finally
+        INI.Free;
+      end;
+      log.log('Game needs to be restarted with AltCursor = true');
+      MessageBox(Handle, 'Game needs to be restarted, AltCursor set to true.',
+      'Please restart the game', MB_OK);
+      FShowOutro := false;
+      //Application.Terminate;
+      PostMessage(Handle, WM_Done, 0, 0);
+    end
+    else
+      MouseCursor := TMousePtr.Create;
 
     Log.Log('Initializing DFX...');
     Log.flush;
@@ -1792,14 +1926,22 @@ begin
                 .OnTrigger) - j - 7)), 0, ',');
               if TFile.Exists(FindMap(S)) then
               begin
-                MouseCursor.SetFrame(1);
+                if not AltCursor then
+                  MouseCursor.SetFrame(1)
+                else
+                  Screen.Cursor := crSoACursorLoad;
                 Zonable := True;
               end;
             end;
           end;
         end
         else
-          MouseCursor.SetFrame(0);
+        begin
+          if not AltCursor then
+            MouseCursor.SetFrame(0)
+          else
+            Screen.Cursor := crSoACursorStandard;
+        end;
         PrevTriggerID := Game.MouseOverTile.TriggerID;
       end;
     end
@@ -2189,6 +2331,7 @@ begin
   try
     CustomDDrawDLL := SiegeIni.ReadString('Settings', 'CustomDDrawDLL', 'false')
       .ToLower = 'true';
+    DDrawVersion := SiegeIni.ReadString('Settings', 'DDrawVersion', 'standard');
     FOpeningMovie := SiegeIni.ReadString('Settings', 'MoviePath',
       ExtractFilePath(Application.ExeName) + 'Movies') + '\' +
       SiegeIni.ReadString('Settings', 'OpeningMovie', 'SiegeOpening.wmv');
@@ -2200,6 +2343,8 @@ begin
     FShowOutro := LowerCase(SiegeIni.ReadString('Settings', 'ShowOutro', 'true')
       ) = 'true';
     ModAllowed := LowerCase(SiegeIni.ReadString('Settings', 'ModAllowed',
+      'false')) = 'true';
+    AltCursor := LowerCase(SiegeIni.ReadString('Settings', 'AltCursor',
       'false')) = 'true';
     // Experimental WINE/Proton/SteamPlay AS-IS support
     // We currently disable Intro/Outtro playback under Wine/Proton - since MF issue
@@ -2220,13 +2365,20 @@ var
   ExStyle: Integer;
   ddrawpath: String;
 begin
-  if CustomDDrawDLL then
-    ddrawpath := 'ddraw.dll'
-  else if (TOSVersion.Major = 6) and (TOSVersion.Minor = 1) then // Win7 sp1
+  if not CustomDDrawDLL then
+  begin
+    if (TOSVersion.Major = 6) and (TOSVersion.Minor = 1) then // Win7 sp1
     ddrawpath := GetSystem32 + '\ddraw.dll'
   else
     ddrawpath := 'soaddraw.dll';
-
+  end
+  else
+  begin
+    if (DDrawVersion = 'None') or (DDrawVersion = 'none') then
+    ddrawpath := GetSystem32 + '\ddraw.dll'
+    else
+    ddrawpath := DDrawVersion +'ddraw.dll';
+  end;
   DirectX.LoadDDraw(ddrawpath);
 
   FGameLibIntegration := TGameLibIntegration.Create;
@@ -2472,6 +2624,13 @@ begin
       Money := TCharacter(OtherObj).Money; // Funds transfer
       TCharacter(OtherObj).Money := -Money;
       Character.Money := Money;
+      if not TCharacter(OtherObj).looted and (money > 0) then
+      begin
+        ExText.Open( 'LootCorpse' );
+        Runscript(player, 'showmessage(' + inttostr(money) +
+        ExText.GetText( 'Crownsreceived' ) + ',40)');
+        ExText.Close;
+      end;
       TCharacter(OtherObj).Looted := True;
 
       DlgLoot.Character := Character;
@@ -2667,6 +2826,10 @@ begin
       SoundTimer.Enabled := False;
       SoundTimer.Free;
     end;
+    SoundLib.Free;
+    SoundLib := nil;
+    MusicLib.Free;
+    MusicLib := nil;
     Active := False;
     Game.Enabled := False;
     Log.Log('Freeing resources');
@@ -2702,6 +2865,9 @@ begin
     DlgOptions.Free;
     DlgOptions := nil;
     /// Log.Log('a8');
+    DlgTrophies.Free;
+    DlgTrophies := nil;
+    //Log.Log('b')
     DlgLoad.Free;
     DlgLoad := nil;
     // Log.Log('a9');
@@ -3094,6 +3260,7 @@ begin
       // TODO: Refactor - code smell below - I even added more stupidity
       S := '';
       Info := ''; // Game info area
+      SpellToAssign := nil;
       if ScreenMetrics.IniIdent = 'HD' then
       begin
         Ymin1 := 606;
@@ -3127,6 +3294,7 @@ begin
             begin
               S := Spells[i].DisplayName;
               Info := Spells[i].GetInfo(Current);
+              SpellToAssign := Spells[i];
             end;
           end;
         end;
@@ -3588,6 +3756,7 @@ begin
           cTransparent);
         if Assigned(D3D11Renderer) then
         begin
+          //causes also an error on a system where the mousecursor doesn't work
           PauseLayer := D3D11Renderer.CreateLayerFromFile
             (InterfaceLanguagePath + 'paused.bmp', cTransparent);
         end;
@@ -3620,6 +3789,7 @@ begin
       DlgTitles := TAward.Create;
       DlgJournal := TJournal.Create;
       DlgOptions := TOptions.Create;
+      DlgTrophies := TTrophies.Create; //Read again in modload
       DlgLoad := TLoadGame.Create;
       DlgProgress := TLoaderBox.Create;
 
@@ -3734,6 +3904,8 @@ begin
 
     Log.Log('-----------------------------------------------------');
     // Screen.Cursor := crHourglass;
+    // Reset Slowmo
+    TKeyevent.Faster;
     MouseCursor.Enabled := False;
     if Transitionscreen = '' then
       S := DefaultTransition
@@ -5168,6 +5340,8 @@ begin
 end;
 
 procedure TfrmMain.CloseIntroDialog(Sender: TObject);
+var
+ INI: TINIFile; //ShowHistroy if started for the first time
 const
   FailName: string = 'Main.CloseIntroDialog';
 begin
@@ -5188,7 +5362,21 @@ begin
       begin
         if ModAllowed and Modloadneeded then
           LoadMod;
-        PostMessage(Handle, WM_StartNew, 0, 0);
+        if ( Modselection <> TModSelection.SoA ) then
+        begin //if not SoA then look if you play the mod for the first time
+          SiegeINIFile := AppPath + Modname + '.ini';
+          INI := TIniFile.Create(AppPath + Modname + '.ini');
+          try
+            FPlayFirstTime := INI.ReadBool('Settings', 'PlayFirstTime', true);
+            INI.WriteBool('Settings', 'PlayFirstTime', false);
+          finally
+            INI.Free;
+          end;
+        end;
+        if FPlayFirstTime then
+          ShowHistroy
+        else
+          PostMessage(Handle, WM_StartNew, 0, 0);
       end
       else if MenuChoice = 2 then
       begin
@@ -5224,7 +5412,11 @@ begin
         Active := True;
         DisableConsole := False;
         Paused := False;
-      end;
+      end
+      else if MenuChoice = 9 then
+      begin
+        PostMessage( Handle, WM_StartTrophies, 0, 0 );
+      end
     end;
 
   except
@@ -5286,8 +5478,6 @@ begin
       'ItemDB', ItemDB));
     TitlesDB := TPath.GetFullPath(INILanguage.ReadString('Settings', 'TitlesDB',
       TitlesDB));
-    UseSmallFont := (LowerCase(INILanguage.ReadString('Settings',
-      'UseSmallFont', 'true')) = 'true');
   finally
     INILanguage.Free;
   end;
@@ -5295,6 +5485,8 @@ begin
   Log.Log('Item DB=' + ItemDB);
   Log.Log('XRef DB=' + XRefDB);
   Log.Log('Titles DB=' + TitlesDB);
+  UseSmallFont := (LowerCase(INI.ReadString('Settings', 'UseSmallFont',
+      'true')) = 'true');
   GlobalBrightness := INI.ReadInteger('Settings', 'Brightness', 0);
   INI.WriteInteger('Settings', 'Brightness', GlobalBrightness);
   MasterSoundVolume := INI.ReadInteger('Settings', 'SoundVolume', 50);
@@ -5312,7 +5504,17 @@ begin
   MouseCursor.Enabled := False; // Different Mousegraphics, so reinit
   MouseCursor.destroy;
   MouseCursor.Cleanup;
-  MouseCursor := TD3DMousePtr.Create(D3D11Renderer);
+  if not AltCursor then
+    MouseCursor := TD3DMousePtr.Create(D3D11Renderer)
+  else
+  begin
+    MouseCursor := TMousePtr.Create;
+    screen.cursors[crSoACursorStandard] := LoadCursorFromFile
+    (PChar(Interfacepath + 'SoACursorStandard.cur'));
+    screen.cursors[crSoACursorLoad] := LoadCursorFromFile
+    (PChar(Interfacepath + 'SoACursorLoad.cur'));
+    Screen.Cursor := crSoACursorStandard;
+  end;
   MouseCursor.Enabled := True;
   MouseCursor.SetFrame(37);
 
@@ -5361,6 +5563,7 @@ begin
     cTransparent);
   if Assigned(D3D11Renderer) then
   begin
+    //causes also an error on a system where the mousecursor doesn't work
     PauseLayer := D3D11Renderer.CreateLayerFromFile(InterfaceLanguagePath +
       'paused.bmp', cTransparent);
   end;
@@ -5369,6 +5572,7 @@ begin
   DlgQuestLog := TQuestLog.Create;
   DlgAdvLog := TAdvLog.Create;
   DlgOptions := TOptions.Create;
+  DlgTrophies := TTrophies.Create; //Other Mods, other trophies
   DlgCreation := TCreation.Create; // Reinitialisation
   DlgLoad := TLoadGame.Create; // Reinitialisation
   DlgText.destroy; // Reinitialisation
@@ -5403,6 +5607,9 @@ begin
     DlgIntro.Captions[6].Enabled := True;
     DlgIntro.Captions[7].Enabled := True;
     DlgIntro.Captions[8].Enabled := not NewGame;
+    if AltCursor then
+    Screen.Cursor := crSoACursorStandard
+    else
     MouseCursor.SetFrame(37);
     PrevTriggerID := -1;
     DisableConsole := True;
@@ -5435,11 +5642,7 @@ end;
 
 procedure TfrmMain.WMStartNew(var Message: TWMNoParams);
 var
-  S: string;
-  i: Integer;
   INI: TIniFile;
-  INILanguage: TIniFile;
-  List: TArray<string>; // TStringList;
   PlayerResource: string;
 const
   FailName: string = 'Main.WMStartNew';
@@ -5529,19 +5732,6 @@ begin
       INI.Free;
     end;
 
-    INILanguage := TIniFile.Create(SiegeINILanguageFile);
-    try
-      S := INILanguage.ReadString('Settings', 'JournalIntro', '');
-      if S <> '' then
-      begin
-        List := S.Split([',']);
-        for i := 0 to Length(List) - 1 do
-          AdventureLog1.AddLogEntry(List[i] + '.jrn');
-      end;
-    finally
-      INILanguage.Free;
-    end;
-
     DlgCreation.Character := Player;
     DlgCreation.frmMain := Self;
 
@@ -5597,6 +5787,30 @@ begin
   except
     on E: Exception do
       Log.Log(FailName, E.Message, []);
+  end;
+end;
+
+procedure TfrmMain.WMStartTrophies( var Message : TWMNoParams );
+const
+  FailName : string = 'Main.WMStartTrophies';
+begin
+{$IFDEF DODEBUG}
+  if ( CurrDbgLvl >= DbgLvlSevere ) then
+    Log.LogEntry( FailName );
+{$ENDIF}
+  try
+     Game.OnMouseDown := nil;
+     Game.OnMouseMove := nil;
+     Game.OnMouseUp := nil;
+     OnKeyDown := nil;
+     DlgTrophies.pText := DlgText;
+     DlgTrophies.OnClose := CloseTrophies;
+     MouseCursor.SetFrame( 37 );
+     PrevTriggerID := -1;
+     DlgTrophies.Init;
+  except
+    on E : Exception do
+      Log.log( FailName, E.Message, [ ] );
   end;
 end;
 
@@ -5686,6 +5900,17 @@ begin
         LastFileSaved := GameName;
         NewGame := False;
         Game.ForceRefresh := True;
+        //StartEvent
+        if Eventactive then
+        begin
+          if not player.titleExists('CurrentEventActive') then
+          player.addtitle('CurrentEventActive');
+        end
+        else
+        begin
+          if player.titleExists('CurrentEventActive') then
+          player.RemoveTitle('CurrentEventActive');
+        end;
         CloseAllDialogs(Sender);
       end;
     end;
@@ -5848,7 +6073,7 @@ begin
       try
         INILanguage := TIniFile.Create(SiegeINILanguageFile);
         try
-          S := INI.ReadString('Settings', 'History', '');
+          S := INILanguage.ReadString('Settings', 'History', '');
         finally
           INILanguage.Free;
         end;
@@ -5923,7 +6148,7 @@ end;
 procedure TfrmMain.ShowMouseMessage(const Msg: string);
 const
   tY1 = 33;
-  tY2 = 55;
+  tY2 = 50;
 var
   NewMessage: Boolean;
   DC: HDC;
@@ -5970,7 +6195,7 @@ begin
     begin
       OverlayB.GetDC(DC);
       try
-        BitBlt(DC, ScreenMetrics.BottomBarX, 30, 202, 68,
+        BitBlt(DC, ScreenMetrics.BottomBarX, 30, 202, 52,
           imgBottomBar.Canvas.Handle, ScreenMetrics.BottomBarX, 30, SRCCOPY);
       finally
         OverlayB.ReleaseDC(DC);
@@ -6356,6 +6581,7 @@ procedure TfrmMain.WMDone(var Message: TWMNoParams);
 begin
   MouseCursor.Enabled := False;
   FreeAll;
+  if not AltCursor then
   UnloadDDraw;
   D3D11Renderer.Free;
   if FShowOutro and FileExists(FClosingMovie) then
@@ -7600,7 +7826,6 @@ var
   List: TArray<string>;
 begin
   INI := TIniFile.Create(SiegeINIFile);
-
   if (INI.ReadInteger('Settings', 'JournalFont', 0) = 1) and
     TDirectory.Exists(ResourcePath + 'journalalt\' + Language) then
     HistoryLog.LogDirectory := ResourcePath + 'journalalt\' + Language + '\'
@@ -7661,7 +7886,12 @@ begin
     Game.ForceRefresh := True;
     Game.Enabled := True;
     Game.ForceRefresh := True;
-
+    if FPlayFirstTime then
+    begin
+      PostMessage(Handle, WM_StartNew, 0, 0);
+      FPlayFirstTime := false; //Reset
+    end
+    else
     PostMessage(Handle, WM_StartMainMenu, 0, 0); // Restart the intro
     // PostMessage(handle,WM_StartCredits,0,0);
 
