@@ -1,8 +1,29 @@
-# Siege of Avalon : Open Source and re-released #
+﻿# Siege of Avalon : Open Source and re-released #
 
 _"Siege of Avalon : Open Source is an attempt to keep this great isometric RPG game alive by continuing development on it."_
 
 ![Siege of Avalon in HD with room for party of 4.](SoAOS_HD.png)Siege of Avalon in HD with room for party of 4.
+
+## Repository now updated to the latest state - the unofficial SoAmigos 1.11 patch ##
+
+I have pulled the changes we made for the official re-release (+150 commits by mostly me and the guys at General Arcade), but also a collective commit that covers +30 commits made by Seppi, that now brings the unofficial patch version to 1.11.
+
+That includes improvements like:
+- Live overlay mapping
+- Numerous bugfixes
+- Tutorial
+- Key remapping
+- Support for all known mods
+    - Days of Ahoul
+    - Pillars of Avalon (not the official promised)
+    - Ashes of Avalon
+    - Caves
+    - Rise of Dwarf
+    - The Seven Kingdoms
+    - Chapter/Kapitel 7
+- Updates check
+- DDraw.dll selection
+- Does compile in latest Delphi 11.3 Alexandria
 
 ## We made it happen!! ##
 
