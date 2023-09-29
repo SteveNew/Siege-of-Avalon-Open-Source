@@ -18,7 +18,6 @@ object frmLaunchSetting: TfrmLaunchSetting
   Font.Name = 'BlackChancery'
   Font.Style = []
   FormStyle = fsStayOnTop
-  OldCreateOrder = False
   Position = poScreenCenter
   Scaled = False
   OnCloseQuery = FormCloseQuery
@@ -26,8 +25,7 @@ object frmLaunchSetting: TfrmLaunchSetting
   OnDestroy = FormDestroy
   OnKeyDown = FormKeyDown
   OnShow = FormShow
-  PixelsPerInch = 96
-  TextHeight = 22
+  TextHeight = 23
   object imgBack: TImage
     Left = 0
     Top = 0
@@ -115,8 +113,8 @@ object frmLaunchSetting: TfrmLaunchSetting
   object VersionLabel: TLabel
     Left = 24
     Top = 24
-    Width = 37
-    Height = 22
+    Width = 20
+    Height = 23
     Caption = '1.11'
     Color = clFuchsia
     Font.Charset = DEFAULT_CHARSET
