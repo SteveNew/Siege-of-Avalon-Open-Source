@@ -116,7 +116,6 @@ object frmMain: TfrmMain
     0000F8000000F0000001F0000001E0000001C000000080000000800000000000
     000000000000000000000000000100000003000000070000001F8000003FC000
     007FF000007FFC00007FFF8000FFFFF001FFFFFC03FFFFFF1FFFFFFFFFFF}
-  OldCreateOrder = True
   Position = poScreenCenter
   Scaled = False
   StyleElements = [seFont, seBorder]
@@ -130,7 +129,6 @@ object frmMain: TfrmMain
   DesignSize = (
     810
     566)
-  PixelsPerInch = 96
   TextHeight = 13
   object OpeningVideoPanel: TPanel
     Left = 0

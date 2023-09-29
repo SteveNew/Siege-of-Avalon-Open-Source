@@ -594,8 +594,14 @@ begin
     FLanguages.Add(AnsiUpperCase(langStr[1]) + Copy(langStr, 2));
     end;
   end;
-  if FLanguages.Count = 0 then // no languages - other than english
-    FLanguages.Add(cNoLanguage);
+  if FLanguages.Count = 0 then // no languages - other than english - old structure
+    FLanguages.Add(cNoLanguage)
+  else
+  begin
+    // we have language folders, but first-time language might not be set.
+    if FCurrentLanguage=cNoLanguage then
+      FCurrentLanguage:='English';
+  end;
   FCurrentLanguageIdx := FLanguages.IndexOf(FCurrentLanguage);
   if FCurrentLanguageIdx = -1 then
     FCurrentLanguageIdx := 0;

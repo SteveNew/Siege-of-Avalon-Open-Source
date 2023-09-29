@@ -11,9 +11,9 @@ I have pulled the changes we made for the official re-release (+150 commits by m
 That includes improvements like:
 - Live overlay mapping
 - Numerous bugfixes
-- Tutorial
+- Tutorial\*
 - Key remapping
-- Support for all known mods
+- Support for all known mods\*
     - Days of Ahoul
     - Pillars of Avalon (not the official promised)
     - Ashes of Avalon
@@ -22,8 +22,10 @@ That includes improvements like:
     - The Seven Kingdoms
     - Chapter/Kapitel 7
 - Updates check
-- DDraw.dll selection
+- DDraw.dll selection\*
 - Does compile in latest Delphi 11.3 Alexandria
+
+<sup>*</sup>These do require that apart from of cause you have purchased the game on GOG or Steam (since the engine is open-sourced, not the resources), you will also need the latest modpack from SoAmigos forum.
 
 ## We made it happen!! ##
 
