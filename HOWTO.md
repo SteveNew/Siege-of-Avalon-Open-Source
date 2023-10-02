@@ -8,6 +8,8 @@ Prerequisites:
 
 Clone or download the repo, and copy all files from your game installation into the `soa-resources` folder
 
+To get all the latest resource bugfixes and the best experience - also download the latest Patch from SoAmigos forum - there is a GOG and a Steam version - unzip that in the `soa-resources` folder as well.
+
 In the Delphi IDE open the `src\win32\Siege.dpr`
 
 Build/Compile - Enjoy

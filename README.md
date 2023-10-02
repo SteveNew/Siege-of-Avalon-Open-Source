@@ -1,4 +1,4 @@
-Ôªø# Siege of Avalon : Open Source and re-released #
+# Siege of Avalon : Open Source and re-released #
 
 _"Siege of Avalon : Open Source is an attempt to keep this great isometric RPG game alive by continuing development on it."_
 
@@ -25,7 +25,7 @@ That includes improvements like:
 - DDraw.dll selection\*
 - Does compile in latest Delphi 11.3 Alexandria
 
-<sup>*</sup>These do require that apart from of cause you have purchased the game on GOG or Steam (since the engine is open-sourced, not the resources), you will also need the latest modpack from SoAmigos forum.
+<sup>*</sup>These do require that apart from of cause you have purchased the game on GOG or Steam (since the engine is open-sourced, not the resources), you will also need the updated patch from SoAmigos forum, which is available in both a GOG and a Steam version.
 
 ## We made it happen!! ##
 
@@ -35,7 +35,7 @@ And the released versions engine source code can be found here: https://github.c
 
 And just to quote their readme:
 
-‚ÄúSiege of Avalon: Anthology‚Äù Remastered : Open Source is our huge ‚Äúthank you‚Äù to the community that was keeping this great isometric RPG alive from 2003 till 2021 by adding constant updates and modifications to it. Our goal is to ensure that fans can develop the game further the way they envision it and use all the work and love we‚Äôve put into it already.
+ìSiege of Avalon: Anthologyî Remastered : Open Source is our huge ìthank youî to the community that was keeping this great isometric RPG alive from 2003 till 2021 by adding constant updates and modifications to it. Our goal is to ensure that fans can develop the game further the way they envision it and use all the work and love weíve put into it already.
 
 Release Date: 8 April 2021
 
