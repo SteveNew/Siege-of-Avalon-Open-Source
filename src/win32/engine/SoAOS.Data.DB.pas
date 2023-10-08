@@ -33,6 +33,7 @@ unit SoAOS.Data.DB;
 interface
 
 uses
+  System.Classes,
   System.Generics.Collections;
 
 type
@@ -49,11 +50,13 @@ type
     function GetAsString: string;
     function GetFieldNames: string;
     function GetAsFloat: Single;
+  private
+    procedure SetAsString(const Value: string);
   public
     constructor Create(const FieldNo: Integer; const FieldNames, Value: string);
     property FieldNames: string read GetFieldNames;
     property Value: string read FStrDataRead;
-    property AsString: string read GetAsString;
+    property AsString: string read GetAsString write SetAsString;
     property AsInteger: Integer read GetAsInteger;
     property AsFloat: Single read GetAsFloat;
     property AsBoolean: Boolean read GetAsBoolean;
@@ -66,23 +69,35 @@ type
   strict private
     { Private declarations }
     FFieldNames: TDictionary<string, Integer>;
-    FData: TObjectDictionary<string, TSoAOSFields>;
+    FData: TStringList;
     FCurrentKey: string;
+    FCurrentRowIdx: Integer;
     FCurrentDataRow: TSoAOSFields;
     FVersion: integer;
     function GetFields(Index: Integer): TSoAOSField;
   private
     FDatasetType: TSoAOSDatasetType;
+    function GetBOF: Boolean;
+    function GetEOF: Boolean;
+    function GetRecordCount: Integer;
   public
     { Public declarations }
     constructor Create; virtual;
-    procedure LoadFromFile(const FileName: string);
     destructor Destroy; override;
     function Locate(const KeyValue: string): boolean;
     function FieldByName(const FieldName: string): TSoAOSField;
+    procedure LoadFromFile(const FileName: string);
+    procedure SaveToFile(const FileName: string);
+    procedure First;
+    procedure Next;
+    procedure Prior;
+    procedure Last;
     property Key: string read FCurrentKey;
     property Version: integer read FVersion;
     property Fields[Index: Integer]: TSoAOSField read GetFields;
+    property BOF: Boolean read GetBOF;
+    property EOF: Boolean read GetEOF;
+    property RecordCount: Integer read GetRecordCount;
   end;
 
   TSoAOSXRefTable = class(TCustomSoAOSDataset)
@@ -103,7 +118,6 @@ type
 implementation
 
 uses
-  System.Classes,
   System.IOUtils,
   System.SysUtils;
 
@@ -165,12 +179,18 @@ begin
     Result := FFieldNames;
 end;
 
+procedure TSoAOSField.SetAsString(const Value: string);
+begin
+  FStrDataRead := Value;
+end;
+
 { TCustomSoAOSDataset }
 
 constructor TCustomSoAOSDataset.Create;
 begin
   inherited;
-  FData := TObjectDictionary<string, TSoAOSFields>.Create([doOwnsValues]);  // key, fields
+  FData := TStringList.Create(dupIgnore, True, False);
+  FData.OwnsObjects := True;
   FFieldNames := TDictionary<string, Integer>.Create;
 end;
 
@@ -202,13 +222,53 @@ begin
     Result := nil;
 end;
 
+procedure TCustomSoAOSDataset.First;
+begin
+  if FData.Count>0 then
+  begin
+    FCurrentRowIdx := 0;
+    FCurrentKey := FData[FCurrentRowIdx].ToLower;
+    FCurrentDataRow := TSoAOSFields(FData.Objects[FCurrentRowIdx]);
+  end;
+end;
+
+function TCustomSoAOSDataset.GetBOF: Boolean;
+begin
+  Result := FCurrentRowIdx=0;
+end;
+
+function TCustomSoAOSDataset.GetEOF: Boolean;
+begin
+  Result := FCurrentRowIdx=(FData.Count-1)
+end;
+
 function TCustomSoAOSDataset.GetFields(Index: Integer): TSoAOSField;
 begin
   if (FCurrentDataRow<>nil) and not FCurrentDataRow.TryGetValue(Index, Result) then
     Result := nil;
 end;
 
+function TCustomSoAOSDataset.GetRecordCount: Integer;
+begin
+  Result := FData.Count;
+end;
+
+procedure TCustomSoAOSDataset.Last;
+begin
+  if FData.Count>0 then
+  begin
+    FCurrentRowIdx := FData.Count-1;
+    FCurrentKey := FData[FCurrentRowIdx].ToLower;
+    FCurrentDataRow := TSoAOSFields(FData.Objects[FCurrentRowIdx]);
+  end;
+end;
+
 procedure TCustomSoAOSDataset.LoadFromFile(const FileName: string);
+const
+  // Pseudo row - since first row in Title.db might not give the full set - lowercase
+  TitleCols = 'titlekey|ttvisible|ttstrength|ttcoordination|ttconstitution|ttmysticism|ttcombat|ttstealth|' +
+              'ttrestriction|ttattackrecovery|tthitrecovery|ttperception|ttcharm|tthealingrate|ttrechargerate|' +
+              'tthitpoints|ttmana|ttattack|ttdefense|ttdisplayname';
 var
   rows: TStringList;
   row, col: Integer;
@@ -252,129 +312,129 @@ begin
     else if coldata[0]='aeriekey' then // guess but just a row
     begin
       dst := dstItems;
-      // Hardcode from consts - some do have multiple names
-      FFieldNames.Add('PiercingMin', 1);
-      FFieldNames.Add('CrushingMin', 2);
-      FFieldNames.Add('CuttingMin', 3);
-      FFieldNames.Add('HeatMin', 4);
-      FFieldNames.Add('ColdMin', 5);
-      FFieldNames.Add('ElectricMin', 6);
-      FFieldNames.Add('PoisonMin', 7);
-      FFieldNames.Add('MagicMin', 8);
-      FFieldNames.Add('MentalMin', 9);
-      FFieldNames.Add('StunMin', 10);
-      FFieldNames.Add('SpecialMin', 11);
+      // Hardcode from consts - some do have multiple names - lowercase
+      FFieldNames.Add('piercingmin', 1);
+      FFieldNames.Add('crushingmin', 2);
+      FFieldNames.Add('cuttingmin', 3);
+      FFieldNames.Add('heatmin', 4);
+      FFieldNames.Add('coldmin', 5);
+      FFieldNames.Add('electricmin', 6);
+      FFieldNames.Add('poisonmin', 7);
+      FFieldNames.Add('magicmin', 8);
+      FFieldNames.Add('mentalmin', 9);
+      FFieldNames.Add('stunmin', 10);
+      FFieldNames.Add('specialmin', 11);
 
-      FFieldNames.Add('PiercingMax', 12);
-      FFieldNames.Add('CrushingMax', 13);
-      FFieldNames.Add('CuttingMax', 14);
-      FFieldNames.Add('HeatMax', 15);
-      FFieldNames.Add('ColdMax', 16);
-      FFieldNames.Add('ElectricMax', 17);
-      FFieldNames.Add('PoisonMax', 18);
-      FFieldNames.Add('MagicMax', 19);
-      FFieldNames.Add('MentalMax', 20);
-      FFieldNames.Add('StunMax', 21);
-      FFieldNames.Add('SpecialMax', 22);
+      FFieldNames.Add('piercingmax', 12);
+      FFieldNames.Add('crushingmax', 13);
+      FFieldNames.Add('cuttingmax', 14);
+      FFieldNames.Add('heatmax', 15);
+      FFieldNames.Add('coldmax', 16);
+      FFieldNames.Add('electricmax', 17);
+      FFieldNames.Add('poisonmax', 18);
+      FFieldNames.Add('magicmax', 19);
+      FFieldNames.Add('mentalmax', 20);
+      FFieldNames.Add('stunmax', 21);
+      FFieldNames.Add('specialmax', 22);
 
-      FFieldNames.Add('PiercingInv', 23);
-      FFieldNames.Add('CrushingInv', 24);
-      FFieldNames.Add('CuttingInv', 25);
-      FFieldNames.Add('HeatInv', 26);
-      FFieldNames.Add('ColdInv', 27);
-      FFieldNames.Add('ElectricInv', 28);
-      FFieldNames.Add('PoisonInv', 29);
-      FFieldNames.Add('MagicInv', 30);
-      FFieldNames.Add('MentalInv', 31);
-      FFieldNames.Add('StunInv', 32);
+      FFieldNames.Add('piercinginv', 23);
+      FFieldNames.Add('crushinginv', 24);
+      FFieldNames.Add('cuttinginv', 25);
+      FFieldNames.Add('heatinv', 26);
+      FFieldNames.Add('coldinv', 27);
+      FFieldNames.Add('electricinv', 28);
+      FFieldNames.Add('poisoninv', 29);
+      FFieldNames.Add('magicinv', 30);
+      FFieldNames.Add('mentalinv', 31);
+      FFieldNames.Add('stuninv', 32);
 
-      FFieldNames.Add('PiercingRes', 33);
-      FFieldNames.Add('CrushingRes', 34);
-      FFieldNames.Add('CuttingRes', 35);
-      FFieldNames.Add('HeatRes', 36);
-      FFieldNames.Add('ColdRes', 37);
-      FFieldNames.Add('ElectricRes', 38);
-      FFieldNames.Add('PoisonRes', 39);
-      FFieldNames.Add('MagicRes', 40);
-      FFieldNames.Add('MentalRes', 41);
-      FFieldNames.Add('StunRes', 42);
+      FFieldNames.Add('piercingres', 33);
+      FFieldNames.Add('crushingres', 34);
+      FFieldNames.Add('cuttingres', 35);
+      FFieldNames.Add('heatres', 36);
+      FFieldNames.Add('coldres', 37);
+      FFieldNames.Add('electricres', 38);
+      FFieldNames.Add('poisonres', 39);
+      FFieldNames.Add('magicres', 40);
+      FFieldNames.Add('mentalres', 41);
+      FFieldNames.Add('stunres', 42);
 
-      FFieldNames.Add('StrengthSM', 43);
-      FFieldNames.Add('CoordinationSM', 44);
-      FFieldNames.Add('ConstitutionSM', 45);
-      FFieldNames.Add('MysticismSM', 46);
-      FFieldNames.Add('CombatSM', 47);
-      FFieldNames.Add('StealthSM', 48);
-      FFieldNames.Add('RestrictionSM', 49);
-      FFieldNames.Add('AttackRecoverySM', 50);
-      FFieldNames.Add('HitRecoverySM', 51);
-      FFieldNames.Add('PerceptionSM', 52);
-      FFieldNames.Add('CharmSM', 53);
-      FFieldNames.Add('HealingRateSM', 54);
-      FFieldNames.Add('RechargeRateSM', 55);
-      FFieldNames.Add('HitPointsSM', 56);
-      FFieldNames.Add('ManaSM', 57);
-      FFieldNames.Add('AttackSM', 58);
-      FFieldNames.Add('DefenseSM', 59);
+      FFieldNames.Add('strengthsm', 43);
+      FFieldNames.Add('coordinationsm', 44);
+      FFieldNames.Add('constitutionsm', 45);
+      FFieldNames.Add('mysticismsm', 46);
+      FFieldNames.Add('combatsm', 47);
+      FFieldNames.Add('stealthsm', 48);
+      FFieldNames.Add('restrictionsm', 49);
+      FFieldNames.Add('attackrecoverysm', 50);
+      FFieldNames.Add('hitrecoverysm', 51);
+      FFieldNames.Add('perceptionsm', 52);
+      FFieldNames.Add('charmsm', 53);
+      FFieldNames.Add('healingratesm', 54);
+      FFieldNames.Add('rechargeratesm', 55);
+      FFieldNames.Add('hitpointssm', 56);
+      FFieldNames.Add('manasm', 57);
+      FFieldNames.Add('attacksm', 58);
+      FFieldNames.Add('defensesm', 59);
 
-      FFieldNames.Add('cSlotsAllowed', 60);
-      FFieldNames.Add('cItemInfo', 61);
-      FFieldNames.Add('cValue', 62);
-      FFieldNames.Add('cWeight', 63);
-      FFieldNames.Add('cTitle', 63);
-      FFieldNames.Add('cMagic', 64);
-      FFieldNames.Add('cItemType', 65);
+      FFieldNames.Add('cslotsallowed', 60);
+      FFieldNames.Add('citeminfo', 61);
+      FFieldNames.Add('cvalue', 62);
+      FFieldNames.Add('cweight', 63);
+      FFieldNames.Add('ctitle', 63);
+      FFieldNames.Add('cmagic', 64);
+      FFieldNames.Add('citemtype', 65);
 //  cItemInfo= 66;
-      FFieldNames.Add('cSecretName', 67);
-      FFieldNames.Add('cSecretInfo', 68);
-      FFieldNames.Add('cInventoryImage', 69);
-      FFieldNames.Add('cPartName', 70);
-      FFieldNames.Add('cDisplayName', 71);
-      FFieldNames.Add('cInventoryHeight', 72);
-      FFieldNames.Add('cInventoryWidth', 73);
+      FFieldNames.Add('csecretname', 67);
+      FFieldNames.Add('csecretinfo', 68);
+      FFieldNames.Add('cinventoryimage', 69);
+      FFieldNames.Add('cpartname', 70);
+      FFieldNames.Add('cdisplayname', 71);
+      FFieldNames.Add('cinventoryheight', 72);
+      FFieldNames.Add('cinventorywidth', 73);
 
-      FFieldNames.Add('w2Handed', 74);
-      FFieldNames.Add('wRange', 75);
-      FFieldNames.Add('wMinStrength', 76);
-      FFieldNames.Add('wMinCoordination', 77);
-      FFieldNames.Add('wMaxRestriction', 78);
-      FFieldNames.Add('wSndAttack', 79);
-      FFieldNames.Add('wSndOther', 80);
-      FFieldNames.Add('wSndMetal', 81);
+      FFieldNames.Add('w2handed', 74);
+      FFieldNames.Add('wrange', 75);
+      FFieldNames.Add('wminstrength', 76);
+      FFieldNames.Add('wmincoordination', 77);
+      FFieldNames.Add('wmaxrestriction', 78);
+      FFieldNames.Add('wsndattack', 79);
+      FFieldNames.Add('wsndother', 80);
+      FFieldNames.Add('wsndmetal', 81);
 
-      FFieldNames.Add('qFletchingColor', 74);
-      FFieldNames.Add('qTracking', 75);
-      FFieldNames.Add('qSndOther', 76);
-      FFieldNames.Add('qSndMetal', 77);
-      FFieldNames.Add('qSndStone', 78);
+      FFieldNames.Add('qfletchingcolor', 74);
+      FFieldNames.Add('qtracking', 75);
+      FFieldNames.Add('qsndother', 76);
+      FFieldNames.Add('qsndmetal', 77);
+      FFieldNames.Add('qsndstone', 78);
 
-      FFieldNames.Add('iMaterial', 74);
+      FFieldNames.Add('imaterial', 74);
       fieldcount := 81;
     end
     else
     begin
       dst := dstTitel;
       // Hardcode from consts - some do have multiple names
-      FFieldNames.Add('ttVisible', 1);
-      FFieldNames.Add('ttStrength', 2);
-      FFieldNames.Add('ttCoordination', 3);
-      FFieldNames.Add('ttConstitution', 4);
-      FFieldNames.Add('ttMysticism', 5);
-      FFieldNames.Add('ttCombat', 6);
-      FFieldNames.Add('ttStealth', 7);
-      FFieldNames.Add('ttRestriction', 8);
-      FFieldNames.Add('ttAttackRecovery', 9);
-      FFieldNames.Add('ttHitRecovery', 10);
-      FFieldNames.Add('ttPerception', 11);
-      FFieldNames.Add('ttCharm', 12);
-      FFieldNames.Add('ttHealingRate', 13);
-      FFieldNames.Add('ttRechargeRate', 14);
-      FFieldNames.Add('ttHitPoints', 15);
-      FFieldNames.Add('ttMana', 16);
-      FFieldNames.Add('ttAttack', 17);
-      FFieldNames.Add('ttDefense', 18);
-      FFieldNames.Add('ttDisplayName', 19);
-      fieldcount := 19;
+      FFieldNames.Add('ttvisible', 1);
+      FFieldNames.Add('ttstrength', 2);
+      FFieldNames.Add('ttcoordination', 3);
+      FFieldNames.Add('ttconstitution', 4);
+      FFieldNames.Add('ttmysticism', 5);
+      FFieldNames.Add('ttcombat', 6);
+      FFieldNames.Add('ttstealth', 7);
+      FFieldNames.Add('ttrestriction', 8);
+      FFieldNames.Add('ttattackrecovery', 9);
+      FFieldNames.Add('tthitrecovery', 10);
+      FFieldNames.Add('ttperception', 11);
+      FFieldNames.Add('ttcharm', 12);
+      FFieldNames.Add('tthealingrate', 13);
+      FFieldNames.Add('ttrechargerate', 14);
+      FFieldNames.Add('tthitpoints', 15);
+      FFieldNames.Add('ttmana', 16);
+      FFieldNames.Add('ttattack', 17);
+      FFieldNames.Add('ttdefense', 18);
+      FFieldNames.Add('ttdisplayname', 19);
+      coldata := TitleCols.Split(['|']);
     end;
     if (FDatasetType <> dst) then
     begin
@@ -386,12 +446,13 @@ begin
     for row := 0 to rows.Count-1 do
     begin
       rowdata := rows[row].Split(['|']);
-//      if Length(rowdata)<>fieldcount then // skip when field count mismatch
-//        Continue;
+      fieldcount := Length(rowdata)-1; // since some rows are incomplete
+      if Length(rowdata)>Length(coldata) then // skip when data exceeds columns - raise error?
+        Continue;
       fields := TSoAOSFields.Create([doOwnsValues]);
       for col := 1 to fieldcount do
         fields.Add(col, TSoAOSField.Create(col, coldata[col], rowdata[col]));
-      FData.AddOrSetValue(rowdata[0].ToLower, fields);
+      FData.AddObject(rowdata[0].ToLower, TSoAOSFields(fields));
     end;
 
   finally
@@ -400,14 +461,46 @@ begin
 end;
 
 function TCustomSoAOSDataset.Locate(const KeyValue: string): boolean;
+var
+  newIdx: Integer;
 begin
   if SameText(KeyValue, FCurrentKey) and (FCurrentDataRow <> nil) then
     Result := True
   else
   begin
-    Result := FData.TryGetValue(KeyValue.ToLower, FCurrentDataRow);
-    if Result then FCurrentKey := KeyValue.ToLower;
+    Result := FData.Find(KeyValue.ToLower, newIdx);
+    if Result then
+    begin
+      FCurrentKey := KeyValue.ToLower;
+      FCurrentRowIdx := newIdx;
+      FCurrentDataRow := TSoAOSFields(FData.Objects[newIdx]);
+    end;
   end;
+end;
+
+procedure TCustomSoAOSDataset.Next;
+begin
+  if not EOF then
+  begin
+    Inc(FCurrentRowIdx);
+    FCurrentKey := FData[FCurrentRowIdx].ToLower;
+    FCurrentDataRow := TSoAOSFields(FData.Objects[FCurrentRowIdx]);
+  end;
+end;
+
+procedure TCustomSoAOSDataset.Prior;
+begin
+  if not BOF then
+  begin
+    Inc(FCurrentRowIdx);
+    FCurrentKey := FData[FCurrentRowIdx].ToLower;
+    FCurrentDataRow := TSoAOSFields(FData.Objects[FCurrentRowIdx]);
+  end;
+end;
+
+procedure TCustomSoAOSDataset.SaveToFile(const FileName: string);
+begin
+
 end;
 
 { TSoAOSXRefDB }
