@@ -42,19 +42,15 @@ type
   TSoAOSField = class
   strict private
     FStrDataRead: string;
-    FFieldNames: string;
-    FFieldNo: Integer;
     function GetAsBoolean: Boolean;
     function GetAsInteger: Integer;
     function GetAsPOXFilename: string;
     function GetAsString: string;
-    function GetFieldNames: string;
     function GetAsFloat: Single;
   private
     procedure SetAsString(const Value: string);
   public
-    constructor Create(const FieldNo: Integer; const FieldNames, Value: string);
-    property FieldNames: string read GetFieldNames;
+    constructor Create(const Value: string);
     property Value: string read FStrDataRead;
     property AsString: string read GetAsString write SetAsString;
     property AsInteger: Integer read GetAsInteger;
@@ -123,10 +119,8 @@ uses
 
 { TSoAOSField }
 
-constructor TSoAOSField.Create(const FieldNo: Integer; const FieldNames, Value: string);
+constructor TSoAOSField.Create(const Value: string);
 begin
-  FFieldNo := FieldNo;
-  FFieldNames := FieldNames;
   FStrDataRead := Value;
 end;
 
@@ -169,14 +163,6 @@ begin
     Result := ''
   else
     Result := FStrDataRead;
-end;
-
-function TSoAOSField.GetFieldNames: string;
-begin
-  if Self=nil then
-    Result := ''
-  else
-    Result := FFieldNames;
 end;
 
 procedure TSoAOSField.SetAsString(const Value: string);
@@ -409,32 +395,13 @@ begin
       FFieldNames.Add('qsndstone', 78);
 
       FFieldNames.Add('imaterial', 74);
-      fieldcount := 81;
     end
     else
     begin
       dst := dstTitel;
-      // Hardcode from consts - some do have multiple names
-      FFieldNames.Add('ttvisible', 1);
-      FFieldNames.Add('ttstrength', 2);
-      FFieldNames.Add('ttcoordination', 3);
-      FFieldNames.Add('ttconstitution', 4);
-      FFieldNames.Add('ttmysticism', 5);
-      FFieldNames.Add('ttcombat', 6);
-      FFieldNames.Add('ttstealth', 7);
-      FFieldNames.Add('ttrestriction', 8);
-      FFieldNames.Add('ttattackrecovery', 9);
-      FFieldNames.Add('tthitrecovery', 10);
-      FFieldNames.Add('ttperception', 11);
-      FFieldNames.Add('ttcharm', 12);
-      FFieldNames.Add('tthealingrate', 13);
-      FFieldNames.Add('ttrechargerate', 14);
-      FFieldNames.Add('tthitpoints', 15);
-      FFieldNames.Add('ttmana', 16);
-      FFieldNames.Add('ttattack', 17);
-      FFieldNames.Add('ttdefense', 18);
-      FFieldNames.Add('ttdisplayname', 19);
       coldata := TitleCols.Split(['|']);
+      for c := 1 to Length(coldata)-1 do
+        FFieldNames.Add(coldata[c], c);
     end;
     if (FDatasetType <> dst) then
     begin
@@ -447,11 +414,9 @@ begin
     begin
       rowdata := rows[row].Split(['|']);
       fieldcount := Length(rowdata)-1; // since some rows are incomplete
-      if Length(rowdata)>Length(coldata) then // skip when data exceeds columns - raise error?
-        Continue;
       fields := TSoAOSFields.Create([doOwnsValues]);
       for col := 1 to fieldcount do
-        fields.Add(col, TSoAOSField.Create(col, coldata[col], rowdata[col]));
+        fields.Add(col, TSoAOSField.Create(rowdata[col]));
       FData.AddObject(rowdata[0].ToLower, TSoAOSFields(fields));
     end;
 
