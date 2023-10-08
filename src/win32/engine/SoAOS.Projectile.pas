@@ -37,6 +37,7 @@ uses
   System.Classes,
   System.SysUtils,
   System.UITypes,
+  System.Generics.Collections,
   Vcl.Graphics,
   SoAOS.Animation,
   Character,
@@ -146,7 +147,7 @@ type
     WanderMode : boolean;
     Direction : boolean;
     procedure Arrival( sender : TObject );
-    function FindEnemies : TList;
+    function FindEnemies: TList<TCharacter>;
   protected
     procedure DoFrame; override;
     procedure CollideFigure( Source, Target : TAniFigure; var Stop : Boolean ); override;
@@ -1016,15 +1017,15 @@ end;
 
 procedure TFireflyProjectile.Arrival( sender : TObject );
 var
-  List : TList;
+  List : TList<TCharacter>;
   i : integer;
 begin
   List := FindEnemies;
   if assigned( List ) then
   begin
     i := random( List.count );
-    NewTargetX := TCharacter( List.items[ i ] ).X + ( TCharacter( List.items[ i ] ).X - X );
-    NewTargetY := TCharacter( List.items[ i ] ).Y + ( TCharacter( List.items[ i ] ).Y - Y );
+    NewTargetX := List.items[ i ].X + ( List.items[ i ].X - X );
+    NewTargetY := List.items[ i ].Y + ( List.items[ i ].Y - Y );
     List.free;
     WanderMode := false;
   end
@@ -1112,10 +1113,10 @@ begin
   end;
 end;
 
-function TFireflyProjectile.FindEnemies : TList;
+function TFireflyProjectile.FindEnemies: TList<TCharacter>;
 var
   i : Integer;
-  List : TList;
+  List : TList<TAniFigure>;
 begin
   result := nil;
 
@@ -1125,14 +1126,14 @@ begin
     begin
       for i := 0 to List.Count - 1 do
       begin
-        if TAniFigure( List.Items[ i ] ) is TCharacter then
+        if List.Items[ i ] is TCharacter then
         begin
           if not TCharacter( List.Items[ i ] ).Dead and
             ( FSource.IsEnemy( TCharacter( List.Items[ i ] ) ) or TCharacter( List.Items[ i ] ).IsEnemy( FSource ) ) then
           begin
             if not Assigned( result ) then
-              result := TList.Create;
-            result.Add( List.Items[ i ] );
+              result := TList<TCharacter>.Create;
+            result.Add( TCharacter(List.Items[ i ]) );
           end;
         end;
       end;

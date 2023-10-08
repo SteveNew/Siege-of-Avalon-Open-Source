@@ -229,7 +229,7 @@ end;
 function GetCharactersInRadius( X, Y : longint; Radius : single ) : TStringList;
 var
   i, j : integer;
-  List : TList;
+  List : TList<TAniFigure>;
 const
   FailName : string = 'Engine.GetCharactersInRadius';
 begin
@@ -243,7 +243,7 @@ begin
     begin
       for i := 0 to List.count - 1 do
       begin
-        if TAniFigure( List.items[ i ] ) is TCharacter then
+        if List.items[ i ] is TCharacter then
         begin
           if not assigned( result ) then
             Result := TStringList.create;

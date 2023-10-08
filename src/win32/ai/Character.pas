@@ -321,6 +321,8 @@ type
     property Info: string read GetInfo;
   end;
 
+  TItemList = class(TList<TItem>);
+
   TWeapon = class(TItem)
   private
     FAttackSound: string;
@@ -958,7 +960,7 @@ var
   i: Integer;
   A, B, C, Q, D, T: Double;
   dx, dy: Double;
-  List: TList;
+  List: TList<TAniFigure>;
   Test: TAniFigure;
 begin
   result := false;
@@ -11765,7 +11767,7 @@ end;
 function GetNearbyCharacter(Source: TCharacter; Limit: Double): TStringList;
 var
   i, j: Integer;
-  List: TList;
+  List: TList<TAniFigure>;
 const
   FailName: string = 'Character.GetNearbyCharacter';
 begin
@@ -11780,7 +11782,7 @@ begin
       begin
         for i := 0 to List.Count - 1 do
         begin
-          if TAniFigure(List.items[i]) is TCharacter then
+          if List.items[i] is TCharacter then
           begin
             if (List.items[i] <> Source) and not TCharacter(List.items[i]).Dead
             then
@@ -11933,7 +11935,7 @@ end;
 function GetPerceptibleEnemies(Source: TCharacter; Factor: Single): TStringList;
 var
   i, j: Integer;
-  List: TList;
+  List: TList<TAniFigure>;
   Limit: Double;
   lVision, Hearing, Smell, F: Double;
 const
@@ -11961,7 +11963,7 @@ begin
       begin
         for i := 0 to List.Count - 1 do
         begin
-          if TAniFigure(List.items[i]) is TCharacter then
+          if List.items[i] is TCharacter then
           begin
             if not TCharacter(List.items[i]).Dead and
               Source.IsEnemy(TCharacter(List.items[i])) then
@@ -11991,7 +11993,7 @@ end;
 function GetNearbyEnemies(Source: TCharacter; Limit: Double): TStringList;
 var
   i, j: Integer;
-  List: TList;
+  List: TList<TAniFigure>;
 const
   FailName: string = 'Character.GetNearbyEnemies';
 begin
@@ -12006,7 +12008,7 @@ begin
       begin
         for i := 0 to List.Count - 1 do
         begin
-          if TAniFigure(List.items[i]) is TCharacter then
+          if List.items[i] is TCharacter then
           begin
             if not TCharacter(List.items[i]).Dead and
               (Source.IsEnemy(TCharacter(List.items[i])) or
@@ -12033,7 +12035,7 @@ end;
 function GetPerceptibleAllies(Source: TCharacter; Factor: Single): TStringList;
 var
   i, j: Integer;
-  List: TList;
+  List: TList<TAniFigure>;
   Limit: Double;
   lVision, Hearing, Smell, F: Double;
 const
@@ -12062,7 +12064,7 @@ begin
       begin
         for i := 0 to List.Count - 1 do
         begin
-          if TAniFigure(List.items[i]) is TCharacter then
+          if List.items[i] is TCharacter then
           begin
             if (List.items[i] <> Source) and not TCharacter(List.items[i])
               .Dead and Source.IsAlly(TCharacter(List.items[i])) then
@@ -12092,7 +12094,7 @@ end;
 function GetNearbyAllies(Source: TCharacter; Limit: Double): TStringList;
 var
   i, j: Integer;
-  List: TList;
+  List: TList<TAniFigure>;
 const
   FailName: string = 'Character.GetNearbyAllies';
 begin
@@ -12107,7 +12109,7 @@ begin
       begin
         for i := 0 to List.Count - 1 do
         begin
-          if TAniFigure(List.items[i]) is TCharacter then
+          if List.items[i] is TCharacter then
           begin
             if (List.items[i] <> Source) and not TCharacter(List.items[i])
               .Dead and (Source.IsAlly(TCharacter(List.items[i])) or
@@ -12134,7 +12136,7 @@ end;
 function GetPerceptibleDead(Source: TCharacter; Factor: Single): TStringList;
 var
   i, j: Integer;
-  List: TList;
+  List: TList<TAniFigure>;
   Limit: Double;
   lVision, Hearing, Smell, F: Double;
 const
@@ -12163,7 +12165,7 @@ begin
       begin
         for i := 0 to List.Count - 1 do
         begin
-          if TAniFigure(List.items[i]) is TCharacter then
+          if List.items[i] is TCharacter then
           begin
             if TCharacter(List.items[i]).Dead then
             begin
@@ -12193,7 +12195,7 @@ function GetPerceptibleContainers(Source: TCharacter; Factor: Single)
   : TStringList;
 var
   i, j: Integer;
-  List: TList;
+  List: TList<TAniFigure>;
   Limit: Double;
   lVision, Hearing, Smell, F: Double;
 const
@@ -12222,7 +12224,7 @@ begin
       begin
         for i := 0 to List.Count - 1 do
         begin
-          if TAniFigure(List.items[i]) is TContainer then
+          if List.items[i] is TContainer then
           begin
             if Perceptible(Source, TSpriteObject(List.items[i]), lVision,
               Hearing, Smell, Source.MysticVision) then

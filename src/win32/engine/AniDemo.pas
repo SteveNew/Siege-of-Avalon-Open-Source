@@ -118,6 +118,11 @@ const
   WM_InitGame = WM_APP + 21;
   WM_PlayClosingMovie = WM_APP + 22;
 
+// Experimental - might actually sound nice with a natural SAPI voice
+//  SVSFDefault = 0;
+//  SVSFlagsAsync = 1;
+//  SVSFPurgeBeforeSpeak= 2;
+
 var
   DlgProgress: TLoaderBox;
   InterfacePath: string;
@@ -304,6 +309,8 @@ type
     ScreenShot: TBitmap;
     Achievements: TAchievements;
     ChosenDisplayindex: Integer;
+    // Experimental - might actually sound nice with a natural SAPI voice - global instance due to async play
+//    voice: OLEVariant;
 
     procedure CloseAllDialogs(Sender: TObject);
     procedure DrawSpellGlyphs;
@@ -432,7 +439,7 @@ uses
   Music,
   MP3,
   Engine,
-  SaveFile;
+  SaveFile, System.Variants, System.Win.ComObj;
 {$R *.DFM}
 
 var
@@ -2255,6 +2262,7 @@ begin
     Application.OnActivate := nil;
     Application.OnDeactivate := nil;
     Application.OnIdle := nil;
+//    voice  := Unassigned;
     Log.Log('Console destroyed');
 
   except
@@ -2320,6 +2328,7 @@ procedure TfrmMain.FormCreate(Sender: TObject);
 var
   SiegeIni: TIniFile;
   WINEVer: string;
+//  i: Integer;
 begin
   OpeningVideoPanel.Cursor := crNone;
   ClosingVideoPanel.Cursor := crNone;
@@ -2358,6 +2367,12 @@ begin
     SiegeIni.Free;
   end;
   Application.OnException := AppException;
+// Experimental - might actually sound nice with a natural SAPI voice
+//  voice := CreateOLEObject('SAPI.SpVoice');
+//  i := voice.GetVoices.count;
+//  voice.Voice := voice.GetVoices.Item(i-1);
+//  voice.volume := 100;
+//  voice.rate := 2;
 end;
 
 procedure TfrmMain.WMInitDDraw(var Message: TWMNoParams);
@@ -2472,7 +2487,7 @@ end;
 
 procedure TfrmMain.BeginInventory(Character: TCharacter);
 var
-  List: TList;
+  List: TList<TAniFigure>;
   i: Integer;
 const
   FailName: string = 'Main.BeginInventory';
@@ -2497,7 +2512,7 @@ begin
             begin
               if TItem(List.Items[i]).Enabled then
               begin
-                DlgInventory.GroundList.Add(List.Items[i]);
+                DlgInventory.GroundList.Add(TItem(List.Items[i]));
               end;
             end;
           end;
@@ -2517,7 +2532,7 @@ end;
 
 procedure TfrmMain.BeginMerchant(Character: TCharacter);
 var
-  List: TList;
+  List: TList<TAniFigure>;
   i: Integer;
 const
   FailName: string = 'Main.BeginMerchant';
@@ -2543,7 +2558,7 @@ begin
             begin
               if TItem(List.Items[i]).Enabled then
               begin
-                DlgMerchant.GroundList.Add(List.Items[i]);
+                DlgMerchant.GroundList.Add(TItem(List.Items[i]));
               end;
             end;
           end;
@@ -2564,7 +2579,7 @@ end;
 procedure TfrmMain.BeginObjInventory(Character: TCharacter;
   OtherObj: TSpriteObject);
 var
-  List: TList;
+  List: TList<TAniFigure>;
   i: Integer;
 const
   FailName: string = 'Main.BeginObjInventory';
@@ -2585,11 +2600,11 @@ begin
         begin
           for i := 0 to List.Count - 1 do
           begin
-            if TAniFigure(List.Items[i]) is TItem then
+            if List.Items[i] is TItem then
             begin
               if TItem(List.Items[i]).Enabled then
               begin
-                DlgObjInventory.GroundList.Add(List.Items[i]);
+                DlgObjInventory.GroundList.Add(TItem(List.Items[i]));
               end;
             end;
           end;
@@ -2609,7 +2624,7 @@ end;
 
 procedure TfrmMain.BeginLoot(Character: TCharacter; OtherObj: TSpriteObject);
 var
-  List: TList;
+  List: TList<TAniFigure>;
   i: Integer;
   Money: Integer;
 const
@@ -2644,11 +2659,11 @@ begin
         begin
           for i := 0 to List.Count - 1 do
           begin
-            if TAniFigure(List.Items[i]) is TItem then
+            if List.Items[i] is TItem then
             begin
               if TItem(List.Items[i]).Enabled then
               begin
-                DlgLoot.GroundList.Add(List.Items[i]);
+                DlgLoot.GroundList.Add(TItem(List.Items[i]));
               end;
             end;
           end;

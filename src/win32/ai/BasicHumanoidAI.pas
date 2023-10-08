@@ -178,6 +178,7 @@ type
   public
     procedure WasAttacked( Source : TAniFigure; Damage : Single ); override;
     procedure WasKilled( Source : TAniFigure ); override;
+    function AdjustedHitPoints(value: Integer): Single;
   public
     destructor Destroy; override;
     property BonusCourage : Integer read FBonusCourage write FBonusCourage;
@@ -2650,10 +2651,8 @@ const
 begin
   Log.DebugLog( FailName );
   try
-
     OldRadius := Character.Radius;
     NewRadius := Character.Radius + 2;
-
 
     CollideCount := 0;
     CirclePoint := Random( 360 ) + 180;
@@ -2682,36 +2681,16 @@ begin
         i := StrToInt( s );
         if i >= 0 then
         begin
+          Character.Wounds := 0;
+          Character.Drain := 0;
+          Character.AttackRecovery := Character.AttackRecovery + ( player.attackRecovery div i );
+
           if player.TitleExists( 'Apprentice' ) then
           begin
-            Character.Wounds := 0;
-            Character.Drain := 0;
             Character.Combat := ( ( ( player.Mysticism * 3 ) div 4 ) + i );
             Character.Strength := ( ( player.Perception * 3 ) div 4 ) + i;
-
-            if not ( Character.TitleExists( 'NoHP' ) ) then
-              if character.BaseHitPoints > 0 then
-              begin
-                if AdjustedPartyHitPoints then
-                begin
-                  if NPCList.Count > 1 then
-                  begin
-                    if player.TitleExists ('NoPartytoEnemyHP') then
-                    character.HitPoints := ( ( player.Perception * 2 ) )
-                    else
-                    character.HitPoints := ( ( player.Perception * 2 ) * ( NPCList.Count / 2 ) );
-                  end
-                  else
-                  begin
-                    character.HitPoints := ( ( player.Perception * 2 ) );
-                  end;
-                end
-                else
-                  character.HitPoints := ( ( player.Perception * 2 ) * NPCList.Count ); // Original
-              end;
-
-            character.Coordination := ( ( player.Coordination * 2 ) div 3 ) + i;
-            Character.AttackRecovery := Character.AttackRecovery + ( player.attackRecovery div i );
+            Character.HitPoints := AdjustedHitPoints(player.Perception);
+            Character.Coordination := ( ( player.Coordination * 2 ) div 3 ) + i;
 
             if character.Resistance.Heat.Invulnerability < ( player.mysticism div 10 ) then
               character.Resistance.Heat.Invulnerability := ( player.mysticism div 10 );
@@ -2739,37 +2718,13 @@ begin
             if character.Resistance.Mental.Resistance < ( player.mysticism / 200 ) then
               character.Resistance.Mental.Resistance := ( player.mysticism / 200 );
           end;
+
           if player.TitleExists( 'Hunter' ) then
           begin
-            character.Wounds := 0;
-            Character.Drain := 0;
-            character.Combat := ( ( ( player.Stealth * 3 ) div 4 ) + i );
-            character.strength := ( ( player.Coordination * 3 ) div 4 ) + i;
-
-            if not ( Character.TitleExists( 'NoHP' ) ) then
-              if character.BaseHitPoints > 0 then
-              begin
-                if AdjustedPartyHitPoints then
-                begin
-                  if NPCList.Count > 1 then
-                  begin
-                    if player.TitleExists ('NoPartytoEnemyHP') then
-                    character.HitPoints := ( ( player.Coordination * 2 ) )
-                    else
-                    character.HitPoints := ( ( player.Coordination * 2 ) * ( NPCList.Count / 2 ) );
-                  end
-                  else
-                  begin
-                    character.HitPoints := ( ( player.Coordination * 2 ) );
-                  end;
-                end
-                else
-                  character.HitPoints := ( ( player.Coordination * 2 ) * NPCList.Count ); // Original
-              end;
-
-            character.Coordination := ( ( player.Coordination * 3 ) div 4 ) + i;
-            Character.AttackRecovery := Character.AttackRecovery + ( player.attackRecovery div i );
-
+            Character.Combat := ( ( ( player.Stealth * 3 ) div 4 ) + i );
+            Character.strength := ( ( player.Coordination * 3 ) div 4 ) + i;
+            Character.HitPoints := AdjustedHitPoints(player.Coordination);
+            Character.Coordination := ( ( player.Coordination * 3 ) div 4 ) + i;
             if character.Resistance.Heat.Invulnerability < ( player.stealth div 20 ) then
               character.Resistance.Heat.Invulnerability := ( player.stealth div 20 );
             if character.Resistance.Cold.Invulnerability < ( player.stealth div 20 ) then
@@ -2791,33 +2746,10 @@ begin
 
           if player.TitleExists( 'Squire' ) then
           begin
-            character.Wounds := 0;
-            Character.Drain := 0;
-            character.Combat := ( ( player.Combat * 3 ) div 4 ) + i;
-            character.strength := ( ( player.Strength * 3 ) div 4 ) + i;
-            character.Coordination := ( ( player.Coordination * 2 ) div 3 ) + i;
-            Character.AttackRecovery := Character.AttackRecovery + ( player.attackRecovery div i );
-
-            if not ( Character.TitleExists( 'NoHP' ) ) then
-              if character.BaseHitPoints > 0 then
-              begin
-                if AdjustedPartyHitPoints then
-                begin
-                  if NPCList.Count > 1 then
-                  begin
-                    if player.TitleExists ('NoPartytoEnemyHP') then
-                    character.HitPoints := ( ( player.Strength * 2 ) )
-                    else
-                    character.HitPoints := ( ( player.Strength * 2 ) * ( NPCList.Count / 2 ) );
-                  end
-                  else
-                  begin
-                    character.HitPoints := ( ( player.Strength * 2 ) );
-                  end;
-                end
-                else
-                  character.HitPoints := ( ( player.Strength * 2 ) * NPCList.Count ); // Original
-              end;
+            Character.Combat := ( ( player.Combat * 3 ) div 4 ) + i;
+            Character.strength := ( ( player.Strength * 3 ) div 4 ) + i;
+            Character.Coordination := ( ( player.Coordination * 2 ) div 3 ) + i;
+            Character.HitPoints := AdjustedHitPoints(player.Strength);
 
             if character.Resistance.Heat.Invulnerability < ( player.combat div 20 ) then
               character.Resistance.Heat.Invulnerability := ( player.combat div 20 );
@@ -2837,7 +2769,6 @@ begin
             if character.Resistance.Magic.Resistance < ( player.mysticism / 200 ) then
               character.Resistance.Magic.Resistance := ( player.mysticism / 200 );
           end;
-
         end;
       end;
     except
@@ -3495,98 +3426,33 @@ begin
         i := StrToInt( s );
         if i >= 0 then
         begin
+          Character.Wounds := 0;
+          Character.Drain := 0;
           if player.TitleExists( 'Apprentice' ) then
           begin
-            character.Wounds := 0;
-            Character.Drain := 0;
-            character.Combat := ( ( ( player.mysticism * 3 ) div 4 ) + i );
-            character.strength := ( ( player.perception * 6 ) div 10 ) + i;
-            character.Coordination := ( ( player.perception * 2 ) div 3 ) + i;
-            character.Stealth := player.Mysticism + i;
-
-            if not ( Character.TitleExists( 'NoHP' ) ) then
-              if character.BaseHitPoints > 0 then
-              begin
-                if AdjustedPartyHitPoints then
-                begin
-                  if NPCList.Count > 1 then
-                  begin
-                    if player.TitleExists ('NoPartytoEnemyHP') then
-                    character.HitPoints := ( ( player.Perception * 2 ) )
-                    else
-                    character.HitPoints := ( ( player.Perception * 2 ) * ( NPCList.Count / 2 ) );
-                  end
-                  else
-                  begin
-                    character.HitPoints := ( ( player.Perception * 2 ) );
-                  end;
-                end
-                else
-                  character.HitPoints := ( ( player.Perception * 2 ) * NPCList.Count ); // Original
-              end;
-
+            Character.Combat := ( ( ( player.mysticism * 3 ) div 4 ) + i );
+            Character.strength := ( ( player.perception * 6 ) div 10 ) + i;
+            Character.Coordination := ( ( player.perception * 2 ) div 3 ) + i;
+            Character.Stealth := player.Mysticism + i;
+            Character.HitPoints := AdjustedHitPoints(player.Perception);
           end;
+
           if player.TitleExists( 'Hunter' ) then
           begin
-            character.Wounds := 0;
-            Character.Drain := 0;
-            character.Combat := player.combat + i;
-            character.strength := ( ( player.Strength * 6 ) div 10 ) + i;
-            character.Coordination := ( ( player.Coordination * 2 ) div 3 ) + i;
-            character.Stealth := player.Stealth + i;
-
-            if not ( Character.TitleExists( 'NoHP' ) ) then
-              if character.BaseHitPoints > 0 then
-              begin
-                if AdjustedPartyHitPoints then
-                begin
-                  if NPCList.Count > 1 then
-                  begin
-                    if player.TitleExists ('NoPartytoEnemyHP') then
-                    character.HitPoints := ( ( player.Coordination * 2 ) )
-                    else
-                    character.HitPoints := ( ( player.Coordination * 2 ) * ( NPCList.Count / 2 ) );
-                  end
-                  else
-                  begin
-                    character.HitPoints := ( ( player.Coordination * 2 ) );
-                  end;
-                end
-                else
-                  character.HitPoints := ( ( player.Coordination * 2 ) * NPCList.Count ); // Original
-              end;
-
+            Character.Combat := player.combat + i;
+            Character.strength := ( ( player.Strength * 6 ) div 10 ) + i;
+            Character.Coordination := ( ( player.Coordination * 2 ) div 3 ) + i;
+            Character.Stealth := player.Stealth + i;
+            Character.HitPoints := AdjustedHitPoints(player.Coordination);
           end;
+
           if player.TitleExists( 'Squire' ) then
           begin
-            character.Wounds := 0;
-            Character.Drain := 0;
-            character.Combat := ( ( ( player.combat * 3 ) div 4 ) + i );
-            character.strength := ( ( player.Coordination * 6 ) div 10 ) + i;
-            character.Coordination := ( ( player.strength * 2 ) div 3 ) + i;
-            character.Stealth := player.Combat + i;
-
-            if not ( Character.TitleExists( 'NoHP' ) ) then
-              if character.BaseHitPoints > 0 then
-              begin
-                if AdjustedPartyHitPoints then
-                begin
-                  if NPCList.Count > 1 then
-                  begin
-                    if player.TitleExists ('NoPartytoEnemyHP') then
-                    character.HitPoints := ( ( player.Strength * 2 ) )
-                    else
-                    character.HitPoints := ( ( player.Strength * 2 ) * ( NPCList.Count / 2 ) );
-                  end
-                  else
-                  begin
-                    character.HitPoints := ( ( player.Strength * 2 ) );
-                  end;
-                end
-                else
-                  character.HitPoints := ( ( player.Strength * 2 ) * NPCList.Count ); // Original
-              end;
-
+            Character.Combat := ( ( ( player.combat * 3 ) div 4 ) + i );
+            Character.strength := ( ( player.Coordination * 6 ) div 10 ) + i;
+            Character.Coordination := ( ( player.strength * 2 ) div 3 ) + i;
+            Character.Stealth := player.Combat + i;
+            Character.HitPoints := AdjustedHitPoints(player.Strength);
           end;
 
           if character.Resistance.Heat.Resistance < ( player.mysticism / 200 ) then
@@ -3601,7 +3467,6 @@ begin
             character.Resistance.Poison.Resistance := ( player.mysticism / 200 );
           if character.Resistance.Mental.Resistance < ( player.mysticism / 200 ) then
             character.Resistance.Mental.Resistance := ( player.mysticism / 200 );
-
         end;
       end;
     except
@@ -3638,11 +3503,8 @@ begin
   except
     on E : Exception do
       Log.log( 'Error HumanoidArcher Init: ' + E.Message );
-
   end;
-
   Delay := random( 60 );
-
 end;
 
 procedure THumanoidArcherCombat.NotifyOfDeath( Source : TAniFigure );
@@ -4910,7 +4772,6 @@ begin
 
 end;
 
-
 procedure THumanoidCasterCombat.Init;
 var
   S : string;
@@ -4966,7 +4827,7 @@ begin
     end;
 
     iTimeToRun := StrToIntDef( Character.Property_[ 'TimeToRun' ], 75 );
-    
+
     S := LowerCase( Character.Property_[ 'SpellEffect' ] );
     if ( s <> '' ) then
     begin
@@ -5016,109 +4877,38 @@ begin
         i := StrToInt( s );
         if i >= 0 then
         begin
+          Character.Wounds := 0;
+          Character.Drain := 0;
+          Character.combat := ( ( player.combat * 3 ) div 4 );
+
           if player.TitleExists( 'Apprentice' ) then
           begin
-            character.Wounds := 0;
-            Character.Drain := 0;
-            character.Mysticism := ( ( player.Mysticism * 3 ) div 4 ) + i;
-            character.perception := ( ( player.perception * 3 ) div 4 ) + i;
-            character.Coordination := ( ( player.Coordination * 3 ) div 4 ) + i;
-
-            if not ( Character.TitleExists( 'NoHP' ) ) then
-              if Character.BaseHitPoints > 0 then
-                if Character.HitPoints > ( Player.Perception * 2 ) then
-                begin
-                  if AdjustedPartyHitPoints then
-                  begin
-                    if NPCList.Count > 1 then
-                    begin
-                      if player.TitleExists ('NoPartytoEnemyHP') then
-                      character.HitPoints := ( ( player.Perception * 2 ) )
-                      else
-                      character.HitPoints := ( ( player.Perception * 2 ) * ( NPCList.Count / 2 ) );
-                    end
-                    else
-                    begin
-                      character.HitPoints := ( ( player.Perception * 2 ) );
-                    end;
-                  end
-                  else
-                    character.HitPoints := ( ( player.Perception * 2 ) * NPCList.Count ); // Original
-                end;
-
-            Character.combat := ( ( player.combat * 3 ) div 4 );
+            Character.Mysticism := ( ( player.Mysticism * 3 ) div 4 ) + i;
+            Character.perception := ( ( player.perception * 3 ) div 4 ) + i;
+            Character.Coordination := ( ( player.Coordination * 3 ) div 4 ) + i;
+            Character.HitPoints := AdjustedHitPoints(Player.Perception);
             Character.HitRecovery := -5;
             Character.AttackRecovery := Character.AttackRecovery + ( player.attackRecovery div i );
-
           end;
           if player.TitleExists( 'Hunter' ) then
           begin
-            character.Wounds := 0;
-            Character.Drain := 0;
             if player.Stealth > 70 then //limit set to 70
-            character.Mysticism := 53 + i //( ( 70 * 3 ) div 4 ) + i
+              Character.Mysticism := 53 + i //( ( 70 * 3 ) div 4 ) + i
             else
-            character.Mysticism := ( ( player.Stealth * 3 ) div 4 ) + i;
-            character.perception := ( ( player.Coordination * 3 ) div 4 ) + i;
-            character.Coordination := ( ( player.Coordination * 3 ) div 4 ) + i;
-
-            if not ( Character.TitleExists( 'NoHP' ) ) then
-              if character.BaseHitPoints > 0 then
-              begin
-                if AdjustedPartyHitPoints then
-                begin
-                  if NPCList.Count > 1 then
-                  begin
-                    if player.TitleExists ('NoPartytoEnemyHP') then
-                    character.HitPoints := ( ( player.Strength * 2 ) )
-                    else
-                    character.HitPoints := ( ( player.Strength * 2 ) * ( NPCList.Count / 2 ) );
-                  end
-                  else
-                  begin
-                    character.HitPoints := ( ( player.Strength * 2 ) );
-                  end;
-                end
-                else
-                  character.HitPoints := ( ( player.Strength * 2 ) * NPCList.Count ); // Original
-              end;
-
-            character.combat := ( ( player.combat * 3 ) div 4 );
+              Character.Mysticism := ( ( player.Stealth * 3 ) div 4 ) + i;
+            Character.perception := ( ( player.Coordination * 3 ) div 4 ) + i;
+            Character.Coordination := ( ( player.Coordination * 3 ) div 4 ) + i;
+            Character.HitPoints := AdjustedHitPoints(Player.Strength);
           end;
           if player.TitleExists( 'Squire' ) then
           begin
-
-            character.Wounds := 0;
-            Character.Drain := 0;
             if player.Combat > 70 then //limit set to 70
-            character.Mysticism := 53 + i
+              Character.Mysticism := 53 + i
             else
-            character.Mysticism := ( ( player.Combat * 3 ) div 4 ) + i;
-            character.perception := ( ( player.Strength * 3 ) div 4 ) + i;
-            character.Coordination := ( ( player.Strength * 3 ) div 4 ) + i;
-            character.combat := ( ( player.combat * 3 ) div 4 );
-
-            if not ( Character.TitleExists( 'NoHP' ) ) then
-              if character.BaseHitPoints > 0 then
-              begin
-                if AdjustedPartyHitPoints then
-                begin
-                  if NPCList.Count > 1 then
-                  begin
-                    if player.TitleExists ('NoPartytoEnemyHP') then
-                    character.HitPoints := ( ( player.Coordination * 2 ) )
-                    else
-                    character.HitPoints := ( ( player.Coordination * 2 ) * ( NPCList.Count / 2 ) );
-                  end
-                  else
-                  begin
-                    character.HitPoints := ( ( player.Coordination * 2 ) );
-                  end;
-                end
-                else
-                  character.HitPoints := ( ( player.Coordination * 2 ) * NPCList.Count ); // Original
-              end;
-
+              Character.Mysticism := ( ( player.Combat * 3 ) div 4 ) + i;
+            Character.perception := ( ( player.Strength * 3 ) div 4 ) + i;
+            Character.Coordination := ( ( player.Strength * 3 ) div 4 ) + i;
+            Character.HitPoints := AdjustedHitPoints(Player.Coordination);
           end;
 
           if character.Resistance.Heat.Resistance < ( player.mysticism / 200 ) then
@@ -5133,7 +4923,6 @@ begin
             character.Resistance.Poison.Resistance := ( player.mysticism / 200 );
           if character.Resistance.Mental.Resistance < ( player.mysticism / 200 ) then
             character.Resistance.Mental.Resistance := ( player.mysticism / 200 );
-
         end;
       end;
     except
@@ -6906,6 +6695,35 @@ begin
 end;
 
 { THumanoidCombat }
+
+function THumanoidCombat.AdjustedHitPoints(value: Integer): Single;
+begin
+  Result := Character.HitPoints;
+  if not ( Character.TitleExists( 'NoHP' ) ) then
+  begin
+    if Character.BaseHitPoints > 0 then
+    begin
+      if AdjustedPartyHitPoints then
+      begin
+        if NPCList.Count > 1 then
+        begin
+          if player.TitleExists ('NoPartytoEnemyHP') then
+            Result := ( value * 2 )
+          else
+            Result := ( value * 2 ) * ( NPCList.Count / 2 );
+        end
+        else
+          Result := ( value * 2 );
+      end
+      else
+        Result := ( value * 2 ) * NPCList.Count; // Original
+    end;
+  end;
+
+
+
+
+end;
 
 destructor THumanoidCombat.Destroy;
 const
