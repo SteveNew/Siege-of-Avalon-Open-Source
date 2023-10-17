@@ -3324,9 +3324,9 @@ begin
         finally
           HelpBox.ReleaseDC(DC);
         end;
-        DlgText.PlotF13Text(HelpBox, S, 10, 5, 170);
+        DlgText.PlotTextXY(HelpBox, S, 10, 5, 170, ftF13Letter);
         LastSpellName := S;
-        DlgText.PlotF13Block(HelpBox, Info, 20, 205, 20, 170);
+        DlgText.PlotTextXYBlock(HelpBox, Info, 20, 205, 20, 170, ftF13Letter);
       end;
     end;
 
@@ -3703,7 +3703,7 @@ begin
 
     if Slot = 0 then
     begin
-      DlgText.PlotF13Text(Surface, Figure.Name, 24, 108, 170);
+      DlgText.PlotTextXY(Surface, Figure.Name, 24, 108, 170, ftF13Letter);
     end;
 
   except
@@ -5244,11 +5244,9 @@ begin
               if Current.HotKey[H + 1] = Spells[i] then
               begin
                 if H < 10 then
-                  DlgText.PlotF13Block(SpellBar, H.ToString, X, X + 15,
-                    Y + 17, 255)
+                  DlgText.PlotTextXYBlock(SpellBar, H.ToString, X, X + 15, Y + 17, 255, ftF13Letter)
                 else // F3-F12
-                  DlgText.PlotF13Block(SpellBar, 'F' + IntToStr(H - 7), X,
-                    X + 15, Y + 17, 255);
+                  DlgText.PlotTextXYBlock(SpellBar, 'F' + IntToStr(H - 7), X, X + 15, Y + 17, 255, ftF13Letter);
                 break;
               end;
           end;
@@ -6216,10 +6214,8 @@ begin
       finally
         OverlayB.ReleaseDC(DC);
       end;
-      DlgText.PlotF13Text(OverlayB, MouseMessage, ScreenMetrics.MouseMsgX,
-        tY1, 170);
-      DlgText.PlotF13Block(OverlayB, QuickMessage, ScreenMetrics.MouseMsgX,
-        ScreenMetrics.MouseMsgX + 196, tY2, 170);
+      DlgText.PlotTextXY(OverlayB, MouseMessage, ScreenMetrics.MouseMsgX, tY1, 170, ftF13Letter);
+      DlgText.PlotTextXYBlock(OverlayB, QuickMessage, ScreenMetrics.MouseMsgX, ScreenMetrics.MouseMsgX + 196, tY2, 170, ftF13Letter);
     end;
 
   except

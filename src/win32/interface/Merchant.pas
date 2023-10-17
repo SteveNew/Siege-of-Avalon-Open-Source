@@ -1194,13 +1194,13 @@ begin
     Sentence := S;
     Sentence := trim( Sentence );
     LoopCount := 0;
-    while ( pText.TinyTextLength( Sentence ) > 170 ) and ( LoopCount < 10 ) do
+    while ( pText.TextLength( Sentence, ftTinyLetter ) > 170 ) and ( LoopCount < 10 ) do
     begin
       dl := LastDelimiter( ' ', Sentence );
       SetLength( Sentence, dl - 1 );
       inc( LoopCount );
     end;
-    if ( LoopCount > 0 ) and ( pText.TinyTextLength( Sentence ) < 165 ) then
+    if ( LoopCount > 0 ) and ( pText.TextLength( Sentence, ftTinyLetter ) < 165 ) then
     begin //we truncated
       Sentence := Sentence + '...';
     end;
@@ -1378,17 +1378,17 @@ begin
           lpDDSBack.BltFast( 46 + Offset.X, j * 35 + 38 + 3 + Offset.Y, ItemList[ i ].DXSurfaceIcon, @pr, DDBLTFAST_SRCCOLORKEY or DDBLTFAST_WAIT );
            //plot the name
            //pText.PlotTinyText(pTempItems(ItemList.Items[i]).pItem.name,126,j*35+38-3,250);
-          pText.PlotTinyText( GetSHORTSlotText( ItemList[ i ].pItem.name ), 126 + Offset.X, j * 35 + 38 - 3 + Offset.Y, 250 );
+          pText.PlotTextXY( lpDDSBack, GetSHORTSlotText( ItemList[ i ].pItem.name ), 126 + Offset.X, j * 35 + 38 - 3 + Offset.Y, 250, ftTinyLetter );
            //If player is wearing this item, say so
           if ItemList[ i ].BodySlot > -1 then
           begin //if hes wearing it, say so
             if ItemList[ i ].BodySlot = 11 then
             begin //its a weapon
-              pText.PlotTinyText( txtMessage[ 12 ], 126 + Offset.X, j * 35 + 38 - 3 + 18 + Offset.Y, 250 );
+              pText.PlotTextXY( lpDDSBack, txtMessage[ 12 ], 126 + Offset.X, j * 35 + 38 - 3 + 18 + Offset.Y, 250, ftTinyLetter );
             end
             else
             begin //an item, or armour
-              pText.PlotTinyText( txtMessage[ 13 ], 126 + Offset.X, j * 35 + 38 - 3 + 18 + Offset.Y, 250 )
+              pText.PlotTextXY( lpDDSBack, txtMessage[ 13 ], 126 + Offset.X, j * 35 + 38 - 3 + 18 + Offset.Y, 250, ftTinyLetter )
             end;
           end;
            //Plot the sale value
@@ -1399,7 +1399,7 @@ begin
           if Cost < 0 then
             Cost := 0;
 //           Cost:= Round(pTempItems(ItemList.Items[i]).pItem.Value*Merchant.BuyingDiscount);
-          pText.PlotTinyText( IntToStr( Cost ) + txtMessage[ 0 ], 297 + Offset.X - pText.TinyTextLength( IntToStr( Cost ) + txtMessage[ 0 ] ), j * 35 + 38 - 3 + 18 + Offset.Y, 250 );
+          pText.PlotTextXY( lpDDSBack, IntToStr( Cost ) + txtMessage[ 0 ], 297 + Offset.X - pText.TextLength( IntToStr( Cost ) + txtMessage[ 0 ], ftTinyLetter ), j * 35 + 38 - 3 + 18 + Offset.Y, 250, ftTinyLetter );
           j := j + 1;
         end
         else
@@ -1460,14 +1460,14 @@ begin
           pr := Rect( 0, 0, cGroundListWidth, cGroundListHeight );
           lpDDSBack.BltFast( 356 + Offset.X, j * 35 + 38 + 3 + Offset.Y, ItemList[ i ].DXSurfaceIcon, @pr, DDBLTFAST_SRCCOLORKEY or DDBLTFAST_WAIT );
            //pText.PlotTinyText(pTempItems(ItemList.Items[i]).pItem.name,80+356,j*35+38-3,250);
-          pText.PlotTinyText( GetSHORTSlotText( ItemList[ i ].pItem.name ), 80 + 356 + Offset.X, j * 35 + 38 - 3 + Offset.Y, 250 );
+          pText.PlotTextXY( lpDDSBack, GetSHORTSlotText( ItemList[ i ].pItem.name ), 80 + 356 + Offset.X, j * 35 + 38 - 3 + Offset.Y, 250, ftTinyLetter );
            //Plot the sale value
           if Character.charm < 1 then
             Cost := Round( ItemList[ i ].pItem.Value * ( 1 + 10 * ( Merchant.SellingMarkup - 1 ) / 1 ) )
           else
             Cost := Round( ItemList[ i ].pItem.Value * ( 1 + 10 * ( Merchant.SellingMarkup - 1 ) / Character.Charm ) );
 //           Cost:= Round(pTempItems(ItemList.Items[i]).pItem.Value*Merchant.SellingMarkup);
-          pText.PlotTinyText( IntToStr( Cost ) + txtMessage[ 0 ], 607 + Offset.X - pText.TinyTextLength( IntToStr( Cost ) + txtMessage[ 0 ] ), j * 35 + 38 - 3 + 18 + Offset.Y, 250 );
+          pText.PlotTextXY( lpDDSBack, IntToStr( Cost ) + txtMessage[ 0 ], 607 + Offset.X - pText.TextLength( IntToStr( Cost ) + txtMessage[ 0 ], ftTinyLetter ), j * 35 + 38 - 3 + 18 + Offset.Y, 250, ftTinyLetter );
           j := j + 1;
            //k:=k+1;
         end

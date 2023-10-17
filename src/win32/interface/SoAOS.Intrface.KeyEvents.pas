@@ -99,6 +99,7 @@ uses
   SoAOS.Animation,
   SoAOS.Effects,
   SoAOS.Intrface.Text,
+  SoAOS.Graphics.GameText, // just for fonttypes
   DirectX,
   DXEffects;
 
@@ -650,8 +651,7 @@ begin
   if Slowmomessage = '' then
     Slowmomessage := 'Slowmo active!';
   ExText.Close;
-  DlgText.PlotF13Block(frmmain.OverlayB, Slowmomessage, ScreenMetrics.MouseMsgX,
-  ScreenMetrics.MouseMsgX + 196, 77, 200);
+  DlgText.PlotTextXYBlock(frmmain.OverlayB, Slowmomessage, ScreenMetrics.MouseMsgX, ScreenMetrics.MouseMsgX + 196, 77, 200, ftF13Letter);
   Slowmoactive := true;
 end;
 

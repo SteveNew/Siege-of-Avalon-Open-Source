@@ -372,9 +372,9 @@ begin
 
               S := Copy( S, 1, length( S ) - 1 );
               if PStatModifier( Character.Titles.objects[ i ] ).DisplayName = '' then
-                pText.PlotTinyText( Character.Titles[ i ] + '   ' + S, 20 + Offset.X, Y + Offset.Y, 240 )
+                pText.PlotTextXY( lpDDSBack, Character.Titles[ i ] + '   ' + S, 20 + Offset.X, Y + Offset.Y, 240, ftTinyLetter )
               else
-                pText.PlotTinyText( PStatModifier( Character.Titles.objects[ i ] ).DisplayName + '   ' + S, 20 + Offset.X, Y + Offset.Y, 240 );
+                pText.PlotTextXY( lpDDSBack, PStatModifier( Character.Titles.objects[ i ] ).DisplayName + '   ' + S, 20 + Offset.X, Y + Offset.Y, 240, ftF13Letter );
               Y := Y + 25;
               inc( LineCount );
             end;

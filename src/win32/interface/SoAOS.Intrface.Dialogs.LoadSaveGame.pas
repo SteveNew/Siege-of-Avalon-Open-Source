@@ -990,10 +990,7 @@ begin
 
     DXBorders := nil;
 
-    if UseSmallFont then
-      pText.PlotGoldTextBlock( txtMessage[ 0 ], nRect.left - 10 + 23, nRect.left - 10 + 281, nRect.top + 52, 240 ) //392,650,451,240)
-    else
-      pText.PlotTextBlock( txtMessage[ 0 ], nRect.left - 10 + 23, nRect.left - 10 + 281, nRect.top + 52, 240 ); //392,650,451,240);
+    pText.PlotTextBlock( txtMessage[ 0 ], nRect.left - 10 + 23, nRect.left - 10 + 281, nRect.top + 52, 240, UseSmallFont, True ); //392,650,451,240);
 
     DeleteBoxVisible := true;
 
@@ -1023,10 +1020,7 @@ begin
 
     DXBorders := nil;
 
-    if UseSmallFont then
-      pText.PlotGoldTextBlock( txtMessage[ 1 ], nRect.left - 10 + 23, nRect.left - 10 + 281, nRect.top + 52, 240 ) //392,650,451,240)
-    else
-      pText.PlotTextBlock( txtMessage[ 1 ], nRect.left - 10 + 23, nRect.left - 10 + 281, nRect.top + 52, 240 ); //392,650,451,240);
+    pText.PlotTextBlock( txtMessage[ 1 ], nRect.left - 10 + 23, nRect.left - 10 + 281, nRect.top + 52, 240, UseSmallFont, True ); //392,650,451,240);
 
     OverwriteBoxVisible := true;
 
@@ -1051,10 +1045,7 @@ begin
   lpDDSBack.BltFast( nRect.left - 10, nRect.top + 32 + 75, DXok, @pr, DDBLTFAST_WAIT );
   DXBorders := nil;
 
-  if UseSmallFont then
-    pText.PlotGoldTextBlock( txtMessage[ 2 ], nRect.left - 10 + 23, nRect.left - 10 + 281, nRect.top + 52, 240 ) //392,650,451,240)
-  else
-    pText.PlotTextBlock( txtMessage[ 2 ], nRect.left - 10 + 23, nRect.left - 10 + 281, nRect.top + 52, 240 ); //392,650,451,240);
+  pText.PlotTextBlock( txtMessage[ 2 ], nRect.left - 10 + 23, nRect.left - 10 + 281, nRect.top + 52, 240, UseSmallFont, True ); //392,650,451,240);
 
   MustEnterNameBoxVisible := true;
 

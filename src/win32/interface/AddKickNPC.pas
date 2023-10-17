@@ -531,9 +531,9 @@ begin
   begin
     CharX := cOffset + ( 463 div 2 ) - cWidth div 2;
     OnDraw( Character, CharX + Offset.X, vOffset - 200 + Offset.Y ); //guy to add
-    i := pText.TinyTextLength( Character.name );
-    pText.PlotTinyText( Character.name, ( CharX + cWidth div 2 ) - ( i div 2 ) + Offset.X, vOffset + 4 - 200 + Offset.Y, 240 );
-    pText.PlotTinyText( txtMessage[ 10 ], CharX + 65 + Offset.X, vOffset - 200 + VAdj2 + Offset.Y, 240 );
+    i := pText.TextLength(Character.name, ftTinyLetter);
+    pText.PlotTextXY( lpDDSBack, Character.name, ( CharX + cWidth div 2 ) - ( i div 2 ) + Offset.X, vOffset + 4 - 200 + Offset.Y, 240, ftTinyLetter );
+    pText.PlotTextXY( lpDDSBack, txtMessage[ 10 ], CharX + 65 + Offset.X, vOffset - 200 + VAdj2 + Offset.Y, 240, ftTinyLetter );
     pr := Rect( CharX + 45, vOffset - 200 + VAdj1, CharX + 45 + 15, vOffset - 200 + VAdj1 + 15 );
     lpDDSBack.BltFast( CharX + 45 + Offset.X, vOffset - 200 + VAdj1 + Offset.Y, DXBack, @pr, DDBLTFAST_SRCCOLORKEY or DDBLTFAST_WAIT );
     pr := Rect( 0, 0, 15, 15 );
@@ -618,10 +618,10 @@ begin
 
   cWidth := TResource( NPCList[ 0 ].resource ).FrameWidth;
 
-  i := pText.TinyTextLength( NPCList[ NPCidx ].name );
-  pText.PlotTinyText( NPCList[ NPCidx ].name, ( CharX + cWidth div 2 ) - ( i div 2 ) + Offset.X, vOffset - vOffAdj + 4 + Offset.Y, 240 );
+  i := pText.TextLength( NPCList[ NPCidx ].name, ftTinyLetter);
+  pText.PlotTextXY( lpDDSBack, NPCList[ NPCidx ].name, ( CharX + cWidth div 2 ) - ( i div 2 ) + Offset.X, vOffset - vOffAdj + 4 + Offset.Y, 240, ftTinyLetter );
   OnDraw( NPCList[ NPCidx ], CharX + Offset.X, vOffset - vOffAdj + Offset.Y );
-  pText.PlotTinyText( txtMessage[ 11 ], CharX + 65 + Offset.X, vOffset + VAdj2 + Offset.Y, 240 );
+  pText.PlotTextXY( lpDDSBack, txtMessage[ 11 ], CharX + 65 + Offset.X, vOffset + VAdj2 + Offset.Y, 240, ftTinyLetter );
   pr := Rect( 0, 0, 15, 15 );
   if CheckBox[ NPCidx ] then
     lpDDSBack.BltFast( CharX + 45 + Offset.X, vOffset + VAdj1 + Offset.Y, DXBox2, @pr, DDBLTFAST_SRCCOLORKEY or DDBLTFAST_WAIT )

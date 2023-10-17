@@ -60,7 +60,7 @@ type
     function PlotTextXYBlock( DX: IDirectDrawSurface; Sentence : string; X, X2, Y, Alpha : integer; AFontType: TBMPFontType ) : integer;
     function PlotTextXYBlockAroundBox( DX: IDirectDrawSurface; Sentence: string; X, X2, Y, Alpha: integer; AFontType: TBMPFontType; cRect: TRect): integer;
 
-    function TextLength( Sentence: string; AFontType: TBMPFontType ): integer; overload;
+    function TextLength( Sentence: string; AFontType: TBMPFontType = ftLetter ): integer;
     function TextBlockHeight( Sentence : string; X, X2, Y : integer ) : integer;
     procedure BreakTextIntoAStringList( const Sentence : string; var daList : TStringList; x1, x2 : integer );
 
@@ -70,20 +70,14 @@ type
 
     // These are just wrappers - maybe eventually remove these from game
     procedure PlotText( const Sentence : string; X, Y: Integer; Alpha: integer=240 );
-    procedure PlotTinyText( const Sentence : string; X, Y, Alpha : integer );
-    function PlotTinyTextBlock( const Sentence : string; X, X2, Y, Alpha : integer ) : integer;
-    procedure PlotF13Text( DX : IDirectDrawSurface; Sentence : string; X, Y, Alpha : integer );
-    function PlotF13TextCentered( DX : IDirectDrawSurface; Sentence : string; X, X2, Y, Alpha : integer ) : boolean;
+    function PlotTextBlock( const Sentence : string; X1, X2, Y, Alpha : integer; Const UseSmallFnt: Boolean = False; Const UseGold: Boolean = False) : integer;
     function PlotTextCentered( const Sentence : string; X, X2, Y, Alpha : integer; const UseSmallFnt: Boolean = False) : boolean; overload;
     function PlotTextCentered( DX : IDirectDrawSurface; Sentence : string; X, X2, Y, Alpha : integer ) : boolean; overload;
-    function PlotDarkTextCentered( const Sentence : string; X, X2, Y, Alpha : integer ) : boolean;
-    function PlotTextBlock( const Sentence : string; X1, X2, Y, Alpha : integer; Const UseSmallFnt: Boolean = False; Const UseGold: Boolean = False) : integer;
-    function PlotGoldTextBlock( const Sentence : string; X, X2, Y, Alpha : integer ) : integer;
-    function PlotGoldTextCentered( DX : IDirectDrawSurface; Sentence : string; X, X2, Y, Alpha : integer ) : boolean;
-    function PlotF13Block( DX : IDirectDrawSurface; Sentence : string; X, X2, Y, Alpha : integer ) : integer;
 
-    function TextLength( const Sentence : string ) : integer; overload;
-    function TinyTextLength( const Sentence : string ) : integer;
+    function PlotTinyTextBlock( const Sentence : string; X, X2, Y, Alpha : integer ) : integer;
+
+    // use in statistics only
+    function PlotDarkTextCentered( const Sentence : string; X, X2, Y, Alpha : integer ) : boolean;
   end;
 
 implementation
@@ -212,31 +206,6 @@ end;
 function TGameText.PlotDarkTextCentered(const Sentence: string; X, X2, Y, Alpha: integer): boolean;
 begin
   Result := PlotTextXYCentered( lpDDSBack, Sentence, X, X2, Y, Alpha, ftDarkLetter, -1);
-end;
-
-function TGameText.PlotF13Block(DX: IDirectDrawSurface; Sentence: string; X, X2, Y, Alpha: integer): integer;
-begin
-  Result := PlotTextXYBlock(DX, Sentence, X, X2, Y, Alpha, ftF13Letter);
-end;
-
-procedure TGameText.PlotF13Text(DX: IDirectDrawSurface; Sentence: string; X, Y, Alpha: integer);
-begin
-  PlotTextXY(DX, Sentence, X, Y, Alpha, ftF13Letter);
-end;
-
-function TGameText.PlotF13TextCentered(DX: IDirectDrawSurface; Sentence: string; X, X2, Y, Alpha: integer): Boolean;
-begin
-  Result := PlotTextXYCentered(DX, Sentence, X, X2, Y, Alpha, ftF13Letter);
-end;
-
-function TGameText.PlotGoldTextBlock(const Sentence: string; X, X2, Y, Alpha: integer): integer;
-begin
-  Result := PlotTextXYBlock( lpDDSBack, Sentence, X, X2, Y, Alpha, ftGoldLetter);
-end;
-
-function TGameText.PlotGoldTextCentered(DX: IDirectDrawSurface; Sentence: string; X, X2, Y, Alpha: integer): boolean;
-begin
-  Result := PlotTextXYCentered(DX, Sentence, X, X2, Y, Alpha, ftGoldLetter);
 end;
 
 procedure TGameText.PlotText( const Sentence : string; X, Y: Integer; Alpha: integer=240 );
@@ -575,11 +544,6 @@ begin
   end;
 end;
 
-procedure TGameText.PlotTinyText( const Sentence: string; X, Y, Alpha: integer);
-begin
-  PlotTextXY(lpDDSBack, Sentence, X, Y, Alpha, ftTinyLetter);
-end;
-
 function TGameText.PlotTinyTextBlock( const Sentence: string; X, X2, Y, Alpha: integer): integer;
 begin
   Result := PlotTextXYBlock( lpDDSBack, Sentence, X, X2, Y, Alpha, ftTinyLetter);
@@ -675,12 +639,7 @@ begin
   end;
 end;
 
-function TGameText.TextLength( const Sentence: string): integer;
-begin
-  Result := TextLength(Sentence, ftLetter);
-end;
-
-function TGameText.TextLength(Sentence: string; AFontType: TBMPFontType): integer;
+function TGameText.TextLength(Sentence: string; AFontType: TBMPFontType = ftLetter): integer;
 var
   i : integer;
   j : integer;
@@ -754,11 +713,6 @@ begin
   finally
     BM.Free;
   end;
-end;
-
-function TGameText.TinyTextLength( const Sentence: string): integer;
-begin
-  Result := TextLength(Sentence, ftTinyLetter);
 end;
 
 function TGameText.PlotTextBlock( const Sentence: string; X1, X2, Y, Alpha: integer; const UseSmallFnt,

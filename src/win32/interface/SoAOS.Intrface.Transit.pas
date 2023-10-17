@@ -941,8 +941,8 @@ begin
   FOffsetRegion := FRegion;
   FOffsetRegion.Offset(Offset);
   FImage := DDGetSurface( lpDD, w, h, cInvisColor, false );
-  AOwner.pText.PlotF13TextCentered( FImage, AOwner.MsgProceed, 0, FRegion.Width, 3, 255 );
-  AOwner.pText.PlotF13TextCentered( FImage, AOwner.DefaultName, 0, FRegion.Width, 23, 255 );
+  AOwner.pText.PlotTextXYCentered( FImage, AOwner.MsgProceed, 0, FRegion.Width, 3, 255, ftF13Letter );
+  AOwner.pText.PlotTextXYCentered( FImage, AOwner.DefaultName, 0, FRegion.Width, 23, 255, ftF13Letter );
   FMapName := AOwner.DefaultMap;
   FIndex := -1;
   FEnabled := True;

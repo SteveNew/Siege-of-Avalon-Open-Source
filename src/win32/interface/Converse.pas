@@ -128,6 +128,7 @@ uses
   SoAOS.Types,
   SoAOS.Intrface.Text,
   SoAOS.Graphics.Draw,
+  SoAOS.Graphics.GameText,
   Engine,
   LogFile,
   AniDemo,
@@ -645,7 +646,7 @@ begin
       R.Top := j;
       R.Right := X1 + W - 30;
       if UseSmallFont then
-        j := j + 18 * pText.PlotTinyTextBlock( Caption, R.Left + Offset.X, R.Right + Offset.X, R.Top + Offset.Y, 240 ) + 10
+        j := j + 18 * pText.PlotTextXYBlock( lpDDSBack, Caption, R.Left + Offset.X, R.Right + Offset.X, R.Top + Offset.Y, 240, ftTinyLetter ) + 10
       else
         j := j + 22 * pText.PlotTextBlock( Caption, R.Left + Offset.X, R.Right + Offset.X, R.Top + Offset.Y, 240 ) + 10;
       R.Bottom := j;
@@ -665,14 +666,14 @@ begin
       if i = HLText then
       begin
         if UseSmallFont then
-          j := j + 18 * pText.PlotTinyTextBlock( S, R.Left + Offset.X, R.Right + Offset.X, R.Top + Offset.Y, 240 )
+          j := j + 18 * pText.PlotTextXYBlock( lpDDSBack, S, R.Left + Offset.X, R.Right + Offset.X, R.Top + Offset.Y, 240, ftTinyLetter )
         else
           j := j + 22 * pText.PlotTextBlock( S, R.Left + Offset.X, R.Right + Offset.X, R.Top + Offset.Y, 240 );
       end
       else
       begin
         if UseSmallFont then
-          j := j + 18 * pText.PlotTinyTextBlock( S, R.Left + Offset.X, R.Right + Offset.X, R.Top + Offset.Y, 120 )
+          j := j + 18 * pText.PlotTextXYBlock( lpDDSBack, S, R.Left + Offset.X, R.Right + Offset.X, R.Top + Offset.Y, 120, ftTinyLetter )
         else
           j := j + 22 * pText.PlotTextBlock( S, R.Left + Offset.X, R.Right + Offset.X, R.Top + Offset.Y, 120 );
       end;
