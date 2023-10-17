@@ -70,7 +70,8 @@ uses
   Display,
   Inventory,
   Converse,
-  Gametext,
+  SoAOS.Graphics.GameText,
+//  Gametext,
   Statistics,
   Achievements,
   ObjInventory,
@@ -3811,8 +3812,8 @@ begin
       DlgNPC := TNPCBehavior.Create;
       DlgShow := TShowGraphic.Create;
       DlgCreation := TCreation.Create;
-      DlgText := TGameText.Create;
-      DlgText.Load13Graphic;
+      DlgText := TGameText.Create(InterfaceLanguagePath, UseSmallFont, (Language = 'russian'));
+//      DlgText.Load13Graphic;
       DlgStatistics := TStatistics.Create;
       DlgQuestLog := TQuestLog.Create;
       DlgAdvLog := TAdvLog.Create;
@@ -5591,9 +5592,9 @@ begin
   DlgCreation := TCreation.Create; // Reinitialisation
   DlgLoad := TLoadGame.Create; // Reinitialisation
   DlgText.destroy; // Reinitialisation
-  DlgText := TGameText.Create;
+  DlgText := TGameText.Create(InterfaceLanguagePath, UseSmallFont, (Language = 'russian'));
   // Reinitialisation, SoA 5 langages but Mods only 2 langauges
-  DlgText.Load13Graphic; // Reinitialisation
+//  DlgText.Load13Graphic; // Reinitialisation
   FreeSpells; // Free Resources, so no overload for "sound listcount"
   if not LoadSpells then // Reinitialisation
     Exit;
@@ -6219,12 +6220,6 @@ begin
         tY1, 170);
       DlgText.PlotF13Block(OverlayB, QuickMessage, ScreenMetrics.MouseMsgX,
         ScreenMetrics.MouseMsgX + 196, tY2, 170);
-      // DlgText.PlotText2(OverlayB,QuickMessage,tx2,ty2,170);
-      // DlgText.LoadTinyFontGraphic;
-      // DlgText.PlotTinyText2(OverlayB,QuickMessage,tx2,ty2,170);
-      // DlgText.LoadMegaTinyFontGraphic;
-      // DlgText.PlotMegaTinyText(OverlayB,QuickMessage,tx2,ty2,170);
-      // DlgText.PlotDarkText2(OverlayB,QuickMessage,tx2,ty2,170);
     end;
 
   except

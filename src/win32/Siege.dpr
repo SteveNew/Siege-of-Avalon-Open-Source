@@ -54,7 +54,6 @@ uses
   Engine in 'engine\Engine.pas',
   AdventureLog in 'engine\AdventureLog.pas',
   DFX in 'graphics\DFX.pas',
-  GameText in 'engine\GameText.pas',
   Character in 'ai\Character.pas',
   AI1 in 'ai\AI1.pas',
   UndeadAI in 'ai\UndeadAI.pas',
@@ -162,7 +161,9 @@ uses
   JclPeImage in 'jcl\JclPeImage.pas',
   JclTD32 in 'jcl\JclTD32.pas',
   JclHookExcept in 'jcl\JclHookExcept.pas',
-  SoAOS.SysUtils in 'engine\SoAOS.SysUtils.pas';
+  SoAOS.SysUtils in 'engine\SoAOS.SysUtils.pas',
+  SoAOS.Graphics.BMPFonts in 'graphics\SoAOS.Graphics.BMPFonts.pas',
+  SoAOS.Graphics.GameText in 'graphics\SoAOS.Graphics.GameText.pas';
 
 {$R *.RES}
 

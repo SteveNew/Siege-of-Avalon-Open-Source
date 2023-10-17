@@ -56,7 +56,7 @@ uses
   System.IniFiles,
   SoAOS.Intrface.Dialogs,
   Resource,
-  GameText,
+  SoAOS.Graphics.GameText,
   AdventureLog,
   LogFile,
   SoAOS.Animation,
@@ -151,7 +151,7 @@ begin
     frmMain.OnMouseDown := FormMouseDown;
     frmMain.OnMouseMove := FormMouseMove;
 
-    pText.LoadFontGraphic( 'inventory' ); //load the statistics font graphic in
+    pText.Fonts.LoadFontGraphic( 'inventory' ); //load the statistics font graphic in
 
     DXBack := SoAOS_DX_LoadBMP( InterfaceLanguagePath + 'Journal.bmp', cInvisColor, DlgWidth, DlgHeight );
 
@@ -372,7 +372,7 @@ begin
         else
         lpDDSBack.BltFast( PicXY.X + Offset.X, PicXY.Y + Offset.Y, DXPic, @pr, DDBLTFAST_SRCCOLORKEY or DDBLTFAST_WAIT );
         if LogText <> '' then
-          pText.PlotTextBlockAroundBox( Logtext, 50, 750, 50, 240, rect( PicXY.X, PicXY.Y, PicXY.X + PicWidth + 20, PicXY.Y + PicHeight + 20 ) );
+          pText.PlotTextXYBlockAroundBox(lpDDSBack, Logtext, 50, 750, 50, 240, ftLetter, rect( PicXY.X, PicXY.Y, PicXY.X + PicWidth + 20, PicXY.Y + PicHeight + 20 ) );
       end
       else if TFile.Exists( JournalLog.LogDirectory + ChangeFileExt( JournalLog.LogFileList.strings[ CurrentLogIndex ], '.jpg' ) ) then
       begin
@@ -407,7 +407,7 @@ begin
         else
         lpDDSBack.BltFast( PicXY.X + Offset.X, PicXY.Y + Offset.Y, DXPic, @pr, DDBLTFAST_SRCCOLORKEY or DDBLTFAST_WAIT );
         if LogText <> '' then
-          pText.PlotTextBlockAroundBox( Logtext, 50, 750, 50, 240, rect( PicXY.X, PicXY.Y, PicXY.X + PicWidth + 20, PicXY.Y + PicHeight + 20 ) );
+          pText.PlotTextXYBlockAroundBox(lpDDSBack, Logtext, 50, 750, 50, 240, ftLetter, rect( PicXY.X, PicXY.Y, PicXY.X + PicWidth + 20, PicXY.Y + PicHeight + 20 ) );
       end
       else if LogText <> '' then
         pText.PlotTextBlock( Logtext, 50, 750, 50, 240 );

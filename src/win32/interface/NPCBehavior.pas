@@ -54,7 +54,7 @@ uses
   SoAOS.AI,
   Character,
   SoAOS.AI.Types,
-  GameText,
+  SoAOS.Graphics.GameText,
   Display,
   SoAOS.Animation,
   Engine;
@@ -182,7 +182,7 @@ begin
   if CharAI.Character <> nil then
     CharSpellList := CharAI.Character.SpellList;
 
-  pText.LoadFontGraphic( 'statistics' ); //load the statistics font graphic in
+  pText.Fonts.LoadFontGraphic( 'statistics' ); //load the statistics font graphic in
 
   //create the dirty surface
   DXDirty := DDGetSurface( lpDD, 35, 35, cInvisColor, true );
@@ -208,7 +208,7 @@ begin
 
   DXBorders := nil;
 
-  pText.PlotText( CharAI.character.name, 9, 41, 240 );
+  pText.PlotText( CharAI.character.name, 9, 41 );
   PlotMenu;
   SoAOS_DX_BltFront;
 end; //Init
@@ -748,7 +748,7 @@ begin
               //clear text
           pr := Rect( 24, 365, 550, 469 );
           lpDDSBack.BltFast( 24, 365, DXBack, @pr, DDBLTFAST_WAIT );
-          pText.PlotText( pTA( ActList.items[ CurrentSelectedItem ] ).text, 25, 365, 240 );
+          pText.PlotText( pTA( ActList.items[ CurrentSelectedItem ] ).text, 25, 365 );
           pText.PlotTextBlock( 'You may drag this Action Icon to any of the four Command Priority slots.  After selecting an Action, you will be prompted for a Target, if necessary.', 25, 550, 395, 240 );
           pr := Rect( Tx, Ty, Tx + 35, Ty + 35 );
           DXDirty.BltFast( 0, 0, lpDDSBack, @pr, DDBLTFAST_WAIT ); //save dirty
@@ -791,7 +791,7 @@ begin
               //clear text
         pr := Rect( 24, 365, 550, 469 );
         lpDDSBack.BltFast( 24, 365, DXBack, @pr, DDBLTFAST_WAIT );
-        pText.PlotText( pTA( TargList.items[ CurrentSelectedItem ] ).text, 25, 365, 240 );
+        pText.PlotText( pTA( TargList.items[ CurrentSelectedItem ] ).text, 25, 365 );
         pText.PlotTextBlock( 'You may drag this Target Icon to any available Target slot.  You may not choose a target until you have dragged an Action Icon or a Spell Icon to a Command Priority slot.', 25, 550, 395, 240 );
         pr := Rect( Tx, Ty, Tx + 35, Ty + 35 );
         DXDirty.BltFast( 0, 0, lpDDSBack, @pr, DDBLTFAST_WAIT ); //save dirty
@@ -832,7 +832,7 @@ begin
               //clear text
         pr := Rect( 24, 365, 550, 469 );
         lpDDSBack.BltFast( 24, 365, DXBack, @pr, DDBLTFAST_WAIT );
-        pText.PlotText( CharSpellList[ pSP( SpellList.items[ CurrentSelectedItem ] ).SpellIndex ], 25, 365, 240 );
+        pText.PlotText( CharSpellList[ pSP( SpellList.items[ CurrentSelectedItem ] ).SpellIndex ], 25, 365 );
         pText.PlotTextBlock( 'You may drag this Spell Icon to any of the four Command Priority slots.  After selecting a Spell, you will be prompted for a Target, if necessary.', 25, 550, 395, 240 );
         pr := Rect( Tx, Ty, Tx + 35, Ty + 35 );
         DXDirty.BltFast( 0, 0, lpDDSBack, @pr, DDBLTFAST_WAIT ); //save dirty
@@ -1069,7 +1069,7 @@ begin
       begin
         if PtInRect( rect( pTA( ActList.items[ i ] ).dx, pTA( ActList.items[ i ] ).dy, pTA( ActList.items[ i ] ).dx + 35, pTA( ActList.items[ i ] ).dy + 35 ), point( x, y ) ) then
         begin
-          pText.PlotText( pTA( ActList.items[ i ] ).text, 25, 365, 240 );
+          pText.PlotText( pTA( ActList.items[ i ] ).text, 25, 365 );
           pText.PlotTextBlock( 'You may drag this Action Icon to any of the four Command Priority slots.  After selecting an Action, you will be prompted for a Target, if necessary.', 25, 550, 395, 240 );
         end;
       end;
@@ -1102,7 +1102,7 @@ begin
       end; //end for
       if ti <> -1 then
       begin //if pointer is over an icon, plot the text
-        pText.PlotText( pTA( TargList.items[ ti ] ).text, 25, 365, 240 );
+        pText.PlotText( pTA( TargList.items[ ti ] ).text, 25, 365 );
         pText.PlotTextBlock( 'You may drag this Target Icon to any available Target slot.  You may not choose a target until you have dragged an Action Icon or a Spell Icon to a Command Priority slot.', 25, 550, 395, 240 );
       end;
     end; //endif ptinrect region - Target
@@ -1134,7 +1134,7 @@ begin
       end; //end for
       if ti <> -1 then
       begin //if pointer is over an icon, plot the text
-        pText.PlotText( CharSpellList[ pSP( SpellList.items[ ti ] ).SpellIndex ], 25, 365, 240 );
+        pText.PlotText( CharSpellList[ pSP( SpellList.items[ ti ] ).SpellIndex ], 25, 365 );
         pText.PlotTextBlock( 'You may drag this Spell Icon to any available Target slot.  You may not choose a target until you have dragged an Action Icon or a Spell Icon to a Command Priority slot.', 25, 550, 395, 240 );
       end;
     end; //endif Y > 247 spells
@@ -1173,9 +1173,9 @@ begin
           if DestRect[ ti ].CommandIndex <> -1 then
           begin
             if DestRect[ ti ].CommandType = 1 then //action
-              pText.PlotText( pTA( ActList.items[ DestRect[ ti ].CommandIndex ] ).text, 25, 365, 240 )
+              pText.PlotText( pTA( ActList.items[ DestRect[ ti ].CommandIndex ] ).text, 25, 365 )
             else //spell
-              pText.PlotText( CharSpellList[ pSP( SpellList.items[ DestRect[ ti ].CommandIndex ] ).SpellIndex ], 25, 365, 240 );
+              pText.PlotText( CharSpellList[ pSP( SpellList.items[ DestRect[ ti ].CommandIndex ] ).SpellIndex ], 25, 365 );
           end;
           pText.PlotTextBlock( DestRect[ ti ].text, 25, 550, 395, 240 )
         end
@@ -1184,7 +1184,7 @@ begin
           if DestRect[ ti ].visible then
           begin //if visible show text
             if DestRect[ ti ].CommandIndex <> -1 then
-              pText.PlotText( pTA( TargList.items[ DestRect[ ti ].CommandIndex ] ).text, 25, 365, 240 );
+              pText.PlotText( pTA( TargList.items[ DestRect[ ti ].CommandIndex ] ).text, 25, 365 );
             pText.PlotTextBlock( DestRect[ ti ].text, 25, 550, 395, 240 );
           end;
         end;

@@ -54,7 +54,7 @@ uses
   Vcl.Controls,
   Character,
   Resource,
-  GameText,
+  SoAOS.Graphics.GameText,
   Scroll,
   Engine,
   SoAOS.Animation,
@@ -363,8 +363,8 @@ begin
     DontPlotCurrentItem := false;
     DlgScroll := TScroll.create; //create the statistics scroll
     DlgScroll.pText := pText; //assign the pointer to pText;
-    pText.LoadFontGraphic( 'inventory' ); //load the inventory font graphic in
-    pText.LoadTinyFontGraphic;
+    pText.Fonts.LoadFontGraphic( 'inventory' ); //load the inventory font graphic in
+//    pText.LoadTinyFontGraphic;
     CurrentSelectedItem := -1; //We aren't dragging anything
     DlgScroll.ScrollIsShowing := False; //stats screen isnt showing
     Alpha := 170; //alpha value for all alphabet plots
@@ -526,7 +526,7 @@ begin
     DontPlotCurrentItem := false;
     paint;
 
-    PlotText( IntToStr( Character.money ) + ' ' + txtCrowns, 240 - pText.TextLength( IntToStr( Character.money ) + ' ' + txtCrowns ), 10, Alpha );
+    pText.PlotText( IntToStr( Character.money ) + ' ' + txtCrowns, 240 + Offset.X - pText.TextLength( IntToStr( Character.money ) + ' ' + txtCrowns ), 10 + Offset.Y, Alpha );
   //Whew! Now we flip it all to the screen
     MouseCursor.Cleanup;
 
@@ -681,7 +681,7 @@ begin
             if UseSmallFont then
               pText.PlotTinyTextBlock( GetSlotText, ClearLeft + Offset.X, ClearRight + Offset.X, SmlMsg + Offset.Y, Alpha )
             else
-              PlotText( GetSlotText, ClearLeft, LrgMsg, Alpha );
+              pText.PlotText( GetSlotText, ClearLeft + Offset.X, LrgMsg + Offset.Y, Alpha );
             //save the background to the dirty DD surface based on the floating item
             pr := ApplyOffset( Rect( Tx, Ty, Tx + ItemList[ CurrentSelectedItem ].W, Ty + ItemList[ CurrentSelectedItem ].H ) );
             DXDirty.BltFast( 0, 0, lpDDSBack, @pr, DDBLTFAST_WAIT );
@@ -758,7 +758,7 @@ begin
               if UseSmallFont then
                 pText.PlotTinyTextBlock( GetSlotText, ClearLeft + Offset.X, ClearRight + Offset.X, SmlMsg + Offset.Y, Alpha )
               else
-                PlotText( GetSlotText, ClearLeft, LrgMsg, Alpha );
+                pText.PlotText( GetSlotText, ClearLeft + Offset.X, LrgMsg + Offset.Y, Alpha );
             end;
           end;
           i := i + 1;
@@ -889,7 +889,7 @@ begin
               if UseSmallFont then
                 pText.PlotTinyTextBlock( GetSlotText, ClearLeft + Offset.X, ClearRight + Offset.X, SmlMsg + Offset.Y, Alpha )
               else
-                PlotText( GetSlotText, ClearLeft, LrgMsg, Alpha );
+                pText.PlotText( GetSlotText, ClearLeft + Offset.X, LrgMsg + Offset.Y, Alpha );
             end;
           end
           else
@@ -921,11 +921,11 @@ begin
           else
           begin
             if ErrorCode = 11 then //weapon error
-              PlotText( txtMessage[ 0 ], ClearLeft, LrgMsg, Alpha )
+              pText.PlotText( txtMessage[ 0 ], ClearLeft + Offset.X, LrgMsg + Offset.Y, Alpha )
             else if ErrorCode = 12 then //shield error
-              PlotText( txtMessage[ 1 ], ClearLeft, LrgMsg, Alpha )
+              pText.PlotText( txtMessage[ 1 ], ClearLeft + Offset.X, LrgMsg + Offset.Y, Alpha )
             else if ErrorCode = 255 then //Quest item drop on ground error
-              PlotText( txtMessage[ 2 ], ClearLeft, LrgMsg, Alpha );
+              pText.PlotText( txtMessage[ 2 ], ClearLeft + Offset.X, LrgMsg + Offset.Y, Alpha );
           end;
           ErrorCode := -1;
           //save the background to the dirty DD surface based on the floating item
@@ -981,7 +981,7 @@ begin
           if UseSmallFont then
             pText.PlotTinyTextBlock( txtMessage[ 3 ], ClearLeft + Offset.X, ClearRight + Offset.X, SmlMsg + Offset.Y, Alpha )
           else
-            PlotText( txtMessage[ 3 ], ClearLeft, LrgMsg, Alpha );
+            pText.PlotText( txtMessage[ 3 ], ClearLeft + Offset.X, LrgMsg + Offset.Y, Alpha );
           //save the background to the dirty DD surface based on the floating item
           pr := ApplyOffset( Rect( Tx, Ty, Tx + ItemList[ CurrentSelectedItem ].W, Ty + ItemList[ CurrentSelectedItem ].H ) );
           DXDirty.BltFast( 0, 0, lpDDSBack, @pr, DDBLTFAST_WAIT );
@@ -1070,11 +1070,11 @@ begin
             else
             begin
               if Character.Strength < TWeapon( ItemList[ CurrentSelectedItem ].PItem ).MinStrength then //Weapon minstrength error
-                PlotText( txtMessage[ 4 ], ClearLeft, LrgMsg, Alpha )
+                pText.PlotText( txtMessage[ 4 ], ClearLeft + Offset.X, LrgMsg + Offset.Y, Alpha )
               else if Character.Coordination < TWeapon( ItemList[ CurrentSelectedItem ].PItem ).MinCoordination then //weap mincoord
-                PlotText( txtMessage[ 5 ], ClearLeft, LrgMsg, Alpha )
+                pText.PlotText( txtMessage[ 5 ], ClearLeft + Offset.X, LrgMsg + Offset.Y, Alpha )
               else if Character.Restriction > TWeapon( ItemList[ CurrentSelectedItem ].PItem ).MaxRestriction then //maxRestriction
-                PlotText( txtMessage[ 6 ], ClearLeft, LrgMsg, Alpha )
+                pText.PlotText( txtMessage[ 6 ], ClearLeft + Offset.X, LrgMsg + Offset.Y, Alpha )
               else
                 pText.PlotTinyTextBlock( GetSlotText + txtMessage[ 7 ], ClearLeft + Offset.X, ClearRight + Offset.X, SmlMsg + Offset.Y, Alpha );
 //                pText.PlotText(GetSlotText + txtMessage[7], ClearLeft, LrgMsg,Alpha);
@@ -1122,7 +1122,7 @@ begin
           if UseSmallFont then
             pText.PlotTinyTextBlock( txtMessage[ 8 ], ClearLeft + Offset.X, ClearRight + Offset.X, SmlMsg + Offset.Y, Alpha )
           else
-            PlotText( txtMessage[ 8 ], ClearLeft, LrgMsg, Alpha );
+            pText.PlotText( txtMessage[ 8 ], ClearLeft + Offset.X, LrgMsg + Offset.Y, Alpha );
         end
         else if PtinRect( ApplyOffset( rect( 353, 391, 365, 418 ) ), point( X, Y ) ) then
         begin //over right arrow
@@ -1135,7 +1135,7 @@ begin
           if UseSmallFont then
             pText.PlotTinyTextBlock( txtMessage[ 9 ], ClearLeft + Offset.X, ClearRight + Offset.X, SmlMsg + Offset.Y, Alpha )
           else
-            PlotText( txtMessage[ 9 ], ClearLeft, LrgMsg, Alpha );
+            pText.PlotText( txtMessage[ 9 ], ClearLeft + Offset.X, LrgMsg + Offset.Y, Alpha );
         end
         else if PtinRect( ApplyOffset( rect( 595, 416, 595 + 74, 416 + 46 ) ), point( X, Y ) ) then
         begin //over back button
@@ -1203,7 +1203,7 @@ begin
   try
     pr := Rect( 0, 0, 679, 476 );
     lpDDSBack.BltFast( Offset.X, Offset.Y, DXBack, @pr, DDBLTFAST_SRCCOLORKEY or DDBLTFAST_WAIT );
-    PlotText( IntToStr( Character.money ) + ' ' + txtCrowns, 240 - pText.TextLength( IntToStr( Character.money ) + ' ' + txtCrowns ), 10, Alpha );
+    pText.PlotText( IntToStr( Character.money ) + ' ' + txtCrowns, 240 + Offset.X - pText.TextLength( IntToStr( Character.money ) + ' ' + txtCrowns ), 10 + Offset.Y, Alpha );
   //Now plot all of the items on the grid
     for i := 0 to ItemList.Count - 1 do
     begin
@@ -1627,7 +1627,7 @@ begin
     DXLeftArrow := nil;
     DXBackToGame := nil;
     DxDirty := nil;
-    pText.UnloadTinyFontGraphic;
+//    pText.UnloadTinyFontGraphic;
     for i := 0 to ItemList.Count - 1 do
     begin
       if Assigned( ItemList[ i ].DXSurface ) then

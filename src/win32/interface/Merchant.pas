@@ -55,7 +55,7 @@ uses
   Vcl.ExtCtrls,
   Character,
   Resource,
-  GameText,
+  SoAOS.Graphics.GameText,
   Parts,
   Scroll,
   Engine,
@@ -228,8 +228,8 @@ begin
     CurrentSelectedListItem := -1;
     DlgScroll := TScroll.create; //create the statistics scroll
     DlgScroll.pText := pText; //assign the pointer to pText;
-    pText.LoadFontGraphic( 'inventory' ); //load the inventory font graphic in
-    pText.LoadTinyFontGraphic; //load the small font graphic for use
+    pText.Fonts.LoadFontGraphic( 'inventory' ); //load the inventory font graphic in
+//    pText.LoadTinyFontGraphic; //load the small font graphic for use
     CurrentSelectedItem := -1; //We aren't dragging anything
     DlgScroll.ScrollIsShowing := False; //stats screen isnt showing
     Alpha := 220; //alpha value for all alphabet plots
@@ -291,20 +291,20 @@ begin
     DXBorder := nil; //release DXBorder
 
   //Now put the names up
-    PlotText( Character.name, 43, 10, Alpha );
-    PlotText( Merchant.name, 355, 10, Alpha );
-    PlotText( IntToStr( Character.money ) + txtMessage[ 0 ], 297 - pText.TextLength( IntToStr( Character.money ) + txtMessage[ 0 ] ), 10, Alpha );
+    pText.PlotText( Character.name, 43 + Offset.X, 10 + Offset.Y, Alpha );
+    pText.PlotText( Merchant.name, 355 + Offset.X, 10 + Offset.Y, Alpha );
+    pText.PlotText( IntToStr( Character.money ) + txtMessage[ 0 ], 297 + Offset.X - pText.TextLength( IntToStr( Character.money ) + txtMessage[ 0 ] ), 10 + Offset.Y, Alpha );
 
   //now the Buy and Sell buttons
     pr := Rect( 76, 362, 268, 386 );
     DXSellItem.BltFast( 0, 0, DXBack, @pr, DDBLTFAST_WAIT );
     pr := Rect( 385, 362, 577, 386 );
     DXBuyItem.BltFast( 0, 0, DXBack, @pr, DDBLTFAST_WAIT );
-    pText.PlotTextCentered2( DXSellItem, txtMessage[ 1 ], 0, 192, 0, 255 );
-    pText.PlotTextCentered2( DXBuyItem, txtMessage[ 2 ], 0, 192, 0, 255 );
+    pText.PlotTextCentered( DXSellItem, txtMessage[ 1 ], 0, 192, 0, 255 );
+    pText.PlotTextCentered( DXBuyItem, txtMessage[ 2 ], 0, 192, 0, 255 );
 
-    PlotTextCentered( txtMessage[ 1 ], 46, 298, 362, BuySellAlpha );
-    PlotTextCentered( txtMessage[ 2 ], 355, 607, 362, BuySellAlpha );
+    pText.PlotTextCentered( txtMessage[ 1 ], 46 + Offset.X, 298 + Offset.X, 362 + Offset.Y, BuySellAlpha );
+    pText.PlotTextCentered( txtMessage[ 2 ], 355 + Offset.X, 607 + Offset.X, 362 + Offset.Y, BuySellAlpha );
 
   //Create list
     ItemList := TList<pTempItems>.Create; //create the ItemList
@@ -467,7 +467,7 @@ begin
               paint;
               pr := Rect( 20, 412, 20 + 550, 412 + 25 );
               lpDDSBack.BltFast( 20 + Offset.X, 412 + Offset.Y, DXBack, @pr, DDBLTFAST_WAIT ); //clean up before we plot text
-              PlotText( txtMessage[ 3 ], 20, 412, Alpha );
+              pText.PlotText( txtMessage[ 3 ], 20 + Offset.X, 412 + Offset.Y, Alpha );
             end
             else
             begin //we did have enough room
@@ -481,7 +481,7 @@ begin
               //plot a bit of informative text
             pr := Rect( 20, 412, 20 + 550, 412 + 25 );
             lpDDSBack.BltFast( 20 + Offset.X, 412 + Offset.Y, DXBack, @pr, DDBLTFAST_WAIT ); //clean up before we plot text
-            PlotText( txtMessage[ 4 ], 20, 412, Alpha );
+            pText.PlotText( txtMessage[ 4 ], 20 + Offset.X, 412 + Offset.Y, Alpha );
           end;
         end; //endif
       end //Sell
@@ -600,7 +600,7 @@ begin
             if UseSmallFont then
               pText.PlotTinyTextBlock( GetSlotText, ClearLeft + Offset.X, ClearRight + Offset.X, SmlMsg + Offset.Y, Alpha )
             else
-              PlotText( GetSlotText, ClearLeft, LrgMsg, Alpha );
+              pText.PlotText( GetSlotText, ClearLeft + Offset.X, LrgMsg + Offset.Y, Alpha );
             //save the background to the dirty DD surface based on the floating item
             pr := ApplyOffset( Rect( Tx, Ty, Tx + cGroundListWidth, Ty + cGroundListHeight ) );
             DXDirty.BltFast( 0, 0, lpDDSBack, @pr, DDBLTFAST_WAIT );
@@ -696,7 +696,7 @@ begin
             if UseSmallFont then
               pText.PlotTinyTextBlock( txtMessage[ 6 ], ClearLeft + Offset.X, ClearRight + Offset.X, SmlMsg + Offset.Y, Alpha )
             else
-              PlotText( txtMessage[ 6 ], ClearLeft, LrgMsg, Alpha );
+              pText.PlotText( txtMessage[ 6 ], ClearLeft + Offset.X, LrgMsg + Offset.Y, Alpha );
           end;
           i := i + 1;
         end; //wend
@@ -728,7 +728,7 @@ begin
               if UseSmallFont then
                 pText.PlotTinyTextBlock( txtMessage[ 11 ], ClearLeft + Offset.X, ClearRight + Offset.X, SmlMsg + Offset.Y, Alpha )
               else
-                PlotText( txtMessage[ 11 ], ClearLeft, LrgMsg, Alpha )
+                pText.PlotText( txtMessage[ 11 ], ClearLeft + Offset.X, LrgMsg + Offset.Y, Alpha )
             end;
             i := i + 1;
           end; //wend
@@ -757,7 +757,7 @@ begin
            //paint;
           pr := Rect( 20, 412, 20 + 550, 412 + 25 );
           lpDDSBack.BltFast( 20 + Offset.X, 412 + Offset.X, DXBack, @pr, DDBLTFAST_WAIT ); //clean up before we plot text
-          PlotText( txtMessage[ 3 ], 20, 412, Alpha );
+          pText.PlotText( txtMessage[ 3 ], 20 + Offset.X, 412 + Offset.Y, Alpha );
         end
         else
         begin //we did have enough room
@@ -882,8 +882,8 @@ begin
       pr := Rect( 76, 362, 76 + 192, 362 + 24 );
       lpDDSBack.BltFast( 76 + Offset.X, 362 + Offset.Y, DXBack, @pr, DDBLTFAST_WAIT );
     //now replot the text
-      PlotTextCentered( txtMessage[ 1 ], 46, 298, 362, BuySellAlpha );
-      PlotTextCentered( txtMessage[ 2 ], 355, 607, 362, BuySellAlpha );
+      pText.PlotTextCentered( txtMessage[ 1 ], 46 + Offset.X, 298 + Offset.X, 362 + Offset.Y, BuySellAlpha );
+      pText.PlotTextCentered( txtMessage[ 2 ], 355 + Offset.X, 607 + Offset.X, 362 + Offset.Y, BuySellAlpha );
     //Clean up secondary message line
       if not ( PtInRect( ApplyOffset( Rect( 287, 376, 363, 406 ) ), point( x, y ) ) or   // ground
         PtInRect( ApplyOffset( rect( 46, 38, 298, 353 ) ), point( x, y ) ) or            // left
@@ -906,7 +906,7 @@ begin
           if UseSmallFont then
             pText.PlotTinyTextBlock( txtMessage[ 7 ], ClearLeft + Offset.X, ClearRight + Offset.X, SmlMsg + Offset.Y, Alpha )
           else
-            PlotText( txtMessage[ 7 ], ClearLeft, LrgMsg, Alpha );
+            pText.PlotText( txtMessage[ 7 ], ClearLeft + Offset.X, LrgMsg + Offset.Y, Alpha );
         end
         else if PtinRect( ApplyOffset( rect( 364, 375, 376, 407 ) ), point( X, Y ) ) then
         begin //over right arrow
@@ -919,7 +919,7 @@ begin
           if UseSmallFont then
             pText.PlotTinyTextBlock( txtMessage[ 8 ], ClearLeft + Offset.X, ClearRight + Offset.X, SmlMsg + Offset.Y, Alpha )
           else
-            PlotText( txtMessage[ 8 ], ClearLeft, LrgMsg, Alpha );
+            pText.PlotText( txtMessage[ 8 ], ClearLeft + Offset.X, LrgMsg + Offset.Y, Alpha );
         end
         else if PtinRect( ApplyOffset( rect( 588, 407, 588 + 77, 412 + 54 ) ), point( X, Y ) ) then
         begin //over back button
@@ -941,7 +941,7 @@ begin
           if UseSmallFont then
             pText.PlotTinyTextBlock( txtMessage[ 9 ], ClearLeft + Offset.X, ClearRight + Offset.X, SmlMsg + Offset.Y, Alpha )
           else
-            PlotText( txtMessage[ 9 ], ClearLeft, LrgMsg, Alpha );
+            pText.PlotText( txtMessage[ 9 ], ClearLeft + Offset.X, LrgMsg + Offset.Y, Alpha );
         end
         else if PtinRect( ApplyOffset( rect( 131, 361, 131 + 82, 361 + 24 ) ), point( X, Y ) ) then
         begin //over sell item
@@ -954,7 +954,7 @@ begin
           if UseSmallFont then
             pText.PlotTinyTextBlock( txtMessage[ 10 ], ClearLeft + Offset.X, ClearRight + Offset.X, SmlMsg + Offset.Y, Alpha )
           else
-            PlotText( txtMessage[ 10 ], ClearLeft, LrgMsg, Alpha );
+            pText.PlotText( txtMessage[ 10 ], ClearLeft + Offset.X, LrgMsg + Offset.Y, Alpha );
         end
         else
         begin //if PtinRect(rect(300,225,347,247),point(X,Y)) then begin //over left ALL arrow
@@ -973,7 +973,7 @@ begin
               if UseSmallFont then
                 pText.PlotTinyTextBlock( txtMessage[ 6 ], ClearLeft + Offset.X, ClearRight + Offset.X, SmlMsg + Offset.Y, Alpha )
               else
-                PlotText( txtMessage[ 6 ], ClearLeft, LrgMsg, Alpha )
+                pText.PlotText( txtMessage[ 6 ], ClearLeft + Offset.X, LrgMsg + Offset.X, Alpha )
             end;
             i := i + 1;
           end; //wend
@@ -993,7 +993,7 @@ begin
                 if UseSmallFont then
                   pText.PlotTinyTextBlock( txtMessage[ 11 ], ClearLeft + Offset.X, ClearRight + Offset.X, SmlMsg + Offset.Y, Alpha )
                 else
-                  PlotText( txtMessage[ 11 ], ClearLeft, LrgMsg, Alpha )
+                  pText.PlotText( txtMessage[ 11 ], ClearLeft + Offset.X, LrgMsg + Offset.Y, Alpha )
               end;
               i := i + 1;
             end; //wend
@@ -1051,12 +1051,12 @@ begin
     ShowLeftList;
     ShowRightList;
   //Now put the names up
-    PlotText( Character.name, 43, 10, Alpha );
-    PlotText( Merchant.name, 355, 10, Alpha );
-    PlotText( IntToStr( Character.money ) + txtMessage[ 0 ], 297 - pText.TextLength( IntToStr( Character.money ) + txtMessage[ 0 ] ), 10, Alpha );
+    pText.PlotText( Character.name, 43 + Offset.X, 10 + Offset.Y, Alpha );
+    pText.PlotText( Merchant.name, 355 + Offset.X, 10 + Offset.Y, Alpha );
+    pText.PlotText( IntToStr( Character.money ) + txtMessage[ 0 ], 297 + Offset.X - pText.TextLength( IntToStr( Character.money ) + txtMessage[ 0 ] ), 10 + Offset.Y, Alpha );
   //now the Buy and Sell buttons
-    PlotTextCentered( txtMessage[ 1 ], 46, 298, 362, BuySellAlpha );
-    PlotTextCentered( txtMessage[ 2 ], 355, 607, 362, BuySellAlpha );
+    pText.PlotTextCentered( txtMessage[ 1 ], 46 + Offset.X, 298 + Offset.X, 362 + Offset.Y, BuySellAlpha );
+    pText.PlotTextCentered( txtMessage[ 2 ], 355 + Offset.X, 607 + Offset.X, 362 + Offset.Y, BuySellAlpha );
 
     SoAOS_DX_BltFront;
   except
@@ -1378,17 +1378,17 @@ begin
           lpDDSBack.BltFast( 46 + Offset.X, j * 35 + 38 + 3 + Offset.Y, ItemList[ i ].DXSurfaceIcon, @pr, DDBLTFAST_SRCCOLORKEY or DDBLTFAST_WAIT );
            //plot the name
            //pText.PlotTinyText(pTempItems(ItemList.Items[i]).pItem.name,126,j*35+38-3,250);
-          PlotTinyText( GetSHORTSlotText( ItemList[ i ].pItem.name ), 126, j * 35 + 38 - 3, 250 );
+          pText.PlotTinyText( GetSHORTSlotText( ItemList[ i ].pItem.name ), 126 + Offset.X, j * 35 + 38 - 3 + Offset.Y, 250 );
            //If player is wearing this item, say so
           if ItemList[ i ].BodySlot > -1 then
           begin //if hes wearing it, say so
             if ItemList[ i ].BodySlot = 11 then
             begin //its a weapon
-              PlotTinyText( txtMessage[ 12 ], 126, j * 35 + 38 - 3 + 18, 250 );
+              pText.PlotTinyText( txtMessage[ 12 ], 126 + Offset.X, j * 35 + 38 - 3 + 18 + Offset.Y, 250 );
             end
             else
             begin //an item, or armour
-              PlotTinyText( txtMessage[ 13 ], 126, j * 35 + 38 - 3 + 18, 250 )
+              pText.PlotTinyText( txtMessage[ 13 ], 126 + Offset.X, j * 35 + 38 - 3 + 18 + Offset.Y, 250 )
             end;
           end;
            //Plot the sale value
@@ -1399,7 +1399,7 @@ begin
           if Cost < 0 then
             Cost := 0;
 //           Cost:= Round(pTempItems(ItemList.Items[i]).pItem.Value*Merchant.BuyingDiscount);
-          PlotTinyText( IntToStr( Cost ) + txtMessage[ 0 ], 297 - pText.TinyTextLength( IntToStr( Cost ) + txtMessage[ 0 ] ), j * 35 + 38 - 3 + 18, 250 );
+          pText.PlotTinyText( IntToStr( Cost ) + txtMessage[ 0 ], 297 + Offset.X - pText.TinyTextLength( IntToStr( Cost ) + txtMessage[ 0 ] ), j * 35 + 38 - 3 + 18 + Offset.Y, 250 );
           j := j + 1;
         end
         else
@@ -1460,14 +1460,14 @@ begin
           pr := Rect( 0, 0, cGroundListWidth, cGroundListHeight );
           lpDDSBack.BltFast( 356 + Offset.X, j * 35 + 38 + 3 + Offset.Y, ItemList[ i ].DXSurfaceIcon, @pr, DDBLTFAST_SRCCOLORKEY or DDBLTFAST_WAIT );
            //pText.PlotTinyText(pTempItems(ItemList.Items[i]).pItem.name,80+356,j*35+38-3,250);
-          PlotTinyText( GetSHORTSlotText( ItemList[ i ].pItem.name ), 80 + 356, j * 35 + 38 - 3, 250 );
+          pText.PlotTinyText( GetSHORTSlotText( ItemList[ i ].pItem.name ), 80 + 356 + Offset.X, j * 35 + 38 - 3 + Offset.Y, 250 );
            //Plot the sale value
           if Character.charm < 1 then
             Cost := Round( ItemList[ i ].pItem.Value * ( 1 + 10 * ( Merchant.SellingMarkup - 1 ) / 1 ) )
           else
             Cost := Round( ItemList[ i ].pItem.Value * ( 1 + 10 * ( Merchant.SellingMarkup - 1 ) / Character.Charm ) );
 //           Cost:= Round(pTempItems(ItemList.Items[i]).pItem.Value*Merchant.SellingMarkup);
-          PlotTinyText( IntToStr( Cost ) + txtMessage[ 0 ], 607 - pText.TinyTextLength( IntToStr( Cost ) + txtMessage[ 0 ] ), j * 35 + 38 - 3 + 18, 250 );
+          pText.PlotTinyText( IntToStr( Cost ) + txtMessage[ 0 ], 607 + Offset.X - pText.TinyTextLength( IntToStr( Cost ) + txtMessage[ 0 ] ), j * 35 + 38 - 3 + 18 + Offset.Y, 250 );
           j := j + 1;
            //k:=k+1;
         end
@@ -1548,7 +1548,7 @@ begin
 
     WriteTheInventoryData;
 
-    pText.UnLoadTinyFontGraphic; //free the tinyfont graphic
+//    pText.UnLoadTinyFontGraphic; //free the tinyfont graphic
     Locked := false;
     DlgScroll.free;
     DlgScroll := nil;
@@ -1646,7 +1646,7 @@ begin
         if UseSmallFont then
           pText.PlotTinyTextBlock( txtMessage[ 6 ], ClearLeft + Offset.X, ClearRight + Offset.X, SmlMsg + Offset.Y, Alpha )
         else
-          PlotText( txtMessage[ 6 ], ClearLeft, LrgMsg, Alpha );
+          pText.PlotText( txtMessage[ 6 ], ClearLeft + Offset.X, LrgMsg + Offset.Y, Alpha );
         SoAOS_DX_BltFront;
         break;
       end;
@@ -1702,7 +1702,7 @@ begin
         if UseSmallFont then
           pText.PlotTinyTextBlock( txtMessage[ 11 ], ClearLeft + Offset.X, ClearRight + Offset.X, SmlMsg + Offset.Y, Alpha )
         else
-          PlotText( txtMessage[ 11 ], ClearLeft, LrgMsg, Alpha );
+          pText.PlotText( txtMessage[ 11 ], ClearLeft + Offset.X, LrgMsg + Offset.Y, Alpha );
 
         SoAOS_DX_BltFront;
         break;

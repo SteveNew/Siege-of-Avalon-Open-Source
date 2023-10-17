@@ -61,7 +61,7 @@ uses
   SoAOS.Intrface.Dialogs,
   Vcl.Controls,
   Vcl.ExtCtrls,
-  GameText,
+  SoAOS.Graphics.GameText,
   SoAOS.Animation,
   Logfile,
   engine;
@@ -193,9 +193,9 @@ begin
       txtMessage[ i ] := ExText.GetText( 'Message' + inttostr( i ) );
       //array above 0-25
 
-    pText.LoadFontGraphic( 'createchar' ); //Load Goldfont
-    if UseSmallFont then
-      pText.LoadGoldFontGraphic;
+    pText.Fonts.LoadFontGraphic( 'createchar' ); //Load Goldfont
+//    if UseSmallFont then
+//      pText.LoadGoldFontGraphic;
 
     DXTroph := SoAOS_DX_LoadBMP( InterfaceLanguagePath + 'trophies.bmp', cInvisColor, DlgWidth, DlgHeight );
     DXExit :=  SoAOS_DX_LoadBMP( InterfaceLanguagePath + 'trexit.bmp', $00FF00FF );
@@ -325,7 +325,7 @@ begin
 {$ENDIF}
   try
      ExText.close;
-     pText.UnloadGoldFontGraphic;
+//     pText.UnloadGoldFontGraphic;
      DXTroph := nil;
      DXBlack := nil;
      DXExit := nil;

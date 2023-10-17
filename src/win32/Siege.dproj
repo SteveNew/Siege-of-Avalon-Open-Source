@@ -189,8 +189,8 @@ $(PostBuildEvent)]]></PostBuildEvent>
         <AppEnableRuntimeThemes>true</AppEnableRuntimeThemes>
         <VerInfo_MinorVer>20</VerInfo_MinorVer>
         <VerInfo_Release>2</VerInfo_Release>
-        <VerInfo_Build>2429</VerInfo_Build>
-        <VerInfo_Keys>CompanyName=;FileDescription=$(MSBuildProjectName);FileVersion=1.20.2.2429;InternalName=;LegalCopyright=;LegalTrademarks=;OriginalFilename=;ProductName=$(MSBuildProjectName);ProductVersion=1.0.0.0;Comments=;ProgramID=</VerInfo_Keys>
+        <VerInfo_Build>2506</VerInfo_Build>
+        <VerInfo_Keys>CompanyName=;FileDescription=$(MSBuildProjectName);FileVersion=1.20.2.2506;InternalName=;LegalCopyright=;LegalTrademarks=;OriginalFilename=;ProductName=$(MSBuildProjectName);ProductVersion=1.0.0.0;Comments=;ProgramID=</VerInfo_Keys>
         <DCC_Optimize>false</DCC_Optimize>
         <DCC_DebugInformation>2</DCC_DebugInformation>
         <DCC_LocalDebugSymbols>true</DCC_LocalDebugSymbols>
@@ -364,26 +364,74 @@ $(PostBuildEvent)]]></PostBuildEvent>
             <Deployment Version="4">
                 <DeployFile LocalName="..\..\assets\Interface\XRay.bmp" Configuration="Debug" Class="ProjectFile"/>
                 <DeployFile LocalName="..\..\assets\Interface\XRay.bmp" Configuration="Release" Class="ProjectFile"/>
+                <DeployFile LocalName="..\..\assets\Interface\XRay.bmp" Configuration="Release" Class="ProjectFile">
+                    <Platform Name="Win32">
+                        <RemoteDir>.\</RemoteDir>
+                        <Overwrite>true</Overwrite>
+                    </Platform>
+                </DeployFile>
                 <DeployFile LocalName="..\..\assets\Interface\blkchcry.ttf" Configuration="Debug" Class="ProjectFile"/>
                 <DeployFile LocalName="..\..\assets\Interface\blkchcry.ttf" Configuration="Release" Class="ProjectFile"/>
+                <DeployFile LocalName="..\..\assets\Interface\blkchcry.ttf" Configuration="Release" Class="ProjectFile">
+                    <Platform Name="Win32">
+                        <RemoteDir>.\</RemoteDir>
+                        <Overwrite>true</Overwrite>
+                    </Platform>
+                </DeployFile>
                 <DeployFile LocalName="..\..\assets\Interface\bottombarFullHD.bmp" Configuration="Debug" Class="ProjectFile"/>
                 <DeployFile LocalName="..\..\assets\Interface\bottombarHD.bmp" Configuration="Debug" Class="ProjectFile"/>
                 <DeployFile LocalName="..\..\assets\Interface\chaLeftArrow.bmp" Configuration="Debug" Class="ProjectFile"/>
                 <DeployFile LocalName="..\..\assets\Interface\chaLeftArrow.bmp" Configuration="Release" Class="ProjectFile"/>
+                <DeployFile LocalName="..\..\assets\Interface\chaLeftArrow.bmp" Configuration="Release" Class="ProjectFile">
+                    <Platform Name="Win32">
+                        <RemoteDir>.\</RemoteDir>
+                        <Overwrite>true</Overwrite>
+                    </Platform>
+                </DeployFile>
                 <DeployFile LocalName="..\..\assets\Interface\chaRightArrow.bmp" Configuration="Debug" Class="ProjectFile"/>
                 <DeployFile LocalName="..\..\assets\Interface\chaRightArrow.bmp" Configuration="Release" Class="ProjectFile"/>
+                <DeployFile LocalName="..\..\assets\Interface\chaRightArrow.bmp" Configuration="Release" Class="ProjectFile">
+                    <Platform Name="Win32">
+                        <RemoteDir>.\</RemoteDir>
+                        <Overwrite>true</Overwrite>
+                    </Platform>
+                </DeployFile>
                 <DeployFile LocalName="..\..\assets\Interface\glow.bmp" Configuration="Debug" Class="ProjectFile"/>
                 <DeployFile LocalName="..\..\assets\Interface\glow.bmp" Configuration="Release" Class="ProjectFile"/>
+                <DeployFile LocalName="..\..\assets\Interface\glow.bmp" Configuration="Release" Class="ProjectFile">
+                    <Platform Name="Win32">
+                        <RemoteDir>.\</RemoteDir>
+                        <Overwrite>true</Overwrite>
+                    </Platform>
+                </DeployFile>
                 <DeployFile LocalName="..\..\assets\Interface\shadow.bmp" Configuration="Debug" Class="ProjectFile"/>
                 <DeployFile LocalName="..\..\assets\Interface\shadow.bmp" Configuration="Release" Class="ProjectFile"/>
+                <DeployFile LocalName="..\..\assets\Interface\shadow.bmp" Configuration="Release" Class="ProjectFile">
+                    <Platform Name="Win32">
+                        <RemoteDir>.\</RemoteDir>
+                        <Overwrite>true</Overwrite>
+                    </Platform>
+                </DeployFile>
                 <DeployFile LocalName="..\..\assets\Interface\sidebarFullHD.bmp" Configuration="Debug" Class="ProjectFile"/>
                 <DeployFile LocalName="..\..\assets\Interface\sidebarHD.bmp" Configuration="Debug" Class="ProjectFile"/>
                 <DeployFile LocalName="..\..\assets\Interface\spellbarFullHD.bmp" Configuration="Debug" Class="ProjectFile"/>
                 <DeployFile LocalName="..\..\assets\Interface\spellbarHD.bmp" Configuration="Debug" Class="ProjectFile"/>
                 <DeployFile LocalName="..\..\assets\Interface\startup-back.png" Configuration="Release" Class="ProjectFile"/>
+                <DeployFile LocalName="..\..\assets\Interface\startup-back.png" Configuration="Release" Class="ProjectFile">
+                    <Platform Name="Win32">
+                        <RemoteDir>.\</RemoteDir>
+                        <Overwrite>true</Overwrite>
+                    </Platform>
+                </DeployFile>
                 <DeployFile LocalName="..\..\game\Siege.exe" Configuration="Debug" Class="ProjectOutput"/>
                 <DeployFile LocalName="..\..\soa-resources\Siege.exe" Configuration="Debug" Class="ProjectOutput"/>
                 <DeployFile LocalName="..\..\soa-resources\Siege.exe" Configuration="Release" Class="ProjectOutput"/>
+                <DeployFile LocalName="..\..\soa-resources\Siege.exe" Configuration="Release" Class="ProjectOutput">
+                    <Platform Name="Win32">
+                        <RemoteName>Siege.exe</RemoteName>
+                        <Overwrite>true</Overwrite>
+                    </Platform>
+                </DeployFile>
                 <DeployClass Name="AdditionalDebugSymbols">
                     <Platform Name="OSX32">
                         <Operation>1</Operation>
@@ -1125,7 +1173,6 @@ $(PostBuildEvent)]]></PostBuildEvent>
         <DCCReference Include="engine\Engine.pas"/>
         <DCCReference Include="engine\AdventureLog.pas"/>
         <DCCReference Include="graphics\DFX.pas"/>
-        <DCCReference Include="engine\GameText.pas"/>
         <DCCReference Include="ai\Character.pas"/>
         <DCCReference Include="ai\AI1.pas"/>
         <DCCReference Include="ai\UndeadAI.pas"/>
@@ -1236,6 +1283,8 @@ $(PostBuildEvent)]]></PostBuildEvent>
         <DCCReference Include="jcl\JclTD32.pas"/>
         <DCCReference Include="jcl\JclHookExcept.pas"/>
         <DCCReference Include="engine\SoAOS.SysUtils.pas"/>
+        <DCCReference Include="graphics\SoAOS.Graphics.BMPFonts.pas"/>
+        <DCCReference Include="graphics\SoAOS.Graphics.GameText.pas"/>
         <RcItem Include="..\..\assets\Interface\blkchcry.ttf">
             <ResourceType>FONT</ResourceType>
             <ResourceId>1</ResourceId>

@@ -124,7 +124,8 @@ uses
   Engine,
   Resource,
   Logfile,
-  GameText,
+  SoAOS.Graphics.GameText,
+//  GameText,
   AniDemo;
 
 { TAddKickNPC }
@@ -219,8 +220,8 @@ begin
     lpDDSBack.BltFast( 0, 0, lpDDSFront, @pr, DDBLTFAST_NOCOLORKEY or DDBLTFAST_WAIT );
     MouseCursor.PlotDirty := false;
 
-    pText.LoadFontGraphic( 'inventory' ); //load the inventory font graphic in
-    pText.LoadTinyFontGraphic;
+    pText.Fonts.LoadFontGraphic( 'inventory' ); //load the inventory font graphic in
+//    pText.LoadTinyFontGraphic;
 
     DXBox := SoAOS_DX_LoadBMP( InterfacePath + 'AddBox.bmp', cTransparent );
     DXBox2 := SoAOS_DX_LoadBMP( InterfacePath + 'AddBoxX.bmp', cTransparent );
@@ -249,20 +250,20 @@ begin
     DXLeftGeeble := nil;
     DXRightGeeble := nil;
 
-    PlotText( txtMessage[ 0 ], 5, 5, 240 );
+    pText.PlotText( txtMessage[ 0 ], 5 + Offset.X, 5 + Offset.Y );
     if assigned( Character ) then
     begin
-      PlotText( txtMessage[ 1 ], 30, 296, 240 );
-      PlotText( txtMessage[ 2 ], 30, 316, 240 );
+      pText.PlotText( txtMessage[ 1 ], 30 + Offset.X, 296 + Offset.Y );
+      pText.PlotText( txtMessage[ 2 ], 30 + Offset.X, 316 + Offset.Y );
 
-      PlotText( txtMessage[ 3 ], 400, 90, 240 );
-      PlotText( txtMessage[ 4 ], 400, 110, 240 );
-      PlotText( txtMessage[ 5 ], 400, 130, 240 );
+      pText.PlotText( txtMessage[ 3 ], 400 + Offset.X, 90 + Offset.Y );
+      pText.PlotText( txtMessage[ 4 ], 400 + Offset.X, 110 + Offset.Y );
+      pText.PlotText( txtMessage[ 5 ], 400 + Offset.X, 130 + Offset.Y );
     end
     else
     begin
-      PlotText( txtMessage[ 1 ], 30, 196, 240 );
-      PlotText( txtMessage[ 2 ], 30, 216, 240 );
+      pText.PlotText( txtMessage[ 1 ], 30 + Offset.X, 196 + Offset.Y );
+      pText.PlotText( txtMessage[ 2 ], 30 + Offset.X, 216 + Offset.Y );
     end;
 
     AIBoxList := TList.create;
@@ -294,7 +295,7 @@ begin
           //check to see if we already have a full party and are trying to add a new player
         if (NPCList.count=5) and (CheckBox[0]=false) and (CheckBox[1]=false) and (CheckBox[2]=false) and (CheckBox[3]=false) and (CheckBox[4]=false) then
         begin
-          PlotTextBlock( txtMessage[ 6 ] + character.name + '.', 87, 590, 188, 240 );
+          pText.PlotTextBlock( txtMessage[ 6 ] + character.name + '.', 87 + Offset.X, 590 + Offset.X, 188 + Offset.Y, 240 );
         end
         else
         begin
@@ -318,7 +319,7 @@ begin
       begin
         if (NPCList.count=5) and (CheckBox[0]=true) and (CheckBox[1]=true) and (CheckBox[2]=false) and (CheckBox[3]=false) and (CheckBox[4]=false) then
         begin
-          PlotTextBlock( txtMessage[ 7 ] + Character.name + txtMessage[ 8 ] + NPCList[ 1 ].name + txtMessage[ 9 ], 87, 590, 174, 240 );
+          pText.PlotTextBlock( txtMessage[ 7 ] + Character.name + txtMessage[ 8 ] + NPCList[ 1 ].name + txtMessage[ 9 ], 87 + Offset.X, 590 + Offset.X, 174 + Offset.Y, 240 );
         end
         else
         begin
@@ -340,7 +341,7 @@ begin
       begin
         if assigned(Character) and (NPCList.count=5) and (CheckBox[0]=true) and (CheckBox[2]=true) and (CheckBox[1]=false) and (CheckBox[3]=false) and (CheckBox[4]=false) then
         begin
-          PlotTextBlock( txtMessage[ 7 ] + Character.name + txtMessage[ 8 ] + NPCList[ 2 ].name + txtMessage[ 9 ], 87, 590, 174, 240 );
+          pText.PlotTextBlock( txtMessage[ 7 ] + Character.name + txtMessage[ 8 ] + NPCList[ 2 ].name + txtMessage[ 9 ], 87 + Offset.X, 590 + Offset.X, 174 + Offset.Y, 240 );
         end
         else
         begin
@@ -362,7 +363,7 @@ begin
       begin
         if assigned(Character) and (NPCList.count=5) and (CheckBox[0]=true) and (CheckBox[3]=true) and (CheckBox[2]=false) and (CheckBox[1]=false) and (CheckBox[4]=false) then
         begin
-          PlotTextBlock( txtMessage[ 7 ] + Character.name + txtMessage[ 8 ] + NPCList[ 3 ].name + txtMessage[ 9 ], 87, 590, 174, 240 );
+          PText.PlotTextBlock( txtMessage[ 7 ] + Character.name + txtMessage[ 8 ] + NPCList[ 3 ].name + txtMessage[ 9 ], 87 + Offset.X, 590 + Offset.X, 174 + Offset.Y, 240 );
         end
         else
         begin
@@ -384,7 +385,7 @@ begin
       begin
         if assigned(Character) and (NPCList.count=5) and (CheckBox[0]=true) and (CheckBox[4]=true) and (CheckBox[2]=false) and (CheckBox[3]=false) and (CheckBox[1]=false) then
         begin
-          PlotTextBlock( txtMessage[ 7 ] + Character.name + txtMessage[ 8 ] + NPCList[ 4 ].name + txtMessage[ 9 ], 87, 590, 174, 240 );
+          PText.PlotTextBlock( txtMessage[ 7 ] + Character.name + txtMessage[ 8 ] + NPCList[ 4 ].name + txtMessage[ 9 ], 87 + Offset.X, 590 + Offset.X, 174 + Offset.Y, 240 );
         end
         else
         begin
@@ -446,7 +447,7 @@ begin
     begin
       if PtInRect( SelectRect[ 0 ].rect, point( X, Y ) ) then
       begin
-        PlotTextBlock( SelectRect[ 0 ].info, 122, 580, 410, 240 );
+        pText.PlotTextBlock( SelectRect[ 0 ].info, 122 + Offset.X, 580 + Offset.X, 410 + Offset.Y, 240 );
       end;
     end;
 
@@ -454,7 +455,7 @@ begin
     begin
       if SelectRect[ i ].Enabled and PtInRect( SelectRect[ i ].rect, point( X, Y ) ) then
       begin
-        PlotTextBlock( SelectRect[ i ].info, 122, 580, 410, 240 );
+        pText.PlotTextBlock( SelectRect[ i ].info, 122 + Offset.X, 580 + Offset.X, 410 + Offset.Y, 240 );
       end;
     end;
 
@@ -484,7 +485,7 @@ begin
     AIImage := nil;
     DXBox := nil;
     DXBox2 := nil;
-    pText.UnLoadTinyFontGraphic;
+//    pText.UnLoadTinyFontGraphic;
     DXBack := nil;
     DXBackToGame := nil;
     OnDraw := nil;
@@ -531,8 +532,8 @@ begin
     CharX := cOffset + ( 463 div 2 ) - cWidth div 2;
     OnDraw( Character, CharX + Offset.X, vOffset - 200 + Offset.Y ); //guy to add
     i := pText.TinyTextLength( Character.name );
-    PlotTinyText( Character.name, ( CharX + cWidth div 2 ) - ( i div 2 ), vOffset + 4 - 200, 240 );
-    PlotTinyText( txtMessage[ 10 ], CharX + 65, vOffset - 200 + VAdj2, 240 );
+    pText.PlotTinyText( Character.name, ( CharX + cWidth div 2 ) - ( i div 2 ) + Offset.X, vOffset + 4 - 200 + Offset.Y, 240 );
+    pText.PlotTinyText( txtMessage[ 10 ], CharX + 65 + Offset.X, vOffset - 200 + VAdj2 + Offset.Y, 240 );
     pr := Rect( CharX + 45, vOffset - 200 + VAdj1, CharX + 45 + 15, vOffset - 200 + VAdj1 + 15 );
     lpDDSBack.BltFast( CharX + 45 + Offset.X, vOffset - 200 + VAdj1 + Offset.Y, DXBack, @pr, DDBLTFAST_SRCCOLORKEY or DDBLTFAST_WAIT );
     pr := Rect( 0, 0, 15, 15 );
@@ -618,9 +619,9 @@ begin
   cWidth := TResource( NPCList[ 0 ].resource ).FrameWidth;
 
   i := pText.TinyTextLength( NPCList[ NPCidx ].name );
-  PlotTinyText( NPCList[ NPCidx ].name, ( CharX + cWidth div 2 ) - ( i div 2 ), vOffset - vOffAdj + 4, 240 );
+  pText.PlotTinyText( NPCList[ NPCidx ].name, ( CharX + cWidth div 2 ) - ( i div 2 ) + Offset.X, vOffset - vOffAdj + 4 + Offset.Y, 240 );
   OnDraw( NPCList[ NPCidx ], CharX + Offset.X, vOffset - vOffAdj + Offset.Y );
-  PlotTinyText( txtMessage[ 11 ], CharX + 65, vOffset + VAdj2, 240 );
+  pText.PlotTinyText( txtMessage[ 11 ], CharX + 65 + Offset.X, vOffset + VAdj2 + Offset.Y, 240 );
   pr := Rect( 0, 0, 15, 15 );
   if CheckBox[ NPCidx ] then
     lpDDSBack.BltFast( CharX + 45 + Offset.X, vOffset + VAdj1 + Offset.Y, DXBox2, @pr, DDBLTFAST_SRCCOLORKEY or DDBLTFAST_WAIT )

@@ -50,7 +50,7 @@ uses
   Vcl.Controls,
 //  Winapi.DirectDraw,
   DirectX,
-  Gametext,
+  SoAOS.Graphics.Gametext,
   SoAOS.Map,
   Engine,
   DXEffects,
@@ -401,8 +401,8 @@ begin
       DXMapMaskLayer := nil;
     end;
 
-    pText.LoadFontGraphic( 'statistics' );
-    PlotTextCentered( MapName, 60, 623, 5, 128 );
+    pText.Fonts.LoadFontGraphic( 'statistics' );
+    pText.PlotTextCentered( MapName, 60 + Offset.X, 623 + Offset.X, 5 + Offset.Y, 128 );
 
     lpDDSFront_Flip( nil, DDFLIP_WAIT );
     pr := Rect( 0, 0, ResWidth, ResHeight );

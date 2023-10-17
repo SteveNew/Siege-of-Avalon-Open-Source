@@ -54,7 +54,7 @@ uses
   Vcl.Controls,
   SoAOS.Types,
   SoAOS.Intrface.Dialogs,
-  GameText,
+  SoAOS.Graphics.GameText,
   Engine,
   music,
   SoAOS.Animation,
@@ -238,7 +238,7 @@ begin
     SelectModBoxNewVisible := false;
     SelectModBoxLoadVisible := false;
     HelpscreenShow := false;
-    pText.LoadFontGraphic('createchar');
+    pText.Fonts.LoadFontGraphic('createchar');
 
     BM := TBitmap.Create;
     try

@@ -220,7 +220,7 @@ uses
   Parts,
   Engine,
   Logfile,
-  GameText,
+  SoAOS.Graphics.GameText,
   AniDemo;
 
 { TCreation }
@@ -292,9 +292,9 @@ begin
     else
       SelectedTraining := 0;
     Hardmode := false;
-    if UseSmallFont then
-      pText.LoadGoldFontGraphic;
-    pText.LoadFontGraphic('CreateChar'); // load the statisctics font graphic in
+//    if UseSmallFont then
+//      pText.LoadGoldFontGraphic;
+    pText.Fonts.LoadFontGraphic('CreateChar'); // load the statisctics font graphic in
     LoadNames;
     LoadBaseValues;
 
@@ -393,7 +393,7 @@ begin
   Log.DebugLog(FailName);
   try
 
-    pText.UnLoadGoldFontGraphic;
+//    pText.UnLoadGoldFontGraphic;
 
     ExText.close;
     DXHardmode := nil;
@@ -428,16 +428,16 @@ begin
   if not female then
   begin
   if val = 16 then
-    pText.PlotTextCentered2(DXBack, txtMessage[3], 113, 261, 409, 250)
+    pText.PlotTextCentered(DXBack, txtMessage[3], 113, 261, 409, 250)
   else
-    pText.PlotTextCentered2(DXBack, txtMessage[4], 113, 261, 409, 250);
+    pText.PlotTextCentered(DXBack, txtMessage[4], 113, 261, 409, 250);
   end
   else
   begin
   if val = 16 then
-    pText.PlotTextCentered2(DXBack, txtMessage[107], 113, 261, 409, 250)
+    pText.PlotTextCentered(DXBack, txtMessage[107], 113, 261, 409, 250)
   else
-    pText.PlotTextCentered2(DXBack, txtMessage[108], 113, 261, 409, 250);
+    pText.PlotTextCentered(DXBack, txtMessage[108], 113, 261, 409, 250);
   end;
 end;
 
@@ -536,14 +536,14 @@ begin
       DrawAlpha(DXBack, Rect(113, 406, 261, 434), Rect(0, 0, 25, 25), DXBlack,
       false, 255);
       if ixSelectedBeard = 0 then
-      pText.PlotTextCentered2(DXBack, txtMessage[107], 113, 261, 409, 250)
+      pText.PlotTextCentered(DXBack, txtMessage[107], 113, 261, 409, 250)
       else
-      pText.PlotTextCentered2(DXBack, txtMessage[108], 113, 261, 409, 250);
+      pText.PlotTextCentered(DXBack, txtMessage[108], 113, 261, 409, 250);
       if ixSelectedHairStyle = 3 then//male was bald, female now medium hair
       begin //Hairstyle label
         DrawAlpha(DXBack, Rect(113, 366, 261, 386), Rect(0, 0, 25, 25), DXBlack,
         false, 255);
-        pText.PlotTextCentered2(DXBack, txtMessage[106] + txtMessage[2], 113, 261, 366, 250);
+        pText.PlotTextCentered(DXBack, txtMessage[106] + txtMessage[2], 113, 261, 366, 250);
       end;
       pr := Rect(114, 366, 261, 434); //Update screen
       lpDDSBack.BltFast(pr.Left + Offset.X, pr.Top + Offset.Y, DXBack, @pr,
@@ -554,14 +554,14 @@ begin
       DrawAlpha(DXBack, Rect(113, 406, 261, 434), Rect(0, 0, 25, 25), DXBlack,
       false, 255);
       if ixSelectedBeard = 0 then
-      pText.PlotTextCentered2(DXBack, txtMessage[3], 113, 261, 409, 250)
+      pText.PlotTextCentered(DXBack, txtMessage[3], 113, 261, 409, 250)
       else
-      pText.PlotTextCentered2(DXBack, txtMessage[4], 113, 261, 409, 250);
+      pText.PlotTextCentered(DXBack, txtMessage[4], 113, 261, 409, 250);
       if ixSelectedHairStyle = 3 then//female had medium hair, male is now bald
       begin //Hairstyle label
         DrawAlpha(DXBack, Rect(113, 366, 261, 386), Rect(0, 0, 25, 25), DXBlack,
         false, 255);
-        pText.PlotTextCentered2(DXBack, txtMessage[23], 113, 261, 366, 250);
+        pText.PlotTextCentered(DXBack, txtMessage[23], 113, 261, 366, 250);
       end;
       pr := Rect(114, 366, 261, 434); //Update screen
       lpDDSBack.BltFast(pr.Left + Offset.X, pr.Top + Offset.Y, DXBack, @pr,
@@ -579,7 +579,7 @@ begin
   ixSelectedHair := val - 8;
   DrawAlpha(DXBack, Rect(113, 321, 261, 348), Rect(0, 0, 25, 25), DXBlack,
     false, 255);
-  pText.PlotTextCentered2(DXBack, SelectRect[val].Text + txtMessage[2], 113,
+  pText.PlotTextCentered(DXBack, SelectRect[val].Text + txtMessage[2], 113,
     261, 324, 250)
 end;
 
@@ -589,16 +589,16 @@ begin
   DrawAlpha(DXBack, Rect(113, 363, 261, 391), Rect(0, 0, 25, 25), DXBlack,
     false, 255);
   if val < 14 then
-    pText.PlotTextCentered2(DXBack, SelectRect[val].Text + txtMessage[2], 113,
+    pText.PlotTextCentered(DXBack, SelectRect[val].Text + txtMessage[2], 113,
       261, 366, 250)
   else if val = 14 then
-  pText.PlotTextCentered2(DXBack, SelectRect[val].Text, 113, 261, 366, 250)
+  pText.PlotTextCentered(DXBack, SelectRect[val].Text, 113, 261, 366, 250)
   else
   begin
   if not female then
-    pText.PlotTextCentered2(DXBack, SelectRect[val].Text, 113, 261, 366, 250)
+    pText.PlotTextCentered(DXBack, SelectRect[val].Text, 113, 261, 366, 250)
   else //Medium hair
-    pText.PlotTextCentered2(DXBack, txtMessage[106] + txtMessage[2], 113, 261, 366, 250);
+    pText.PlotTextCentered(DXBack, txtMessage[106] + txtMessage[2], 113, 261, 366, 250);
   end;
 end;
 
@@ -607,7 +607,7 @@ begin
   ixSelectedPants := val - 4;
   DrawAlpha(DXBack, Rect(113, 278, 261, 306), Rect(0, 0, 25, 25), DXBlack,
     false, 255);
-  pText.PlotTextCentered2(DXBack, SelectRect[val].Text + txtMessage[1], 113,
+  pText.PlotTextCentered(DXBack, SelectRect[val].Text + txtMessage[1], 113,
     261, 281, 250);
 end;
 
@@ -616,7 +616,7 @@ begin
   ixSelectedShirt := val;
   DrawAlpha(DXBack, Rect(113, 236, 261, 264), Rect(0, 0, 25, 25), DXBlack,
     false, 255);
-  pText.PlotTextCentered2(DXBack, SelectRect[val].Text + txtMessage[0], 113,
+  pText.PlotTextCentered(DXBack, SelectRect[val].Text + txtMessage[0], 113,
     261, 239, 250)
 end;
 
@@ -634,7 +634,7 @@ begin
     ixselectedDoAHair := 3; // Safety reason
     DrawAlpha(DXBack, Rect(113, 363, 261, 391), Rect(0, 0, 25, 25), DXBlack,
       false, 255);
-    pText.PlotTextCentered2(DXBack, SelectRect[15].Text, 113, 261, 366, 250);
+    pText.PlotTextCentered(DXBack, SelectRect[15].Text, 113, 261, 366, 250);
     // no [ val ], instead value for Bald = 15, SelectRect... matches luckily
   end;
   // Clear selected Training
@@ -642,7 +642,7 @@ begin
     false, 255);
   DrawAlpha(DXBack, Rect(113, 236, 261, 264), Rect(0, 0, 25, 25), DXBlack,
     false, 255);
-  pText.PlotTextCentered2(DXBack, txtMessage[val + 16], 113, 261, 239, 250);
+  pText.PlotTextCentered(DXBack, txtMessage[val + 16], 113, 261, 239, 250);
 end;
 
 procedure TCreation.selectTattoo(const val: Integer);
@@ -651,18 +651,18 @@ begin
   DrawAlpha(DXBack, Rect(113, 321, 261, 348), Rect(0, 0, 25, 25), DXBlack,
     false, 255);
   if ixSelectedTattoo = 0 then
-    pText.PlotTextCentered2(DXBack, txtMessage[15] + txtMessage[0], 113, 261,
+    pText.PlotTextCentered(DXBack, txtMessage[15] + txtMessage[0], 113, 261,
       324, 250)
   else if ixSelectedTattoo = 1 then
-    pText.PlotTextCentered2(DXBack, txtMessage[14] + txtMessage[0], 113, 261,
+    pText.PlotTextCentered(DXBack, txtMessage[14] + txtMessage[0], 113, 261,
       324, 250)
   else
   begin
     if language = 'german' then
-      pText.PlotTextCentered2(DXBack, 'Kein' + txtMessage[0], 113,
+      pText.PlotTextCentered(DXBack, 'Kein' + txtMessage[0], 113,
         261, 324, 250)
     else
-      pText.PlotTextCentered2(DXBack, 'No' + txtMessage[0], 113, 261, 324, 250);
+      pText.PlotTextCentered(DXBack, 'No' + txtMessage[0], 113, 261, 324, 250);
   end;
   // pText.PlotTextCentered2( DXBack, SelectRect[ val ].Text + txtMessage[ 0 ], 113, 261, 324, 250 );
 end;
@@ -676,18 +676,18 @@ begin
   begin
     if AhoulRace > 1 then // No Shaman, Orkhead possible
     begin
-      pText.PlotTextCentered2(DXBack, txtMessage[81], 113, 261, 366, 250);
+      pText.PlotTextCentered(DXBack, txtMessage[81], 113, 261, 366, 250);
     end
     else // Long Shaman hair possible
     begin
-      pText.PlotTextCentered2(DXBack, SelectRect[val].Text, 113, 261, 366, 250);
+      pText.PlotTextCentered(DXBack, SelectRect[val].Text, 113, 261, 366, 250);
     end;
   end
   else if ixselectedDoAHair = 1 then // war =13
-    pText.PlotTextCentered2(DXBack, SelectRect[val].Text + txtMessage[3], 113,
+    pText.PlotTextCentered(DXBack, SelectRect[val].Text + txtMessage[3], 113,
       261, 366, 250)
   else if ixselectedDoAHair > 1 then // war >13
-    pText.PlotTextCentered2(DXBack, SelectRect[val].Text, 113, 261, 366, 250);
+    pText.PlotTextCentered(DXBack, SelectRect[val].Text, 113, 261, 366, 250);
 end;
 // TCreation.Release
 
@@ -892,8 +892,7 @@ begin
             DrawAlpha(lpDDSBack, r, Rect(0, 0, 25, 25), DXBlack, false, 255);
             if i = 18 then
             begin
-              PlotTextCentered(lpDDSBack, txtMessage[5], 300, 448, 135, 250,
-                UseSmallFont);
+              pText.PlotTextCentered(txtMessage[5], 300 + Offset.X, 448 + Offset.X, 135 + Offset.Y, 250, UseSmallFont);
               if modselection = TModSelection.AoA then
                 Character.Strength := Character.BaseStrength + 4
               else
@@ -916,8 +915,7 @@ begin
             end
             else if i = 19 then
             begin
-              PlotTextCentered(lpDDSBack, txtMessage[6], 300, 448, 135, 250,
-                UseSmallFont);
+              pText.PlotTextCentered(txtMessage[6], 300 + Offset.X, 448 + Offset.X, 135 + Offset.Y, 250, UseSmallFont);
               Character.Strength := Character.BaseStrength + 2;
               Character.Coordination := Character.BaseCoordination + 5;
               Character.Constitution := Character.BaseConstitution + 0;
@@ -931,8 +929,7 @@ begin
             end
             else if i = 20 then
             begin
-              PlotTextCentered(lpDDSBack, txtMessage[7], 300, 448, 135, 250,
-                UseSmallFont);
+              pText.PlotTextCentered(txtMessage[7], 300 + Offset.X, 448 + Offset.X, 135 + Offset.Y, 250, UseSmallFont);
               Character.Strength := Character.BaseStrength + 0;
               Character.Coordination := Character.BaseCoordination + 3;
               Character.Constitution := Character.BaseConstitution + 2;
@@ -1030,7 +1027,7 @@ begin
           // DoA change of Race needs new selected Training
           begin
             if not DoAStart then
-            PlotTextBlock(txtMessage[4], 500, 682, 239, 240, UseSmallFont, True)
+            pText.PlotTextBlock(txtMessage[4], 500 + Offset.X, 682 + Offset.X, 239 + Offset.Y, 240, UseSmallFont, True)
             else
             begin
               Character.Name := CharacterName;
@@ -1051,11 +1048,9 @@ begin
             lpDDSBack.BltFast(pr.Left + Offset.X, pr.Top + Offset.Y, DXBack,
               @pr, DDBLTFAST_WAIT);
             if (ChosenTraining > -1) then
-              PlotTextBlock(txtMessage[8], 500, 682, 239, 240,
-                UseSmallFont, True)
+              pText.PlotTextBlock(txtMessage[8], 500 + Offset.X, 682 + Offset.X, 239 + Offset.Y, 240, UseSmallFont, True)
             else
-              PlotTextBlock(txtMessage[9], 500, 682, 239, 240,
-                UseSmallFont, True);
+              pText.PlotTextBlock(txtMessage[9], 500 + Offset.X, 682 + Offset.X, 239 + Offset.Y, 240, UseSmallFont, True);
           end
           else
           begin
@@ -1063,11 +1058,9 @@ begin
             lpDDSBack.BltFast(pr.Left + Offset.X, pr.Top + Offset.Y, DXBack,
               @pr, DDBLTFAST_WAIT);
             if (ChosenTraining > -1) then
-              PlotTextBlock(txtMessage[10], 500, 682, 165, 240,
-                UseSmallFont, True)
+              pText.PlotTextBlock(txtMessage[10], 500 + Offset.X, 682 + Offset.X, 165 + Offset.Y, 240, UseSmallFont, True)
             else
-              PlotTextBlock(txtMessage[11], 500, 682, 165, 240,
-                UseSmallFont, True);
+              pText.PlotTextBlock(txtMessage[11], 500 + Offset.X, 682 + Offset.X, 165 + Offset.Y, 240, UseSmallFont, True);
           end;
         end;
       end
@@ -1141,9 +1134,9 @@ begin
           ChangeFileExt(ExtractFileName(Players[PlayerResourceIdx - 1]), '');
 
       if BoxOpen <> bxTraining then
-        PlotTextBlock(PlayerInfo, 500, 680, 165, 240, UseSmallFont, True)
+        pText.PlotTextBlock(PlayerInfo, 500 + Offset.X, 680 + Offset.X, 165 + Offset.Y, 240, UseSmallFont, True)
       else // Training box in the way - so print below
-        PlotTextBlock(PlayerInfo, 500, 680, 239, 240, UseSmallFont, True);
+        pText.PlotTextBlock(PlayerInfo, 500 + Offset.X, 680 + Offset.X, 239 + Offset.Y, 240, UseSmallFont, True);
     end;
 
     if rRightArrow.Contains(point(X, Y)) then
@@ -1156,9 +1149,9 @@ begin
           ChangeFileExt(ExtractFileName(Players[PlayerResourceIdx + 1]), '');
 
       if BoxOpen <> bxTraining then
-        PlotTextBlock(PlayerInfo, 500, 680, 165, 240, UseSmallFont, True)
+        pText.PlotTextBlock(PlayerInfo, 500 + Offset.X, 680 + Offset.X, 165 + Offset.Y, 240, UseSmallFont, True)
       else // Training box in the way - so print below
-        PlotTextBlock(PlayerInfo, 500, 680, 239, 240, UseSmallFont, True);
+        pText.PlotTextBlock(PlayerInfo, 500 + Offset.X, 680 + Offset.X, 239 + Offset.Y, 240, UseSmallFont, True);
     end;
 
     i := 0;
@@ -1170,10 +1163,10 @@ begin
         if SelectRect[i].Contains(point(X, Y)) then
         begin // if over an item
           if BoxOpen <> bxTraining then // little kludge here
-            PlotTextBlock(SelectRect[i].Info, 500, 682, 165, 240, UseSmallFont,
+            pText.PlotTextBlock(SelectRect[i].Info, 500 + Offset.X, 682 + Offset.X, 165 + Offset.Y, 240, UseSmallFont,
               True) // Plot the info
           else
-            PlotTextBlock(SelectRect[i].Info, 500, 682, 239, 240, UseSmallFont,
+            pText.PlotTextBlock(SelectRect[i].Info, 500 + Offset.X, 682 + Offset.X, 239 + Offset.Y, 240, UseSmallFont,
               True); // Plot the info
           i := 900; // drop out of the loop
         end;
@@ -1193,10 +1186,10 @@ begin
         if ArrowRect[i].Contains(point(X, Y)) then
         begin // if over an Arrow
           if BoxOpen <> bxTraining then // little kludge here
-            PlotTextBlock(ArrowRect[i].Info, 500, 682, 165, 240, UseSmallFont,
+            pText.PlotTextBlock(ArrowRect[i].Info, 500 + Offset.X, 682 + Offset.X, 165 + Offset.Y, 240, UseSmallFont,
               True) // Plot the info
           else
-            PlotTextBlock(ArrowRect[i].Info, 500, 682, 239, 240, UseSmallFont,
+            pText.PlotTextBlock(ArrowRect[i].Info, 500 + Offset.X, 682 + Offset.X, 239 + Offset.Y, 240, UseSmallFont,
               True); // Plot the info
 
           i := 900; // drop out of the loop
@@ -1213,10 +1206,10 @@ begin
         if InfoRect[i].Contains(point(X, Y)) then
         begin // if over an item
           if BoxOpen <> bxTraining then // little kludge here
-            PlotTextBlock(InfoRect[i].Info, 500, 682, 165, 240, UseSmallFont,
+            pText.PlotTextBlock(InfoRect[i].Info, 500 + Offset.X, 682 + Offset.X, 165 + Offset.Y, 240, UseSmallFont,
               True) // Plot the info
           else
-            PlotTextBlock(InfoRect[i].Info, 500, 682, 239, 240, UseSmallFont,
+            pText.PlotTextBlock(InfoRect[i].Info, 500 + Offset.X, 682 + Offset.X, 239 + Offset.Y, 240, UseSmallFont,
               True); // Plot the info
 
           i := 900; // drop out of the loop
@@ -1281,7 +1274,7 @@ begin
       DDBLTFAST_SRCCOLORKEY or DDBLTFAST_WAIT);
     // replot the entire screen statistics
     ShowStats;
-    PlotText(CharacterName, 310, 95, 240);
+    pText.PlotText(CharacterName, 310 + Offset.X, 95 + Offset.Y);
     SoAOS_DX_BltFront;
   except
     on E: Exception do
@@ -1642,48 +1635,47 @@ end; // TCreation.LoadBaseValues;
 procedure TCreation.ShowStats;
 var
   a, b: string;
-  i, X, Alpha: Integer;
+  i, X: Integer;
 const
   FailName: string = 'TCreation.ShowStats';
 begin
   Log.DebugLog(FailName);
   try
-    Alpha := 240; // blend value
     X := 167 + Modifier;
     str(Character.TrainingPoints, a);
-    PlotText(a, X, 213, Alpha);
+    pText.PlotText(a, X + Offset.X, 213 + Offset.Y);
     // primary stats column
     i := 239;
     str(Character.Strength, b);
-    PlotText(b, X, i, Alpha);
+    pText.PlotText(b, X + Offset.X, i + Offset.Y);
     i := i + 24;
 
     str(Character.Coordination, b);
-    PlotText(b, X, i, Alpha);
+    pText.PlotText(b, X + Offset.X, i + Offset.Y);
     i := i + 24;
 
     str(Character.Constitution, b);
-    PlotText(b, X, i, Alpha);
+    pText.PlotText(b, X + Offset.X, i + Offset.Y);
     i := i + 24;
 
     str(Character.BasePerception, b);
-    PlotText(b, X, i, Alpha);
+    pText.PlotText(b, X + Offset.X, i + Offset.Y);
     i := i + 24;
 
     str(Character.Charm, b);
-    PlotText(b, X, i, Alpha);
+    pText.PlotText(b, X + Offset.X, i + Offset.Y);
     i := i + 24;
 
     str(Character.Mysticism, b);
-    PlotText(b, X, i, Alpha);
+    pText.PlotText(b, X + Offset.X, i + Offset.Y);
     i := i + 24;
 
     str(Character.Combat, b);
-    PlotText(b, X, i, Alpha);
+    pText.PlotText(b, X + Offset.X, i + Offset.Y);
     i := i + 24;
 
     str(Character.Stealth, b);
-    PlotText(b, X, i, Alpha);
+    pText.PlotText(b, X + Offset.X, i + Offset.Y);
 
   except
     on E: Exception do
@@ -1972,9 +1964,9 @@ begin
     end;
 
     // Character.Name:=CharacterName;
-    PlotText(CharacterName, 310, 95, 240);
+    pText.PlotText(CharacterName, 310 + Offset.X, 95 + Offset.Y);
     // plot the Carat
-    PlotText('|', CaratPosition + 310, 95, 240);
+    pText.PlotText('|', CaratPosition + 310 + Offset.X, 95 + Offset.Y);
     SoAOS_DX_BltFront;
    end;
   except
@@ -2077,9 +2069,9 @@ begin
     end;
     if CaratVisible then
     begin
-      PlotText('|', CaratPosition + 310, 95, 240);
+      pText.PlotText('|', CaratPosition + 310 + Offset.X, 95 + Offset.Y);
     end;
-    PlotText(CharacterName, 310, 95, 240);
+    pText.PlotText(CharacterName, 310 + Offset.X, 95 + Offset.Y);
     DrawNewPlayer;
     // lpDDSFront_Flip(nil, DDFLIP_WAIT);
     // lpDDSBack.BltFast(0, 0, lpDDSFront, Rect(0, 0, 800, 600), DDBLTFAST_WAIT);
@@ -2131,8 +2123,7 @@ begin
         Offset.Y, DXCircle, @pr, DDBLTFAST_SRCCOLORKEY or DDBLTFAST_WAIT);
       if modselection = TModSelection.RoD then // RoD - Kämpfer
       begin
-        PlotTextCentered(lpDDSBack, txtMessage[5], 465, 465 + 123, 69 + 38, 240,
-          UseSmallFont);
+        pText.PlotTextCentered(txtMessage[5], 465 + Offset.X, 465 + 123 + Offset.X, 69 + 38 + Offset.Y, 240, UseSmallFont);
         // SelectRect[ 18 ].rect := rect( 465, 69 + 38 , 465 + 123, 69 + 38 + 24 );
         SelectRect[18].enabled := True;
         SelectRect[19].enabled := false;
@@ -2140,8 +2131,7 @@ begin
       end
       else if modselection = TModSelection.Caves then // Caves = Magier
       begin
-        PlotTextCentered(lpDDSBack, txtMessage[7], 465, 465 + 123, 69 + 86, 240,
-          UseSmallFont);
+        pText.PlotTextCentered(txtMessage[7], 465 + Offset.X, 465 + 123 + Offset.X, 69 + 86 + Offset.Y, 240, UseSmallFont);
         // SelectRect[ 20 ].rect := rect( 465, 69 + 38 + 24 * 2, 465 + 123, 69 + 38 + 24 + 24 * 2 );
         SelectRect[18].enabled := false;
         SelectRect[19].enabled := false;
@@ -2150,10 +2140,8 @@ begin
       else if modselection = TModSelection.DoA then // DoA
         if AhoulRace = 2 then // Ahoul, no Shaman or Halfbreed
         begin
-          PlotTextCentered(lpDDSBack, txtMessage[5], 465, 465 + 123, 69 + 38,
-            240, UseSmallFont);
-          PlotTextCentered(lpDDSBack, txtMessage[6], 465, 465 + 123, 69 + 62,
-            240, UseSmallFont);
+          pText.PlotTextCentered(txtMessage[5], 465 + Offset.X, 465 + 123 + Offset.X, 69 + 38 + Offset.Y, 240, UseSmallFont);
+          pText.PlotTextCentered(txtMessage[6], 465 + Offset.X, 465 + 123 + Offset.X, 69 + 62 + Offset.Y, 240, UseSmallFont);
           // for i := 0 to 1 do
           // SelectRect[ 18 + i ].rect := rect( 465, 69 + 38 + 24 * i, 465 + 123, 69 + 38 + 24 + 24 * i );
           SelectRect[18].enabled := True;
@@ -2162,8 +2150,7 @@ begin
         end
         else if AhoulRace = 1 then // Shaman, no Ahoul or Halfbreed
         begin
-          PlotTextCentered(lpDDSBack, txtMessage[7], 465, 465 + 123, 69 + 86,
-            240, UseSmallFont);
+          pText.PlotTextCentered(txtMessage[7], 465 + Offset.X, 465 + 123 + Offset.X, 69 + 86 + Offset.Y, 240, UseSmallFont);
           // for i := 2 to 2 do
           // SelectRect[ 18 + i ].rect := rect( 465, 69 + 38 + 24 * i, 465 + 123, 69 + 38 + 24 + 24 * i );
           SelectRect[18].enabled := false;
@@ -2172,24 +2159,18 @@ begin
         end
         else // halfbreed
         begin
-          PlotTextCentered(lpDDSBack, txtMessage[5], 465, 465 + 123, 69 + 38,
-            240, UseSmallFont);
-          PlotTextCentered(lpDDSBack, txtMessage[6], 465, 465 + 123, 69 + 62,
-            240, UseSmallFont);
-          PlotTextCentered(lpDDSBack, txtMessage[7], 465, 465 + 123, 69 + 86,
-            240, UseSmallFont);
+          pText.PlotTextCentered(txtMessage[5], 465 + Offset.X, 465 + 123 + Offset.X, 69 + 38 + Offset.Y, 240, UseSmallFont);
+          pText.PlotTextCentered(txtMessage[6], 465 + Offset.X, 465 + 123 + Offset.X, 69 + 62 + Offset.Y, 240, UseSmallFont);
+          pText.PlotTextCentered(txtMessage[7], 465 + Offset.X, 465 + 123 + Offset.X, 69 + 86 + Offset.Y, 240, UseSmallFont);
           for i := 0 to 2 do
             // SelectRect[ 18 + i ].rect := rect( 465, 69 + 38 + 24 * i, 465 + 123, 69 + 38 + 24 + 24 * i )
             SelectRect[18 + i].enabled := True;
         end
       else // SoA, PoA, AoA, TsK
       begin
-        PlotTextCentered(lpDDSBack, txtMessage[5], 465, 465 + 123, 69 + 38, 240,
-          UseSmallFont);
-        PlotTextCentered(lpDDSBack, txtMessage[6], 465, 465 + 123, 69 + 62, 240,
-          UseSmallFont);
-        PlotTextCentered(lpDDSBack, txtMessage[7], 465, 465 + 123, 69 + 86, 240,
-          UseSmallFont);
+        pText.PlotTextCentered(txtMessage[5], 465 + Offset.X, 465 + 123 + Offset.X, 69 + 38 + Offset.Y, 240, UseSmallFont);
+        pText.PlotTextCentered(txtMessage[6], 465 + Offset.X, 465 + 123 + Offset.X, 69 + 62 + Offset.Y, 240, UseSmallFont);
+        pText.PlotTextCentered(txtMessage[7], 465 + Offset.X, 465 + 123 + Offset.X, 69 + 86 + Offset.Y, 240, UseSmallFont);
         for i := 0 to 2 do
           SelectRect[18 + i].enabled := True;
       end;
@@ -2229,22 +2210,17 @@ begin
         begin
           if box = bxShirt then
           begin
-            PlotTextCentered(nil, txtMessage[12], 279, 279 + 123,
-              239 + (ord(box) - 12) * 42 + 34, 240);
-            PlotTextCentered(nil, txtMessage[15], 279, 279 + 123,
-              239 + (ord(box) - 12) * 42 + 58, 240);
+            pText.PlotTextCentered(txtMessage[12], 279 + Offset.X, 279 + 123 + Offset.X, 239 + (ord(box) - 12) * 42 + 34 + Offset.Y, 240);
+            pText.PlotTextCentered(txtMessage[15], 279 + Offset.X, 279 + 123 + Offset.X, 239 + (ord(box) - 12) * 42 + 58 + Offset.Y, 240);
             for i := 0 to 1 do
               // SelectRect[ ( Box - 12 ) * 4 + i ].rect := rect( 279, 239 + ( box - 12 ) * 42 + 34 + 24 * i, 279 + 123, 239 + ( box - 12 ) * 42 + 34 + 24 + 24 * i )
               SelectRect[(ord(box) - 12) * 4 + i].enabled := True;
           end
           else if box = bxPants then
           begin
-            PlotTextCentered(nil, 'Schwarz', 279, 279 + 123,
-              239 + (ord(box) - 12) * 42 + 34, 240);
-            PlotTextCentered(nil, txtMessage[13], 279, 279 + 123,
-              239 + (ord(box) - 12) * 42 + 58, 240);
-            PlotTextCentered(nil, txtMessage[14], 279, 279 + 123,
-              239 + (ord(box) - 12) * 42 + 82, 240);
+            pText.PlotTextCentered('Schwarz', 279 + Offset.X, 279 + 123 + Offset.X, 239 + (ord(box) - 12) * 42 + 34 + Offset.Y, 240);
+            pText.PlotTextCentered(txtMessage[13], 279 + Offset.X, 279 + 123 + Offset.X, 239 + (ord(box) - 12) * 42 + 58 + Offset.X, 240);
+            pText.PlotTextCentered(txtMessage[14], 279 + Offset.X, 279 + 123 + Offset.X, 239 + (ord(box) - 12) * 42 + 82 + Offset.X, 240);
             for i := 0 to 2 do
               // SelectRect[ ( Box - 12 ) * 4 + i ].rect := rect( 279, 239 + ( box - 12 ) * 42 + 34 + 24 * i, 279 + 123, 239 + ( box - 12 ) * 42 + 34 + 24 + 24 * i );
               SelectRect[(ord(box) - 12) * 4 + i].enabled := True;
@@ -2255,22 +2231,17 @@ begin
         begin
           if box = bxShirt then
           begin
-            PlotTextCentered(nil, 'Shaman', 279, 279 + 123,
-              239 + (ord(box) - 12) * 42 + 34, 240);
-            PlotTextCentered(nil, 'Ahoul', 279, 279 + 123,
-              239 + (ord(box) - 12) * 42 + 58, 240);
-            PlotTextCentered(nil, 'Mischling', 279, 279 + 123,
-              239 + (ord(box) - 12) * 42 + 82, 240);
+            pText.PlotTextCentered('Shaman', 279 + Offset.X, 279 + 123 + Offset.X, 239 + (ord(box) - 12) * 42 + 34 + Offset.Y, 240);
+            pText.PlotTextCentered('Ahoul', 279 + Offset.X, 279 + 123 + Offset.X, 239 + (ord(box) - 12) * 42 + 58 + Offset.Y, 240);
+            pText.PlotTextCentered('Mischling', 279 + Offset.X, 279 + 123 + Offset.X, 239 + (ord(box) - 12) * 42 + 82 + Offset.Y, 240);
             for i := 0 to 2 do
               SelectRect[(ord(box) - 12) * 4 + i].enabled := True;
             // SelectRect[ ( Box - 12 ) * 4 + i ].rect := rect( 279, 239 + ( box - 12 ) * 42 + 34 + 24 * i, 279 + 123, 239 + ( box - 12 ) * 42 + 34 + 24 + 24 * i )
           end
           else if box = bxPants then
           begin
-            PlotTextCentered(nil, txtMessage[12], 279, 279 + 123,
-              239 + (ord(box) - 12) * 42 + 34, 240);
-            PlotTextCentered(nil, txtMessage[13], 279, 279 + 123,
-              239 + (ord(box) - 12) * 42 + 58, 240);
+            pText.PlotTextCentered(txtMessage[12], 279 + Offset.X, 279 + 123 + Offset.X, 239 + (ord(box) - 12) * 42 + 34 + Offset.Y, 240);
+            pText.PlotTextCentered(txtMessage[13], 279 + Offset.X, 279 + 123 + Offset.X, 239 + (ord(box) - 12) * 42 + 58 + Offset.Y, 240);
             for i := 0 to 1 do
               SelectRect[(ord(box) - 12) * 4 + i].enabled := True;
             // SelectRect[ ( Box - 12 ) * 4 + i ].rect := rect( 279, 239 + ( box - 12 ) * 42 + 34 + 24 * i, 279 + 123, 239 + ( box - 12 ) * 42 + 34 + 24 + 24 * i );
@@ -2278,14 +2249,10 @@ begin
         end // End Days of Ahoul
         else
         begin
-          PlotTextCentered(nil, txtMessage[12], 279, 279 + 123,
-            239 + (ord(box) - 12) * 42 + 34, 240);
-          PlotTextCentered(nil, txtMessage[13], 279, 279 + 123,
-            239 + (ord(box) - 12) * 42 + 58, 240);
-          PlotTextCentered(nil, txtMessage[14], 279, 279 + 123,
-            239 + (ord(box) - 12) * 42 + 82, 240);
-          PlotTextCentered(nil, txtMessage[15], 279, 279 + 123,
-            239 + (ord(box) - 12) * 42 + 106, 240);
+          pText.PlotTextCentered(txtMessage[12], 279 + Offset.X, 279 + 123 + Offset.X, 239 + (ord(box) - 12) * 42 + 34 + Offset.Y, 240);
+          pText.PlotTextCentered(txtMessage[13], 279 + Offset.X, 279 + 123 + Offset.X, 239 + (ord(box) - 12) * 42 + 58 + Offset.Y, 240);
+          pText.PlotTextCentered(txtMessage[14], 279 + Offset.X, 279 + 123 + Offset.X, 239 + (ord(box) - 12) * 42 + 82 + Offset.Y, 240);
+          pText.PlotTextCentered(txtMessage[15], 279 + Offset.X, 279 + 123 + Offset.X, 239 + (ord(box) - 12) * 42 + 106 + Offset.Y, 240);
           for i := 0 to 3 do
             SelectRect[(ord(box) - 12) * 4 + i].enabled := True;
         end;
@@ -2298,12 +2265,9 @@ begin
           lpDDSBack.BltFast(279 + 13 + Offset.X, 239 + (ord(box) - 12) * 42 + 34
             + 24 * (ixSelectedHair) + Offset.Y, DXCircle, @pr,
             DDBLTFAST_SRCCOLORKEY or DDBLTFAST_WAIT);
-          PlotTextCentered(nil, txtMessage[16], 279, 279 + 123,
-            239 + (ord(box) - 12) * 42 + 34, 240);
-          PlotTextCentered(nil, txtMessage[17], 279, 279 + 123,
-            239 + (ord(box) - 12) * 42 + 58, 240);
-          PlotTextCentered(nil, txtMessage[18], 279, 279 + 123,
-            239 + (ord(box) - 12) * 42 + 82, 240);
+          pText.PlotTextCentered(txtMessage[16], 279 + Offset.X, 279 + 123 + Offset.X, 239 + (ord(box) - 12) * 42 + 34 + Offset.Y, 240);
+          pText.PlotTextCentered(txtMessage[17], 279 + Offset.X, 279 + 123 + Offset.X, 239 + (ord(box) - 12) * 42 + 58 + Offset.Y, 240);
+          pText.PlotTextCentered(txtMessage[18], 279 + Offset.X, 279 + 123 + Offset.X, 239 + (ord(box) - 12) * 42 + 82 + Offset.Y, 240);
           for i := 0 to 2 do
             SelectRect[(ord(box) - 12) * 4 + i].enabled := True;
           // SelectRect[ ( Box - 12 ) * 4 + i ].rect := rect( 279, 239 + ( box - 12 ) * 42 + 34 + 24 * i, 279 + 123, 239 + ( box - 12 ) * 42 + 34 + 24 + 24 * i );
@@ -2313,16 +2277,12 @@ begin
           lpDDSBack.BltFast(279 + 13 + Offset.X, 239 + (ord(box) - 12) * 42 + 34
             + 24 * (ixSelectedTattoo) + Offset.Y, DXCircle, @pr,
             DDBLTFAST_SRCCOLORKEY or DDBLTFAST_WAIT);
-          PlotTextCentered(nil, txtMessage[15], 279, 279 + 123,
-            239 + (ord(box) - 12) * 42 + 34, 240); // blau
-          PlotTextCentered(nil, txtMessage[14], 279, 279 + 123,
-            239 + (ord(box) - 12) * 42 + 58, 240); // gelb
+          pText.PlotTextCentered(txtMessage[15], 279 + Offset.X, 279 + 123 + Offset.X, 239 + (ord(box) - 12) * 42 + 34 + Offset.Y, 240); // blau
+          pText.PlotTextCentered(txtMessage[14], 279 + Offset.X, 279 + 123 + Offset.X, 239 + (ord(box) - 12) * 42 + 58 + Offset.Y, 240); // gelb
           if language = 'german' then
-            PlotTextCentered(nil, 'Keins', 279, 279 + 123,
-              239 + (ord(box) - 12) * 42 + 82, 240)
+            pText.PlotTextCentered('Keins', 279 + Offset.X, 279 + 123 + Offset.X, 239 + (ord(box) - 12) * 42 + 82 + Offset.Y, 240)
           else
-            PlotTextCentered(nil, 'no', 279, 279 + 123, 239 + (ord(box) - 12) *
-              42 + 82, 240);
+            pText.PlotTextCentered('no', 279 + Offset.X, 279 + 123 + Offset.X, 239 + (ord(box) - 12) * 42 + 82 + Offset.Y, 240);
           for i := 0 to 2 do
             // SelectRect[ ( Box - 12 ) * 4 + i ].rect := rect( 279, 239 + ( box - 12 ) * 42 + 34 + 24 * i, 279 + 123, 239 + ( box - 12 ) * 42 + 34 + 24 + 24 * i );
             SelectRect[(ord(box) - 12) * 4 + i].enabled := True;
@@ -2332,14 +2292,10 @@ begin
           lpDDSBack.BltFast(279 + 13 + Offset.X, 239 + (ord(box) - 12) * 42 + 34
             + 24 * (ixSelectedHair) + Offset.Y, DXCircle, @pr,
             DDBLTFAST_SRCCOLORKEY or DDBLTFAST_WAIT);
-          PlotTextCentered(nil, txtMessage[16], 279, 279 + 123,
-            239 + (ord(box) - 12) * 42 + 34, 240);
-          PlotTextCentered(nil, txtMessage[17], 279, 279 + 123,
-            239 + (ord(box) - 12) * 42 + 58, 240);
-          PlotTextCentered(nil, txtMessage[18], 279, 279 + 123,
-            239 + (ord(box) - 12) * 42 + 82, 240);
-          PlotTextCentered(nil, txtMessage[19], 279, 279 + 123,
-            239 + (ord(box) - 12) * 42 + 106, 240);
+          pText.PlotTextCentered(txtMessage[16], 279 + Offset.X, 279 + 123 + Offset.X, 239 + (ord(box) - 12) * 42 + 34 + Offset.Y, 240);
+          pText.PlotTextCentered(txtMessage[17], 279 + Offset.X, 279 + 123 + Offset.X, 239 + (ord(box) - 12) * 42 + 58 + Offset.Y, 240);
+          pText.PlotTextCentered(txtMessage[18], 279 + Offset.X, 279 + 123 + Offset.X, 239 + (ord(box) - 12) * 42 + 82 + Offset.Y, 240);
+          pText.PlotTextCentered(txtMessage[19], 279 + Offset.X, 279 + 123 + Offset.X, 239 + (ord(box) - 12) * 42 + 106 + Offset.Y, 240);
           for i := 0 to 3 do
             SelectRect[(ord(box) - 12) * 4 + i].enabled := True;
         end;
@@ -2352,8 +2308,7 @@ begin
           lpDDSBack.BltFast(279 + 13 + Offset.X, 239 + (ord(box) - 12) * 42 + 34
             + 24 * (ixSelectedHairStyle) + Offset.Y, DXCircle, @pr,
             DDBLTFAST_SRCCOLORKEY or DDBLTFAST_WAIT);
-          PlotTextCentered(nil, txtMessage[20], 279, 279 + 123,
-            239 + (ord(box) - 12) * 42 + 34, 240);
+          pText.PlotTextCentered(txtMessage[20], 279 + Offset.X, 279 + 123 + Offset.X, 239 + (ord(box) - 12) * 42 + 34 + Offset.X, 240);
           for i := 0 to 0 do
             // SelectRect[ ( Box - 12 ) * 4 + i ].rect := rect( 279, 239 + ( box - 12 ) * 42 + 34 + 24 * i, 279 + 123, 239 + ( box - 12 ) * 42 + 34 + 24 + 24 * i );
             SelectRect[(ord(box) - 12) * 4 + i].enabled := True;
@@ -2364,17 +2319,12 @@ begin
             + 24 * (ixselectedDoAHair) + Offset.Y, DXCircle, @pr,
             DDBLTFAST_SRCCOLORKEY or DDBLTFAST_WAIT);
           if AhoulRace > 1 then
-            PlotTextCentered(nil, txtMessage[24], 279, 279 + 123,
-              239 + (ord(box) - 12) * 42 + 34, 240)
+            pText.PlotTextCentered(txtMessage[24], 279 + Offset.X, 279 + 123 + Offset.X, 239 + (ord(box) - 12) * 42 + 34 + Offset.Y, 240)
           else
-            PlotTextCentered(nil, txtMessage[20], 279, 279 + 123,
-              239 + (ord(box) - 12) * 42 + 34, 240);
-          PlotTextCentered(nil, txtMessage[21] + txtMessage[3], 279, 279 + 123,
-            239 + (ord(box) - 12) * 42 + 58, 240);
-          PlotTextCentered(nil, txtMessage[22], 279, 279 + 123,
-            239 + (ord(box) - 12) * 42 + 82, 240);
-          PlotTextCentered(nil, txtMessage[23], 279, 279 + 123,
-            239 + (ord(box) - 12) * 42 + 106, 240);
+            pText.PlotTextCentered(txtMessage[20], 279 + Offset.X, 279 + 123 + Offset.X, 239 + (ord(box) - 12) * 42 + 34 + Offset.Y, 240);
+          pText.PlotTextCentered(txtMessage[21] + txtMessage[3], 279 + Offset.X, 279 + 123 + Offset.X, 239 + (ord(box) - 12) * 42 + 58 + Offset.Y, 240);
+          pText.PlotTextCentered(txtMessage[22], 279 + Offset.X, 279 + 123 + Offset.X, 239 + (ord(box) - 12) * 42 + 82 + Offset.Y, 240);
+          pText.PlotTextCentered(txtMessage[23], 279 + Offset.X, 279 + 123 + Offset.X, 239 + (ord(box) - 12) * 42 + 106 + Offset.Y, 240);
           for i := 0 to 3 do
             // SelectRect[ ( Box - 12 ) * 4 + i ].rect := rect( 279, 239 + ( box - 12 ) * 42 + 34 + 24 * i, 279 + 123, 239 + ( box - 12 ) * 42 + 34 + 24 + 24 * i );
             SelectRect[(ord(box) - 12) * 4 + i].enabled := True;
@@ -2384,18 +2334,13 @@ begin
           lpDDSBack.BltFast(279 + 13 + Offset.X, 239 + (ord(box) - 12) * 42 + 34
             + 24 * (ixSelectedHairStyle) + Offset.Y, DXCircle, @pr,
             DDBLTFAST_SRCCOLORKEY or DDBLTFAST_WAIT);
-          PlotTextCentered(nil, txtMessage[20], 279, 279 + 123,
-            239 + (ord(box) - 12) * 42 + 34, 240);
-          PlotTextCentered(nil, txtMessage[21], 279, 279 + 123,
-            239 + (ord(box) - 12) * 42 + 58, 240);
-          PlotTextCentered(nil, txtMessage[22], 279, 279 + 123,
-            239 + (ord(box) - 12) * 42 + 82, 240);
+          pText.PlotTextCentered(txtMessage[20], 279 + Offset.X, 279 + 123 + Offset.X, 239 + (ord(box) - 12) * 42 + 34 + Offset.Y, 240);
+          pText.PlotTextCentered(txtMessage[21], 279 + Offset.X, 279 + 123 + Offset.X, 239 + (ord(box) - 12) * 42 + 58 + Offset.Y, 240);
+          pText.PlotTextCentered(txtMessage[22], 279 + Offset.X, 279 + 123 + Offset.X, 239 + (ord(box) - 12) * 42 + 82 + Offset.Y, 240);
           if not female then
-          PlotTextCentered(nil, txtMessage[23], 279, 279 + 123,
-            239 + (ord(box) - 12) * 42 + 106, 240)
+            pText.PlotTextCentered(txtMessage[23], 279 + Offset.X, 279 + 123 + Offset.X, 239 + (ord(box) - 12) * 42 + 106 + Offset.X, 240)
           else //Medium hair
-          PlotTextCentered(nil, txtMessage[106], 279, 279 + 123,
-            239 + (ord(box) - 12) * 42 + 106, 240);
+            pText.PlotTextCentered(txtMessage[106], 279 + Offset.X, 279 + 123 + Offset.X, 239 + (ord(box) - 12) * 42 + 106 + Offset.X, 240);
           for i := 0 to 3 do
             SelectRect[(ord(box) - 12) * 4 + i].enabled := True;
         end;
@@ -2409,17 +2354,13 @@ begin
             DDBLTFAST_SRCCOLORKEY or DDBLTFAST_WAIT);
           if not female then
           begin
-          PlotTextCentered(nil, txtMessage[24], 279, 279 + 123,
-            239 + (ord(box) - 12) * 42 + 58, 240); //Beard
-          PlotTextCentered(nil, txtMessage[25], 279, 279 + 123,
-            239 + (ord(box) - 12) * 42 + 82, 240); //No beard
+            pText.PlotTextCentered(txtMessage[24], 279 + Offset.X, 279 + 123 + Offset.X, 239 + (ord(box) - 12) * 42 + 58 + Offset.Y, 240); //Beard
+            pText.PlotTextCentered(txtMessage[25], 279 + Offset.X, 279 + 123 + Offset.X, 239 + (ord(box) - 12) * 42 + 82 + Offset.Y, 240); //No beard
           end
           else
           begin
-          PlotTextCentered(nil, txtMessage[107], 279, 279 + 123,
-            239 + (ord(box) - 12) * 42 + 58, 240); //Braided
-          PlotTextCentered(nil, txtMessage[108], 279, 279 + 123,
-            239 + (ord(box) - 12) * 42 + 82, 240); //Normal
+            pText.PlotTextCentered(txtMessage[107], 279 + Offset.X, 279 + 123 + Offset.X, 239 + (ord(box) - 12) * 42 + 58 + Offset.Y, 240); //Braided
+            pText.PlotTextCentered(txtMessage[108], 279 + Offset.X, 279 + 123 + Offset.X, 239 + (ord(box) - 12) * 42 + 82 + Offset.Y, 240); //Normal
           end;
           for i := 0 to 1 do
             SelectRect[(ord(box) - 12) * 4 + i].enabled := True;

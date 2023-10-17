@@ -50,7 +50,7 @@ uses
   System.Types,
   System.Classes,
   Vcl.Controls,
-  GameText,
+  SoAOS.Graphics.GameText,
   SoAOS.Intrface.Dialogs,
   Engine,
   System.IniFiles,
@@ -155,7 +155,7 @@ begin
     inherited;
     MouseCursor.Cleanup;
 
-    pText.LoadFontGraphic( 'inventory' ); //load the inventory font graphic in
+    pText.Fonts.LoadFontGraphic( 'inventory' ); //load the inventory font graphic in
 
     ExText.Open( 'LogScreen' );
     for i := 0 to 1 do
@@ -241,11 +241,11 @@ begin
     end;
 
 //    pText.PlotText( Title, 5, 5, 240 );
-    PlotText( Title, 5, 5, 240 );
+    pText.PlotText( Title, 5 + Offset.X, 5 + Offset.Y );
 
     ShowText( PageNumber );
 //    pText.plotText( txtMessage[ 0 ] + inttostr( PageNumber + 1 ) + txtMessage[ 1 ] + inttostr( MaxPages + 1 ), 20, 424, 240 );
-    PlotText( txtMessage[ 0 ] + inttostr( PageNumber + 1 ) + txtMessage[ 1 ] + inttostr( MaxPages + 1 ), 20, 424, 240 );
+    pText.PlotText( txtMessage[ 0 ] + inttostr( PageNumber + 1 ) + txtMessage[ 1 ] + inttostr( MaxPages + 1 ), 20 + Offset.X, 424 + Offset.Y );
 
     SoAOS_DX_BltFront;
   except
@@ -276,7 +276,7 @@ begin
           lpDDSBack.BltFast( Offset.X, 40 + Offset.Y, DXBack, @pr, DDBLTFAST_SRCCOLORKEY or DDBLTFAST_WAIT );
           pr := Rect( 20, 424, 350, 450 );
           lpDDSBack.BltFast( 20 + Offset.X, 424 + Offset.Y, DXBack, @pr, DDBLTFAST_SRCCOLORKEY or DDBLTFAST_WAIT );
-          PlotText( txtMessage[ 0 ] + inttostr( PageNumber + 1 ) + txtMessage[ 1 ] + inttostr( MaxPages + 1 ), 20, 424, 240 );
+          pText.PlotText( txtMessage[ 0 ] + inttostr( PageNumber + 1 ) + txtMessage[ 1 ] + inttostr( MaxPages + 1 ), 20 + Offset.X, 424 + Offset.Y );
 //          pText.plotText( txtMessage[ 0 ] + inttostr( PageNumber + 1 ) + txtMessage[ 1 ] + inttostr( MaxPages + 1 ), 20, 424, 240 );
           ShowText( PageNumber );
         end;
@@ -296,7 +296,7 @@ begin
           lpDDSBack.BltFast( Offset.X, 40 + Offset.Y, DXBack, @pr, DDBLTFAST_SRCCOLORKEY or DDBLTFAST_WAIT );
           pr := Rect( 20, 424, 350, 450 );
           lpDDSBack.BltFast( 20 + Offset.X , 424 + Offset.Y, DXBack, @pr, DDBLTFAST_SRCCOLORKEY or DDBLTFAST_WAIT );
-          PlotText( txtMessage[ 0 ] + inttostr( PageNumber + 1 ) + txtMessage[ 1 ] + inttostr( MaxPages + 1 ), 20, 424, 240 );
+          pText.PlotText( txtMessage[ 0 ] + inttostr( PageNumber + 1 ) + txtMessage[ 1 ] + inttostr( MaxPages + 1 ), 20 + Offset.X, 424 + Offset.Y );
 //          pText.plotText( txtMessage[ 0 ] + inttostr( PageNumber + 1 ) + txtMessage[ 1 ] + inttostr( MaxPages + 1 ), 20, 424, 240 );
           ShowText( PageNumber );
         end;
@@ -386,7 +386,7 @@ begin
             begin //we have room
               if DontPlotText = false then
 //                pText.PlotTextBlock( S, 20, 640, Y, 240 );
-                PlotTextBlock( S, 20, 640, Y, 240 );
+                pText.PlotTextBlock( S, 20 + Offset.X, 640 + Offset.X, Y + Offset.Y, 240 );
               Y := Y + BlockHeight * 25; //Y:=Y+25;
               if BlockHeight = 1 then
                 Y := Y + 6; //single lines come out too close- Kludge

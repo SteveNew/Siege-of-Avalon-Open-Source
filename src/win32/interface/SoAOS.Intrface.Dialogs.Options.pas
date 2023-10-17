@@ -52,7 +52,7 @@ uses
   Vcl.ExtCtrls,
   SoAOS.Intrface.Dialogs,
   Character,
-  GameText,
+  SoAOS.Graphics.GameText,
   Logfile,
   SoAOS.Animation,
   Engine;
@@ -137,16 +137,16 @@ begin
           begin
             if k< 11 then
             //  pText.PlotText( 'F' + intToStr( k + 4 ), 611, 264 + j * 35, 240 );
-            pText.PlotText( intToStr( k - 1 ), 611+Offset.X, 264 + j * 35+Offset.Y, 240 )
+            pText.PlotText( intToStr( k - 1 ), 611+Offset.X, 264 + j * 35+Offset.Y )
             else
-            pText.PlotText( 'F' + intToStr( k - 8), 611 + Offset.X, 264 + j * 35 + Offset.Y, 240 );
+            pText.PlotText( 'F' + intToStr( k - 8), 611 + Offset.X, 264 + j * 35 + Offset.Y );
           end;
         end;
             //Plot The Spell Icons
         pt := TSpell( SpellList.objects[ i ] ).GetIconXY( Character );
         pr := ApplyOffset( Rect( 130, 260 + j * 35, 130 + 32, 260 + j * 35 + 32 ) );
         DrawAlpha( lpDDSBack, pr, Rect( pt.x, pt.y, pt.x + 32, pt.y + 32 ), IconDX, True, 200 );
-        pText.PlotText( TSpell( SpellList.Objects[ i ] ).DisplayName, 181+Offset.X, 264 + j * 35+Offset.Y, 240 );
+        pText.PlotText( TSpell( SpellList.Objects[ i ] ).DisplayName, 181+Offset.X, 264 + j * 35+Offset.Y );
         j := j + 1;
       end
     end; //end for
@@ -189,9 +189,9 @@ begin
     CurrentSelectedListItem := -1;
     StartSpell := 0;
 
-    pText.LoadFontGraphic( 'createchar' ); //load the GoldFont font graphic in
-    if UseSmallFont then
-      pText.LoadGoldFontGraphic;
+    pText.Fonts.LoadFontGraphic( 'createchar' ); //load the GoldFont font graphic in
+//    if UseSmallFont then
+//      pText.LoadGoldFontGraphic;
     DXContinue := SoAOS_DX_LoadBMP( InterfaceLanguagePath + 'opContinue.bmp', cInvisColor );
     DXYellow := SoAOS_DX_LoadBMP( InterfacePath + 'opYellow.bmp', cInvisColor );
     DXVolumeSlider := SoAOS_DX_LoadBMP( InterfacePath + 'opVolume.bmp', cInvisColor );
@@ -293,9 +293,9 @@ begin
             if TSpell( SpellList.objects[ i ] ) = Character.HotKey[ k ] then
             begin
               if k < 11 then
-              pText.PlotText( intToStr( k - 1), 611+Offset.X, 264 + j * 35+Offset.Y, 240 )
+                pText.PlotText( intToStr( k - 1), 611+Offset.X, 264 + j * 35+Offset.Y )
               else
-              pText.PlotText( 'F' + intToStr( k - 8), 611 + Offset.X, 264 + j * 35 + Offset.Y, 240 );
+                pText.PlotText( 'F' + intToStr( k - 8), 611 + Offset.X, 264 + j * 35 + Offset.Y );
             end;
           end;
             //Plot The Spell Icons
@@ -306,7 +306,7 @@ begin
             //if pText.TextLength(SpellList.Strings[i]) > 215 then
             //  pText.PlotSquishedText(SpellList.Strings[i],426,145+j*35,240)
             //else
-          pText.PlotText( TSpell( SpellList.Objects[ i ] ).DisplayName, 181+Offset.X, 264 + j * 35+Offset.Y, 240 );
+          pText.PlotText( TSpell( SpellList.Objects[ i ] ).DisplayName, 181+Offset.X, 264 + j * 35+Offset.Y );
           j := j + 1;
         end
       end; //end for
@@ -558,9 +558,9 @@ begin
             begin
               if k < 11 then
             // pText.PlotText( 'F' + intToStr( k + 4 ), 611, 264 + j * 35, 240 );
-              pText.PlotText( intToStr( k - 1 ), 611+Offset.X, 264 + j * 35+Offset.Y, 240 )
+              pText.PlotText( intToStr( k - 1 ), 611+Offset.X, 264 + j * 35+Offset.Y )
               else
-              pText.PlotText( 'F' + intToStr( k - 8 ), 611 + Offset.X, 264 + j * 35 + Offset.Y, 240 );
+              pText.PlotText( 'F' + intToStr( k - 8 ), 611 + Offset.X, 264 + j * 35 + Offset.Y );
             end;
           end;
             //Plot The Spell Icons
@@ -571,7 +571,7 @@ begin
             //if pText.TextLength(SpellList.Strings[i]) > 215 then
             //  pText.PlotSquishedText(SpellList.Strings[i],426,145+j*35,240)
             //else
-          pText.PlotText( TSpell( SpellList.Objects[ i ] ).DisplayName, 181+Offset.X, 264 + j * 35+Offset.Y, 240 );
+          pText.PlotText( TSpell( SpellList.Objects[ i ] ).DisplayName, 181+Offset.X, 264 + j * 35+Offset.Y );
           j := j + 1;
         end
       end; //end for
@@ -590,16 +590,16 @@ begin
       SpllRect := ApplyOffset( Rect( 101, 229, 694, 448 ) );
 
       if FXRect.Contains( Point( X, Y ) ) then //over SoundFX
-        PlotTextBlock( txtMessage[ 0 ], 359, 670, 121, 240, UseSmallFont, True )
+        pText.PlotTextBlock( txtMessage[ 0 ], 359 + Offset.X, 670 + Offset.X, 121 + Offset.Y, 240, UseSmallFont, True )
       else if MusRect.Contains( Point( X, Y ) ) then //over music
-        PlotTextBlock( txtMessage[ 1 ], 359, 670, 121, 240, UseSmallFont, True )
+        pText.PlotTextBlock( txtMessage[ 1 ], 359 + Offset.X, 670 + Offset.X, 121 + Offset.Y, 240, UseSmallFont, True )
       else if ShdwRect.Contains( Point( X, Y ) ) then //over Shadows
-        PlotTextBlock( txtMessage[ 2 ], 359, 670, 121, 240, UseSmallFont, True )
+        pText.PlotTextBlock( txtMessage[ 2 ], 359 + Offset.X, 670 + Offset.X, 121 + Offset.Y, 240, UseSmallFont, True )
       else if SpllRect.Contains( Point( X, Y ) ) then //over Spells list
         if Character = nil then
-          PlotTextBlock( txtMessage[ 3 ], 359, 670, 121, 240, UseSmallFont, True )
+          pText.PlotTextBlock( txtMessage[ 3 ], 359 + Offset.X, 670 + Offset.X, 121 + Offset.Y, 240, UseSmallFont, True )
         else
-          PlotTextBlock( txtMessage[ 4 ], 359, 670, 121, 240, UseSmallFont, True );
+          pText.PlotTextBlock( txtMessage[ 4 ], 359 + Offset.X, 670 + Offset.X, 121 + Offset.Y, 240, UseSmallFont, True );
     end;
 
     SoAOS_DX_BltFront;
@@ -627,7 +627,7 @@ begin
     frmMain.OnMouseWheel := nil;
 
     ExText.close;
-    pText.UnloadGoldFontGraphic;
+//    pText.UnloadGoldFontGraphic;
     if Character <> nil then
       SpellList.free; //free the spelllist passed here
 

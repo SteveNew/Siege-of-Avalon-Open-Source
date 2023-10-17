@@ -46,7 +46,8 @@ uses
   System.Classes,
   System.Types,
   Vcl.Controls,
-  Gametext,
+  SoAOS.Graphics.GameText,
+  //Gametext,
   Engine,
   LogFile;
 

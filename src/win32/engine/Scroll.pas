@@ -49,7 +49,7 @@ uses
   System.Types,
   System.SysUtils,
   Character,
-  GameText;
+  SoAOS.Graphics.GameText;
 
 type
   TScroll = class( TObject )

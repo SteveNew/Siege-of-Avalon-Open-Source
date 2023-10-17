@@ -54,7 +54,7 @@ uses
   Vcl.Controls,
   Character,
   Resource,
-  GameText,
+  SoAOS.Graphics.GameText,
   SoAOS.Intrface.Dialogs,
   Parts,
   Scroll,
@@ -225,8 +225,8 @@ begin
     ShadowAlpha := 150;
     DlgScroll := TScroll.create; //create the statistics scroll
     DlgScroll.pText := pText; //assign the pointer to pText;
-    pText.LoadFontGraphic( 'inventory' ); //load the inventory font graphic in
-    pText.LoadTinyFontGraphic;
+    pText.Fonts.LoadFontGraphic( 'inventory' ); //load the inventory font graphic in
+//    pText.LoadTinyFontGraphic;
     CurrentSelectedItem := -1; //We aren't dragging anything
     DlgScroll.ScrollIsShowing := False; //stats screen isnt showing
     Alpha := 220; //alpha value for all alphabet plots
@@ -257,12 +257,11 @@ begin
     DXBorder := nil; //release DXBorder
 
   //Now put the names up
-    PlotTextCentered( Character.name, 27, 243, 10, Alpha );
+    pText.PlotTextCentered( Character.name, 27 + Offset.X, 243 + Offset.X, 10 + Offset.Y, Alpha );
     if OtherOb is TCharacter then
-      PlotTextCentered( TCharacter( OtherOb ).name, 417, 633, 10, Alpha )
+      pText.PlotTextCentered( TCharacter( OtherOb ).name, 417 + Offset.X, 633 + Offset.X, 10 + Offset.Y, Alpha )
     else
-      PlotTextCentered( TContainer( OtherOb ).name, 417, 633, 10, Alpha );
-
+      pText.PlotTextCentered( TContainer( OtherOb ).name, 417 + Offset.X, 633 + Offset.X, 10 + Offset.Y, Alpha );
 
   //Create list
     ItemList := TList<pTempItems>.Create; //create the ItemList
@@ -578,7 +577,7 @@ begin
             if UseSmallFont then
               pText.PlotTinyTextBlock( GetSlotText, ClearLeft + Offset.X, ClearRight + Offset.X, SmlMsg + Offset.Y, Alpha )
             else
-              PlotText( GetSlotText, ClearLeft, LrgMsg, Alpha );
+              pText.PlotText( GetSlotText, ClearLeft + Offset.X, LrgMsg + Offset.Y, Alpha );
             ShowOpenInventorySlots;
             //save the background to the dirty DD surface based on the floating item
             pr := ApplyOffset( Rect( Tx, Ty, Tx + ItemList[ CurrentSelectedItem ].W, Ty + ItemList[ CurrentSelectedItem ].H ) );
@@ -636,7 +635,7 @@ begin
                 if UseSmallFont then
                   pText.PlotTinyTextBlock( GetSlotText, ClearLeft + Offset.X, ClearRight + Offset.X, SmlMsg + Offset.Y, Alpha )
                 else
-                  PlotText( GetSlotText, ClearLeft, LrgMsg, Alpha );
+                  pText.PlotText( GetSlotText, ClearLeft + Offset.X, LrgMsg + Offset.Y, Alpha );
               end; //endif button
             end; //endif whohasthis
           end;
@@ -725,7 +724,7 @@ begin
           if UseSmallFont then
             pText.PlotTinyTextBlock( txtMessage[ 0 ], ClearLeft + Offset.X, ClearRight + Offset.X, SmlMsg + Offset.Y, Alpha )
           else
-            PlotText( txtMessage[ 0 ], ClearLeft, LrgMsg, Alpha );
+            pText.PlotText( txtMessage[ 0 ], ClearLeft + Offset.X, LrgMsg + Offset.Y, Alpha );
           //save the background to the dirty DD surface based on the floating item
           pr := ApplyOffset( Rect( Tx, Ty, Tx + ItemList[ CurrentSelectedItem ].W, Ty + ItemList[ CurrentSelectedItem ].H ) );
           DXDirty.BltFast( 0, 0, lpDDSBack, @pr, DDBLTFAST_WAIT );
@@ -746,7 +745,7 @@ begin
           if UseSmallFont then
             pText.PlotTinyTextBlock( txtMessage[ 1 ], ClearLeft + Offset.X, ClearRight + Offset.X, SmlMsg + Offset.Y, Alpha )
           else
-            PlotText( txtMessage[ 1 ], ClearLeft, LrgMsg, Alpha );
+            pText.PlotText( txtMessage[ 1 ], ClearLeft + Offset.X, LrgMsg+ Offset.Y, Alpha );
           //save the background to the dirty DD surface based on the floating item
           pr := ApplyOffset( Rect( Tx, Ty, Tx + ItemList[ CurrentSelectedItem ].W, Ty + ItemList[ CurrentSelectedItem ].H ) );
           DXDirty.BltFast( 0, 0, lpDDSBack, @pr, DDBLTFAST_WAIT );
@@ -1052,11 +1051,11 @@ begin
     end;
 
   //Now put the names up
-    PlotTextCentered( Character.name, 27, 243, 10, Alpha );
+    pText.PlotTextCentered( Character.name, 27 + Offset.X, 243 + Offset.X, 10 + Offset.Y, Alpha );
     if OtherOb is TCharacter then
-      PlotTextCentered( TCharacter( OtherOb ).name, 417, 633, 10, Alpha )
+      pText.PlotTextCentered( TCharacter( OtherOb ).name, 417 + Offset.X, 633 + Offset.X, 10 + Offset.Y, Alpha )
     else
-      PlotTextCentered( TContainer( OtherOb ).name, 417, 633, 10, Alpha );
+      pText.PlotTextCentered( TContainer( OtherOb ).name, 417 + Offset.X, 633 + Offset.X, 10 + Offset.Y, Alpha );
 
     SoAOS_DX_BltFront;
   except
@@ -1556,7 +1555,7 @@ begin
     CheckForGroundDrop := true;
     WriteTheInventoryData; //write the data back
     ContainCursor( 0 );
-    pText.UnloadTinyFontGraphic;
+//    pText.UnloadTinyFontGraphic;
     DXBrown := nil;
     DlgScroll.free;
     DlgScroll := nil;

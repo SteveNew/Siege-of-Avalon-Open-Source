@@ -171,8 +171,8 @@ begin
     for i := 0 to 64 do
       txtMessage[ i ] := ExText.GetText( 'Message' + inttostr( i ) );
 
-    pText.LoadFontGraphic( 'statistics' ); //load the statisctics font graphic in
-    pText.LoadTinyFontGraphic;
+    pText.Fonts.LoadFontGraphic( 'statistics' ); //load the statisctics font graphic in
+//    pText.LoadTinyFontGraphic;
     LoadNames;
     CreateCollisionRects;
     LoadBaseValues;
@@ -219,7 +219,7 @@ begin
   Log.DebugLog( FailName );
   try
 
-    pText.UnloadTinyFontGraphic;
+//    pText.UnloadTinyFontGraphic;
     ExText.Close;
     DXLeftArrow := nil;
     DXRightArrow := nil;
@@ -533,7 +533,7 @@ begin
           lpDDSBack.BltFast( ArrowRect[ i ].rect.left + Offset.X, ArrowRect[ i ].rect.top + Offset.Y, DXLeftArrow, @pr, DDBLTFAST_SRCCOLORKEY or DDBLTFAST_WAIT ) //plot the highlight
         else
           lpDDSBack.BltFast( ArrowRect[ i ].rect.left - 4 + Offset.X, ArrowRect[ i ].rect.top + Offset.Y, DXRightArrow, @pr, DDBLTFAST_SRCCOLORKEY or DDBLTFAST_WAIT ); //plot the highlight
-        PlotTextBlock( ArrowRect[ i ].Info, 10, 587, 376, 240, UseSmallFont ); //Plot the info
+        pText.PlotTextBlock( ArrowRect[ i ].Info, 10 + Offset.X, 587 + Offset.X, 376 + Offset.Y, 240, UseSmallFont ); //Plot the info
         i := 900; //drop out of the loop
       end;
       i := i + 1;
@@ -545,7 +545,7 @@ begin
       begin
         if not InfoRect[ i ].Disabled and ptInRect( ApplyOffset( InfoRect[ i ].rect ), point( X, Y ) ) then
         begin //if over an Arrow
-          PlotTextBlock( InfoRect[ i ].Info, 10, 580, 376, 240, UseSmallFont ); //Plot the info
+          pText.PlotTextBlock( InfoRect[ i ].Info, 10 + Offset.X, 580 + Offset.X, 376 + Offset.Y, 240, UseSmallFont ); //Plot the info
           j := i;
           i := 900;
         end;
@@ -584,7 +584,7 @@ begin
         Info := '* ' + inttostr( round( Rate * 60 ) ) + HitPointMinMsg
       else
         Info := '* ' + inttostr( round( Rate * 3600 ) ) + HitPointHrMsg;
-      PlotTextBlock( Info, 208, 580, 338, 240, UseSmallFont ); //Plot the info
+      pText.PlotTextBlock( Info, 208 + Offset.X, 580 + Offset.X, 338 + Offset.Y, 240, UseSmallFont ); //Plot the info
     end
     else if j = 35 then
     begin
@@ -595,7 +595,7 @@ begin
         Info := '* ' + inttostr( round( Rate * 60 ) ) + ManaMinMsg
       else
         Info := '* ' + inttostr( round( Rate * 3600 ) ) + ManaHrMsg;
-      PlotTextBlock( Info, 208, 580, 338, 240, UseSmallFont ); //Plot the info
+      pText.PlotTextBlock( Info, 208 + Offset.X, 580 + Offset.X, 338 + Offset.Y, 240, UseSmallFont ); //Plot the info
     end;
 
     if i <> 901 then
@@ -953,9 +953,9 @@ begin
   try
 
     Alpha := 240; //blend value
-    PlotTextCentered( nil, Character.Name, 120, 640, 8, Alpha, False );
+    pText.PlotTextCentered(Character.Name, 120 + Offset.X, 640 + Offset.X, 8 + Offset.Y, Alpha );
     str( Character.TrainingPoints, a );
-    PlotText( a, 130, 46, Alpha );
+    pText.PlotText( a, 130 + Offset.X, 46 + Offset.Y, Alpha );
    //primary stats column
     x1 := 118;
     x2 := 156;
@@ -966,104 +966,104 @@ begin
     str( Character.Strength, b );
     if StatAdjustments[ 0 ] < 1 then
     begin
-      PlotTextCentered( nil, a, x1, x2, i, Alpha, False );
-      PlotTextCentered( nil, b, x3, x4, i, Alpha, False );
+      pText.PlotTextCentered( a, x1 + Offset.X, x2 + Offset.X, i + Offset.Y, Alpha );
+      pText.PlotTextCentered( b, x3 + Offset.X, x4 + Offset.X, i + Offset.Y, Alpha );
     end
     else
     begin //darken it up
-      PlotDarkTextCentered( a, x1, x2, i, 240 );
-      PlotDarkTextCentered( b, x3, x4, i, 240 );
+      pText.PlotDarkTextCentered( a, x1 + Offset.X, x2 + Offset.X, i + Offset.Y, 240 );
+      pText.PlotDarkTextCentered( b, x3 + Offset.X, x4 + Offset.X, i + Offset.Y, 240 );
     end;
     i := i + 24;
     str( Character.BaseCoordination, a );
     str( Character.Coordination, b );
     if StatAdjustments[ 1 ] < 1 then
     begin
-      PlotTextCentered( a, x1, x2, i, Alpha );
-      PlotTextCentered( b, x3, x4, i, Alpha );
+      pText.PlotTextCentered( a, x1 + Offset.X, x2 + Offset.X, i + Offset.Y, Alpha );
+      pText.PlotTextCentered( b, x3 + Offset.X, x4 + Offset.X, i + Offset.Y, Alpha );
     end
     else
     begin //darken it up
-      PlotDarkTextCentered( a, x1, x2, i, 240 );
-      PlotDarkTextCentered( b, x3, x4, i, 240 );
+      pText.PlotDarkTextCentered( a, x1 + Offset.X, x2 + Offset.X, i + Offset.Y, 240 );
+      pText.PlotDarkTextCentered( b, x3 + Offset.X, x4 + Offset.X, i + Offset.Y, 240 );
     end;
     i := i + 24;
     str( Character.BaseConstitution, a );
     str( Character.Constitution, b );
     if StatAdjustments[ 2 ] < 1 then
     begin
-      PlotTextCentered( a, x1, x2, i, Alpha );
-      PlotTextCentered( b, x3, x4, i, Alpha );
+      pText.PlotTextCentered( a, x1 + Offset.X, x2 + Offset.X, i + Offset.Y, Alpha );
+      pText.PlotTextCentered( b, x3 + Offset.X, x4 + Offset.X, i + Offset.Y, Alpha );
     end
     else
     begin //darken it up
-      PlotDarkTextCentered( a, x1, x2, i, 240 );
-      PlotDarkTextCentered( b, x3, x4, i, 240 );
+      pText.PlotDarkTextCentered( a, x1 + Offset.X, x2 + Offset.X, i + Offset.Y, 240 );
+      pText.PlotDarkTextCentered( b, x3 + Offset.X, x4 + Offset.X, i + Offset.Y, 240 );
     end;
     i := i + 24;
     str( Character.BasePerception, a );
     str( Character.Perception, b );
     if StatAdjustments[ 3 ] < 1 then
     begin
-      PlotTextCentered( a, x1, x2, i, Alpha );
-      PlotTextCentered( b, x3, x4, i, Alpha );
+      pText.PlotTextCentered( a, x1 + Offset.X, x2 + Offset.X, i + Offset.Y, Alpha );
+      pText.PlotTextCentered( b, x3 + Offset.X, x4 + Offset.X, i + Offset.Y, Alpha );
     end
     else
     begin //darken it up
-      PlotDarkTextCentered( a, x1, x2, i, 240 );
-      PlotDarkTextCentered( b, x3, x4, i, 240 );
+      pText.PlotDarkTextCentered( a, x1 + Offset.X, x2 + Offset.X, i + Offset.Y, 240 );
+      pText.PlotDarkTextCentered( b, x3 + Offset.X, x4 + Offset.X, i + Offset.Y, 240 );
     end;
     i := i + 24;
     str( Character.BaseCharm, a );
     str( Character.Charm, b );
     if StatAdjustments[ 4 ] < 1 then
     begin
-      PlotTextCentered( a, x1, x2, i, Alpha );
-      PlotTextCentered( b, x3, x4, i, Alpha );
+      pText.PlotTextCentered( a, x1 + Offset.X, x2 + Offset.X, i + Offset.Y, Alpha );
+      pText.PlotTextCentered( b, x3 + Offset.X, x4 + Offset.X, i + Offset.Y, Alpha );
     end
     else
     begin //darken it up
-      PlotDarkTextCentered( a, x1, x2, i, 240 );
-      PlotDarkTextCentered( b, x3, x4, i, 240 );
+      pText.PlotDarkTextCentered( a, x1 + Offset.X, x2 + Offset.X, i + Offset.Y, 240 );
+      pText.PlotDarkTextCentered( b, x3 + Offset.X, x4 + Offset.X, i + Offset.Y, 240 );
     end;
     i := 248;
     str( Character.BaseMysticism, a );
     str( Character.Mysticism, b );
     if StatAdjustments[ 5 ] < 1 then
     begin
-      PlotTextCentered( a, x1, x2, i, Alpha );
-      PlotTextCentered( b, x3, x4, i, Alpha );
+      pText.PlotTextCentered( a, x1 + Offset.X, x2 + Offset.X, i + Offset.Y, Alpha );
+      pText.PlotTextCentered( b, x3 + Offset.X, x4 + Offset.X, i + Offset.Y, Alpha );
     end
     else
     begin //darken it up
-      PlotDarkTextCentered( a, x1, x2, i, 240 );
-      PlotDarkTextCentered( b, x3, x4, i, 240 );
+      pText.PlotDarkTextCentered( a, x1 + Offset.X, x2 + Offset.X, i + Offset.Y, 240 );
+      pText.PlotDarkTextCentered( b, x3 + Offset.X, x4 + Offset.X, i + Offset.Y, 240 );
     end;
     i := i + 24;
     str( Character.BaseCombat, a );
     str( Character.Combat, b );
     if StatAdjustments[ 6 ] < 1 then
     begin
-      PlotTextCentered( a, x1, x2, i, Alpha );
-      PlotTextCentered( b, x3, x4, i, Alpha );
+      pText.PlotTextCentered( a, x1 + Offset.X, x2 + Offset.X, i + Offset.Y, Alpha );
+      pText.PlotTextCentered( b, x3 + Offset.X, x4 + Offset.X, i + Offset.Y, Alpha );
     end
     else
     begin //darken it up
-      PlotDarkTextCentered( a, x1, x2, i, 240 );
-      PlotDarkTextCentered( b, x3, x4, i, 240 );
+      pText.PlotDarkTextCentered( a, x1 + Offset.X, x2 + Offset.X, i + Offset.Y, 240 );
+      pText.PlotDarkTextCentered( b, x3 + Offset.X, x4 + Offset.X, i + Offset.Y, 240 );
     end;
     i := i + 24;
     str( Character.BaseStealth, a );
     str( Character.Stealth, b );
     if StatAdjustments[ 7 ] < 1 then
     begin
-      PlotTextCentered( a, x1, x2, i, Alpha );
-      PlotTextCentered( b, x3, x4, i, Alpha );
+      pText.PlotTextCentered( a, x1 + Offset.X, x2 + Offset.X, i + Offset.Y, Alpha );
+      pText.PlotTextCentered( b, x3 + Offset.X, x4 + Offset.X, i + Offset.Y, Alpha );
     end
     else
     begin //darken it up
-      PlotDarkTextCentered( a, x1, x2, i, 240 );
-      PlotDarkTextCentered( b, x3, x4, i, 240 );
+      pText.PlotDarkTextCentered( a, x1 + Offset.X, x2 + Offset.X, i + Offset.Y, 240 );
+      pText.PlotDarkTextCentered( b, x3 + Offset.X, x4 + Offset.X, i + Offset.Y, 240 );
     end;
 
 
@@ -1073,21 +1073,21 @@ begin
     i := 104;
    //New
     str( round( Character.AttackBonus ), a );
-    PlotTextCentered( a, x1, x2, i, Alpha );
+    pText.PlotTextCentered( a, x1 + Offset.X, x2 + Offset.X, i + Offset.Y, Alpha );
     i := i + 24;
     str( round( Character.Defense ), a );
-    PlotTextCentered( a, x1, x2, i, Alpha );
+    pText.PlotTextCentered( a, x1 + Offset.X, x2 + Offset.X, i + Offset.Y, Alpha );
     i := i + 24;
     str( Character.AttackRecovery, a );
-    PlotTextCentered( a, x1, x2, i, Alpha );
+    pText.PlotTextCentered( a, x1 + Offset.X, x2 + Offset.X, i + Offset.Y, Alpha );
     i := i + 24;
    //end new
     str( Character.restriction, a );
-    PlotTextCentered( a, x1, x2, i, Alpha );
+    pText.PlotTextCentered( a, x1 + Offset.X, x2 + Offset.X, i + Offset.Y, Alpha );
     i := i + 24;
 //   str(round(Character.movement),a);
     str( round( TCharacterResource( Character.resource ).speed ), a );
-    PlotTextCentered( a, x1, x2, i, Alpha );
+    pText.PlotTextCentered( a, x1 + Offset.X, x2 + Offset.X, i + Offset.Y, Alpha );
     i := i + 24;
    //str(Character.recovery,a);
    //pText.PlotText(a),327,i,Alpha);
@@ -1095,23 +1095,23 @@ begin
 //   str(Character.healingrate,a);
 //   str(round(Character.HitPoints * Character.HealingRate * Character.Constitution / 1000),a);
     a := '*';
-    PlotTextCentered( a, x1, x2, i, Alpha );
+    pText.PlotTextCentered( a, x1 + Offset.X, x2 + Offset.X, i + Offset.Y, Alpha );
     i := i + 24;
 //   str(Character.rechargerate,a);
 //   str(round(Character.Mana * Character.RechargeRate * Character.Constitution / 200),a);
     a := '*';
-    PlotTextCentered( a, x1, x2, i, Alpha );
+    pText.PlotTextCentered( a, x1 + Offset.X, x2 + Offset.X, i + Offset.Y, Alpha );
     i := i + 24;
     str( round( Character.hitpoints ), a );
     str( round( Character.hitpoints - character.wounds ), b );
-    PlotTextCentered( b + '/' + a, x1 + 10, x2 + 10, i, Alpha );
+    pText.PlotTextCentered( b + '/' + a, x1 + 10 + Offset.X, x2 + 10 + Offset.X, i + Offset.Y, Alpha );
     i := i + 24;
     str( round( Character.mana ), a );
     str( round( Character.mana - character.drain ), b );
-    PlotTextCentered( b + '/' + a, x1 + 10, x2 + 10, i, Alpha );
+    pText.PlotTextCentered( b + '/' + a, x1 + 10 + Offset.X, x2 + 10 + Offset.X, i + Offset.Y, Alpha );
     i := i + 24; //Show too, because it's no longer zero in basevalues
     str( round( Character.Hitrecovery ), a );
-    PlotTextCentered( a, x1, x2, i, Alpha );
+    pText.PlotTextCentered( a, x1 + Offset.X, x2 + Offset.X, i + Offset.Y, Alpha );
    //Resistance column
     x1 := 439;
     x2 := 478;
@@ -1120,63 +1120,63 @@ begin
     i := 104;
     ix := 3; //ix is the number of new items we inserted before these
     str( Round( Character.resistance.Piercing.Invulnerability ), a );
-    PlotTextCentered( a, x1, x2, i, Alpha );
+    pText.PlotTextCentered( a, x1 + Offset.X, x2 + Offset.X, i + Offset.Y, Alpha );
     str( Round( Character.resistance.Piercing.Resistance * 100 ), b );
-    PlotTextCentered( b, x3, x4, i, Alpha );
+    pText.PlotTextCentered( b, x3 + Offset.X, x4 + Offset.X, i + Offset.Y, Alpha );
     InfoRect[ ix + 48 ].info := txtMessage[ 19 ] + a + txtMessage[ 20 ] + StatName[ 1 ][ 1 ] + txtMessage[ 21 ];
     InfoRect[ ix + 48 + 11 ].info := txtMessage[ 22 ] + b + txtMessage[ 23 ] + StatName[ 1 ][ 1 ] + txtMessage[ 21 ];
 
     i := i + 24;
     str( Round( Character.resistance.crushing.Invulnerability ), a );
-    PlotTextCentered( a, x1, x2, i, Alpha );
+    pText.PlotTextCentered( a, x1 + Offset.X, x2 + Offset.X, i + Offset.Y, Alpha );
     str( Round( Character.resistance.crushing.Resistance * 100 ), b );
-    PlotTextCentered( b, x3, x4, i, Alpha );
+    pText.PlotTextCentered( b, x3 + Offset.X, x4 + Offset.X, i + Offset.Y, Alpha );
     InfoRect[ ix + 49 ].info := txtMessage[ 19 ] + a + txtMessage[ 20 ] + StatName[ 1 ][ 2 ] + txtMessage[ 21 ];
     InfoRect[ ix + 49 + 11 ].info := txtMessage[ 22 ] + b + txtMessage[ 23 ] + StatName[ 1 ][ 2 ] + txtMessage[ 21 ];
 
     i := i + 24;
     str( Round( Character.resistance.cutting.Invulnerability ), a );
-    PlotTextCentered( a, x1, x2, i, Alpha );
+    pText.PlotTextCentered( a, x1 + Offset.X, x2 + Offset.X, i + Offset.Y, Alpha );
     str( Round( Character.resistance.cutting.Resistance * 100 ), b );
-    PlotTextCentered( b, x3, x4, i, Alpha );
+    pText.PlotTextCentered( b, x3 + Offset.X, x4 + Offset.X, i + Offset.Y, Alpha );
     InfoRect[ ix + 50 ].info := txtMessage[ 19 ] + a + txtMessage[ 20 ] + StatName[ 1 ][ 3 ] + txtMessage[ 21 ];
     InfoRect[ ix + 50 + 11 ].info := txtMessage[ 22 ] + b + txtMessage[ 23 ] + StatName[ 1 ][ 3 ] + txtMessage[ 21 ];
 
     i := i + 24;
     str( Round( Character.resistance.heat.Invulnerability ), a );
-    PlotTextCentered( a, x1, x2, i, Alpha );
+    pText.PlotTextCentered( a, x1 + Offset.X, x2 + Offset.X, i + Offset.Y, Alpha );
     str( Round( Character.resistance.heat.Resistance * 100 ), b );
-    PlotTextCentered( b, x3, x4, i, Alpha );
+    pText.PlotTextCentered( b, x3 + Offset.X, x4 + Offset.X, i + Offset.Y, Alpha );
     InfoRect[ ix + 51 ].info := txtMessage[ 19 ] + a + txtMessage[ 20 ] + StatName[ 1 ][ 4 ] + txtMessage[ 21 ];
     InfoRect[ ix + 51 + 11 ].info := txtMessage[ 22 ] + b + txtMessage[ 23 ] + StatName[ 1 ][ 4 ] + txtMessage[ 21 ];
     i := i + 24;
     str( Round( Character.resistance.cold.Invulnerability ), a );
-    PlotTextCentered( a, x1, x2, i, Alpha );
+    pText.PlotTextCentered( a, x1 + Offset.X, x2 + Offset.X, i + Offset.Y, Alpha );
     str( Round( Character.resistance.cold.Resistance * 100 ), b );
-    PlotTextCentered( b, x3, x4, i, Alpha );
+    pText.PlotTextCentered( b, x3 + Offset.X, x4 + Offset.X, i + Offset.Y, Alpha );
     InfoRect[ ix + 52 ].info := txtMessage[ 19 ] + a + txtMessage[ 20 ] + StatName[ 1 ][ 5 ] + txtMessage[ 21 ];
     InfoRect[ ix + 52 + 11 ].info := txtMessage[ 22 ] + b + txtMessage[ 23 ] + StatName[ 1 ][ 5 ] + txtMessage[ 21 ];
     i := i + 24;
     str( Round( Character.resistance.electric.Invulnerability ), a );
-    PlotTextCentered( a, x1, x2, i, Alpha );
+    pText.PlotTextCentered( a, x1 + Offset.X, x2 + Offset.X, i + Offset.Y, Alpha );
     str( Round( Character.resistance.electric.Resistance * 100 ), b );
-    PlotTextCentered( b, x3, x4, i, Alpha );
+    pText.PlotTextCentered( b, x3 + Offset.X, x4 + Offset.X, i + Offset.Y, Alpha );
     InfoRect[ ix + 53 ].info := txtMessage[ 19 ] + a + txtMessage[ 20 ] + StatName[ 1 ][ 6 ] + txtMessage[ 21 ];
     InfoRect[ ix + 53 + 11 ].info := txtMessage[ 22 ] + b + txtMessage[ 23 ] + StatName[ 1 ][ 6 ] + txtMessage[ 21 ];
 
     i := i + 24;
     str( Round( Character.resistance.magic.Invulnerability ), a );
-    PlotTextCentered( a, x1, x2, i, Alpha );
+    pText.PlotTextCentered( a, x1 + Offset.X, x2 + Offset.X, i + Offset.Y, Alpha );
     str( Round( Character.resistance.magic.Resistance * 100 ), b );
-    PlotTextCentered( b, x3, x4, i, Alpha );
+    pText.PlotTextCentered( b, x3 + Offset.X, x4 + Offset.X, i + Offset.Y, Alpha );
     InfoRect[ ix + 54 ].info := txtMessage[ 19 ] + a + txtMessage[ 20 ] + StatName[ 1 ][ 7 ] + txtMessage[ 21 ];
     InfoRect[ ix + 54 + 11 ].info := txtMessage[ 22 ] + b + txtMessage[ 23 ] + StatName[ 1 ][ 7 ] + txtMessage[ 21 ];
 
     i := i + 24;
     str( Round( Character.resistance.stun.Invulnerability ), a );
-    PlotTextCentered( a, x1, x2, i, Alpha );
+    pText.PlotTextCentered( a, x1 + Offset.X, x2 + Offset.X, i + Offset.Y, Alpha );
     str( Round( Character.resistance.stun.Resistance * 100 ), b );
-    PlotTextCentered( b, x3, x4, i, Alpha );
+    pText.PlotTextCentered( b, x3 + Offset.X, x4 + Offset.X, i + Offset.Y, Alpha );
     InfoRect[ ix + 55 ].info := txtMessage[ 19 ] + a + txtMessage[ 20 ] + StatName[ 1 ][ 8 ] + txtMessage[ 21 ];
     InfoRect[ ix + 55 + 11 ].info := txtMessage[ 22 ] + b + txtMessage[ 23 ] + StatName[ 1 ][ 8 ] + txtMessage[ 21 ];
     (*InfoRect[ ix + 56 ].Disabled := true;
@@ -1186,17 +1186,17 @@ begin
     //Posion
     i:=i+24;
     str(Round(Character.resistance.poison.Invulnerability),a);
-    PlotTextCentered(a,x1,x2,i,Alpha);
+    pText.PlotTextCentered( a, x1 + Offset.X, x2 + Offset.X, i + Offset.Y, Alpha );
     str(Round(Character.resistance.poison.Resistance*100),b);
-    PlotTextCentered(b,x3,x4,i,Alpha);
+    pText.PlotTextCentered( b, x3 + Offset.X, x4 + Offset.X, i + Offset.Y, Alpha );
     InfoRect[ix+56].info:=txtMessage[19]+ a +txtMessage[20]+ StatName[1][10]+ txtMessage[21];
     InfoRect[ix+56+11].info:=txtMessage[22]+ b +txtMessage[23]+ StatName[1][10]+ txtMessage[21];
     //Mental
     i:=i+24;
     str(Round(Character.resistance.mental.Invulnerability),a);
-    PlotTextCentered(a,x1,x2,i,Alpha);
+    pText.PlotTextCentered( a, x1 + Offset.X, x2 + Offset.X, i + Offset.Y, Alpha );
     str(Round(Character.resistance.mental.Resistance*100),b);
-    PlotTextCentered(b,x3,x4,i,Alpha);
+    pText.PlotTextCentered( b, x3 + Offset.X, x4 + Offset.X, i + Offset.Y, Alpha );
     InfoRect[ix+57].info:=txtMessage[19]+ a +txtMessage[20]+ StatName[1][11]+ txtMessage[21];
     InfoRect[ix+57+11].info:=txtMessage[22]+ b +txtMessage[23]+ StatName[1][11]+ txtMessage[21];
 
@@ -1206,69 +1206,69 @@ begin
     i := 104;
     str( Round( Character.damage.Piercing.Min ), a );
     str( Round( Character.damage.Piercing.Max ), b );
-    PlotTextCentered( a + '-' + b, x1, x2, i, Alpha );
+    pText.PlotTextCentered( a + '-' + b, x1 + Offset.X, x2 + Offset.X, i + Offset.Y, Alpha );
     InfoRect[ ix + 81 ].info := txtMessage[ 24 ] + a + txtMessage[ 25 ] + b + txtMessage[ 26 ] + StatName[ 1 ][ 1 ] +
       txtMessage[ 27 ];
     i := i + 24;
     str( Round( Character.damage.crushing.Min ), a );
     str( Round( Character.damage.crushing.Max ), b );
-    PlotTextCentered( a + '-' + b, x1, x2, i, Alpha );
+    pText.PlotTextCentered( a + '-' + b, x1 + Offset.X, x2 + Offset.X, i + Offset.Y, Alpha );
     InfoRect[ ix + 82 ].info := txtMessage[ 24 ] + a + txtMessage[ 25 ] + b + txtMessage[ 26 ] + StatName[ 1 ][ 2 ] +
       txtMessage[ 27 ];
     i := i + 24;
     str( Round( Character.damage.cutting.Min ), a );
     str( Round( Character.damage.cutting.Max ), b );
-    PlotTextCentered( a + '-' + b, x1, x2, i, Alpha );
+    pText.PlotTextCentered( a + '-' + b, x1 + Offset.X, x2 + Offset.X, i + Offset.Y, Alpha );
     InfoRect[ ix + 83 ].info := txtMessage[ 24 ] + a + txtMessage[ 25 ] + b + txtMessage[ 26 ] + StatName[ 1 ][ 3 ] +
       txtMessage[ 27 ];
     i := i + 24;
     str( Round( Character.damage.heat.Min ), a );
     str( Round( Character.damage.heat.Max ), b );
-    PlotTextCentered( a + '-' + b, x1, x2, i, Alpha );
+    pText.PlotTextCentered( a + '-' + b, x1 + Offset.X, x2 + Offset.X, i + Offset.Y, Alpha );
     InfoRect[ ix + 84 ].info := txtMessage[ 24 ] + a + txtMessage[ 25 ] + b + txtMessage[ 26 ] + StatName[ 1 ][ 4 ] +
       txtMessage[ 27 ];
     i := i + 24;
     str( Round( Character.damage.cold.Min ), a );
     str( Round( Character.damage.cold.Max ), b );
-    PlotTextCentered( a + '-' + b, x1, x2, i, Alpha );
+    pText.PlotTextCentered( a + '-' + b, x1 + Offset.X, x2 + Offset.X, i + Offset.Y, Alpha );
     InfoRect[ ix + 85 ].info := txtMessage[ 24 ] + a + txtMessage[ 25 ] + b + txtMessage[ 26 ] + StatName[ 1 ][ 5 ] +
       txtMessage[ 27 ];
     i := i + 24;
     str( Round( Character.damage.electric.Min ), a );
     str( Round( Character.damage.electric.Max ), b );
-    PlotTextCentered( a + '-' + b, x1, x2, i, Alpha );
+    pText.PlotTextCentered( a + '-' + b, x1 + Offset.X, x2 + Offset.X, i + Offset.Y, Alpha );
     InfoRect[ ix + 86 ].info := txtMessage[ 24 ] + a + txtMessage[ 25 ] + b + txtMessage[ 26 ] + StatName[ 1 ][ 6 ] +
       txtMessage[ 27 ];
     i := i + 24;
     str( Round( Character.damage.magic.Min ), a );
     str( Round( Character.damage.magic.Max ), b );
-    PlotTextCentered( a + '-' + b, x1, x2, i, Alpha );
+    pText.PlotTextCentered( a + '-' + b, x1 + Offset.X, x2 + Offset.X, i + Offset.Y, Alpha );
     InfoRect[ ix + 87 ].info := txtMessage[ 24 ] + a + txtMessage[ 25 ] + b + txtMessage[ 26 ] + StatName[ 1 ][ 7 ] +
       txtMessage[ 27 ];
     i := i + 24;
     str( Round( Character.damage.stun.Min ), a );
     str( Round( Character.damage.stun.Max ), b );
-    PlotTextCentered( a + '-' + b, x1, x2, i, Alpha );
+    pText.PlotTextCentered( a + '-' + b, x1 + Offset.X, x2 + Offset.X, i + Offset.Y, Alpha );
     InfoRect[ ix + 88 ].info := txtMessage[ 24 ] + a + txtMessage[ 25 ] + b + txtMessage[ 26 ] + StatName[ 1 ][ 8 ] +
       txtMessage[ 27 ];
 
     i:=i+24;
     str(Round(Character.damage.special.Min),a);
     str(Round(Character.damage.special.Max),b);
-    PlotTextCentered(a+'-'+b,x1,x2,i,Alpha);
+    pText.PlotTextCentered( a + '-' + b, x1 + Offset.X, x2 + Offset.X, i + Offset.Y, Alpha );
     InfoRect[ix+89].info:=txtMessage[24]+ a + txtMessage[25] + b + txtMessage[26] + StatName[ 1 ][ 9 ]+
                       txtMessage[27];
 
     i:=i+24;
     str(Round(Character.damage.poison.Min),a);
     str(Round(Character.damage.poison.Max),b);
-    PlotTextCentered(a+'-'+b,x1,x2,i,Alpha);
+    pText.PlotTextCentered( a + '-' + b, x1 + Offset.X, x2 + Offset.X, i + Offset.Y, Alpha );
     InfoRect[ix+90].info:=txtMessage[24]+ a + txtMessage[25] + b + txtMessage[26] + StatName[ 1 ][ 10 ]+
                       txtMessage[27];
     i:=i+24;
     str(Round(Character.damage.mental.Min),a);
     str(Round(Character.damage.mental.Max),b);
-    PlotTextCentered(a+'-'+b,x1,x2,i,Alpha);
+    pText.PlotTextCentered( a + '-' + b, x1 + Offset.X, x2 + Offset.X, i + Offset.Y, Alpha );
     InfoRect[ix+91].info:=txtMessage[24]+ a + txtMessage[25] + b + txtMessage[26] + StatName[ 1 ][ 11 ]+
                       txtMessage[27];
   except

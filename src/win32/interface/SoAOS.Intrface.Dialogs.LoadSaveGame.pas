@@ -53,7 +53,7 @@ uses
   Vcl.Forms,
   Vcl.ExtCtrls,
   SoAOS.Intrface.Dialogs,
-  GameText,
+  SoAOS.Graphics.GameText,
   Engine,
   SoAOS.Animation,
   Logfile;
@@ -198,8 +198,8 @@ begin
 
     LoadText;
 
-    pText.LoadFontGraphic( 'createchar' ); //load the statisctics font graphic in
-    pText.LoadGoldFontGraphic;
+    pText.Fonts.LoadFontGraphic( 'createchar' ); //load the statisctics font graphic in
+//    pText.LoadGoldFontGraphic;
 
     //TODO: The rects are defined identical - clean
     if LoadFile then
@@ -366,8 +366,8 @@ begin
         end
         else
         begin
-        ptext.PlotText( pItem( SelectRect.items[ i ] ).text, pItem( SelectRect.items[ i ] ).rect.left, pItem( SelectRect.items[ i ] ).rect.top, 240 );
-        ptext.PlotText( pItem( SelectRect.items[ i ] ).date, 590 + Offset.X, pItem( SelectRect.items[ i ] ).rect.top, 240 );
+        ptext.PlotText( pItem( SelectRect.items[ i ] ).text, pItem( SelectRect.items[ i ] ).rect.left, pItem( SelectRect.items[ i ] ).rect.top );
+        ptext.PlotText( pItem( SelectRect.items[ i ] ).date, 590 + Offset.X, pItem( SelectRect.items[ i ] ).rect.top );
         end;
         j := j + 1;
       end
@@ -437,7 +437,7 @@ begin
       pr := Rect( nRect.left - 10, nRect.top - 5, nRect.right, nRect.bottom - 5 );
       lpDDSBack.BltFast( nRect.left - 10, nRect.top - 5, DXBack, @pr, DDBLTFAST_WAIT );
       DrawAlpha( lpDDSBack, rect( nRect.left - 10, nRect.top - 5, nRect.right, nRect.bottom - 5 ), rect( 0, 0, 12, 12 ), DXBackHighlight, False, 40 );
-      pText.PlotText( pItem( SelectRect.items[ CurrentSelectedListItem ] ).date, 590 + Offset.X, pItem( SelectRect.items[ CurrentSelectedListItem ] ).rect.top, 240 );
+      pText.PlotText( pItem( SelectRect.items[ CurrentSelectedListItem ] ).date, 590 + Offset.X, pItem( SelectRect.items[ CurrentSelectedListItem ] ).rect.top );
       if ( ( Key > 64 ) and ( Key < 91 ) ) or ( ( Key > 47 ) and ( Key < 58 ) ) or ( Key = 32 ) or ( key = 189 ) then
       begin
         if ( ( Key > 64 ) and ( Key < 91 ) ) and ( Shift <> [ ssShift ] ) then //make the char lowercase
@@ -536,9 +536,9 @@ begin
       end;
 
          //Character.Name:=SavedFileName;
-      pText.PlotText( SavedFileName, X1, Y1, 240 );
+      pText.PlotText( SavedFileName, X1, Y1 );
          //plot the Carat
-      pText.PlotText( '|', CaratPosition + X1, Y1, 240 );
+      pText.PlotText( '|', CaratPosition + X1, Y1 );
       SoAOS_DX_BltFront;
     end //endif
     else if key = 13 then
@@ -616,7 +616,7 @@ begin
         pr := Rect( nRect.left - 10 - Offset.X, nRect.top - 5 - Offset.Y, nRect.right - Offset.X, nRect.bottom - 5 - Offset.Y);
         lpDDSBack.BltFast( nRect.left - 10, nRect.top - 5, DXBack, @pr, DDBLTFAST_WAIT );
         DrawAlpha( lpDDSBack, rect( nRect.left - 10, nRect.top - 5, nRect.right, nRect.bottom - 5 ), rect( 0, 0, 12, 12 ), DXBackHighlight, False, 40 );
-        pText.PlotText( pItem( SelectRect.items[ CurrentSelectedListItem ] ).date, 590 + Offset.X, pItem( SelectRect.items[ CurrentSelectedListItem ] ).rect.top, 240 );
+        pText.PlotText( pItem( SelectRect.items[ CurrentSelectedListItem ] ).date, 590 + Offset.X, pItem( SelectRect.items[ CurrentSelectedListItem ] ).rect.top );
         X1 := pItem( SelectRect.items[ CurrentSelectedListItem ] ).rect.left;
         Y1 := pItem( SelectRect.items[ CurrentSelectedListItem ] ).rect.top;
 
@@ -628,9 +628,9 @@ begin
         end;
         if CaratVisible then
         begin
-          pText.PlotText( '|', CaratPosition + X1, Y1, 240 );
+          pText.PlotText( '|', CaratPosition + X1, Y1 );
         end;
-        pText.PlotText( SavedFileName, X1, Y1, 240 );
+        pText.PlotText( SavedFileName, X1, Y1 );
 
         SoAOS_DX_BltFront;
       end;
@@ -1103,8 +1103,8 @@ begin
           end
           else
           begin
-          pText.PlotText( pItem( SelectRect.items[ i ] ).text, pItem( SelectRect.items[ i ] ).rect.left, pItem( SelectRect.items[ i ] ).rect.top, 240 );
-          pText.PlotText( pItem( SelectRect.items[ i ] ).date, 590 + Offset.X, pItem( SelectRect.items[ i ] ).rect.top, 240 );
+          pText.PlotText( pItem( SelectRect.items[ i ] ).text, pItem( SelectRect.items[ i ] ).rect.left, pItem( SelectRect.items[ i ] ).rect.top );
+          pText.PlotText( pItem( SelectRect.items[ i ] ).date, 590 + Offset.X, pItem( SelectRect.items[ i ] ).rect.top );
           end;
         end;
       end; //end for
@@ -1149,11 +1149,11 @@ begin
     pr := Rect( 111, 65, 344, 231 );
     lpDDSBack.BltFast( pr.Left + Offset.X, pr.Top + Offset.Y, DXBack, @pr, DDBLTFAST_WAIT );
 
-    PlotTextBlock( MapName, 123, 340, 70, 240, False, False );
+    pText.PlotTextBlock( MapName, 123 + Offset.X, 340 + Offset.X, 70 + Offset.Y, 240 );
 
     for i := 1 to CharacterCount do
     begin
-      PlotText( CharacterName[ i ], 133, 70 + i * 25, 240 );
+      pText.PlotText( CharacterName[ i ], 133 + Offset.X, (70 + i * 25) + Offset.Y );
     end;
   except
     on E : Exception do
@@ -1243,7 +1243,7 @@ begin
     end;
 
     frmMain.OnMouseWheel := nil;
-    pText.UnloadGoldFontGraphic;
+//    pText.UnloadGoldFontGraphic;
     DXBack := nil;
     DXBackHighlight := nil;
     DXLoad := nil;

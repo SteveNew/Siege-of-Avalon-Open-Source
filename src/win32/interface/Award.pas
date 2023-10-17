@@ -50,7 +50,7 @@ uses
   System.Types,
   Vcl.Controls,
   Character,
-  GameText,
+  SoAOS.Graphics.GameText,
   Engine,
   SoAOS.Animation,
   SoAOS.Intrface.Dialogs,
@@ -170,8 +170,8 @@ begin
     lpDDSBack.BltFast( 0, 0, lpDDSFront, @pr, DDBLTFAST_NOCOLORKEY or DDBLTFAST_WAIT );
     MouseCursor.PlotDirty := false;
 
-    pText.LoadFontGraphic( 'statistics' ); //load the inventory font graphic in
-    pText.LoadTinyFontGraphic;
+    pText.Fonts.LoadFontGraphic( 'statistics' ); //load the inventory font graphic in
+//    pText.LoadTinyFontGraphic;
 
     DXBackToGame := SoAOS_DX_LoadBMP( InterfaceLanguagePath + 'obInvBackToGame.bmp', cInvisColor );
     DXLeftGeeble := SoAOS_DX_LoadBMP( InterfacePath + 'LogLeftGeeble.bmp', cTransparent );
@@ -194,7 +194,7 @@ begin
     DXLeftGeeble := nil;
     DXRightGeeble := nil;
 
-    PlotText( txtMessage[ 0 ] + Character.name, 5, 5, 240 );
+    pText.PlotText( txtMessage[ 0 ] + Character.name, 5 + Offset.X, 5 + Offset.Y );
 
     if TitleCount > 15 then
     begin
@@ -372,9 +372,9 @@ begin
 
               S := Copy( S, 1, length( S ) - 1 );
               if PStatModifier( Character.Titles.objects[ i ] ).DisplayName = '' then
-                PlotTinyText( Character.Titles[ i ] + '   ' + S, 20, Y, 240 )
+                pText.PlotTinyText( Character.Titles[ i ] + '   ' + S, 20 + Offset.X, Y + Offset.Y, 240 )
               else
-                PlotTinyText( PStatModifier( Character.Titles.objects[ i ] ).DisplayName + '   ' + S, 20, Y, 240 );
+                pText.PlotTinyText( PStatModifier( Character.Titles.objects[ i ] ).DisplayName + '   ' + S, 20 + Offset.X, Y + Offset.Y, 240 );
               Y := Y + 25;
               inc( LineCount );
             end;
@@ -397,7 +397,7 @@ begin
   Log.DebugLog(FailName);
   try
     ExText.close;
-    pText.UnLoadTinyFontGraphic;
+//    pText.UnLoadTinyFontGraphic;
     if assigned( DXPrev ) then
       DXPrev := nil;
     if assigned( DXNext ) then

@@ -198,7 +198,7 @@ begin
     end;
 
     HLText := -1;
-    pText.LoadFontGraphic( 'Inventory' );
+    pText.Fonts.LoadFontGraphic( 'Inventory' );
 
     Filename := Parse( AnsiString ( Conversation ), 0, '.' );
     Section := Parse( AnsiString ( Conversation ), 1, '.' );
@@ -221,7 +221,7 @@ begin
     end;
 
     SoAOS_DX_BltFront;
-    pText.LoadTinyFontGraphic;
+//    pText.LoadTinyFontGraphic;
 
     Paint;
   except
@@ -704,7 +704,7 @@ begin
       Responses[ i ].Free;
     Responses.Clear;
     slResponse.Clear;
-    pText.UnloadTinyFontGraphic;
+//    pText.UnloadTinyFontGraphic;
   except
     on E : Exception do
       Log.log( FailName, E.Message, [ ] );

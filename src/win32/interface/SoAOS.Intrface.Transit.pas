@@ -171,7 +171,7 @@ uses
   SoAOS.Intrface.Text,
   AniDemo,
   System.SysUtils,
-  Gametext,
+  SoAOS.Graphics.Gametext,
   Engine,
   DXEffects,
   DXUtil,
@@ -338,9 +338,8 @@ begin
 
     DirtyRect := ApplyOffset( DirtyRect ); // From now on we need the offset rect
 
-    pText.LoadDarkFontGraphic( 'inventory' );
-    pText.PlotDarkText2( DXBack, MsgBack, 0, 0, 240 );
-    pText.PlotDarkText2( DXDirty, MsgBack, 0, 0, 128 );
+    pText.PlotTextXY(DXBack, MsgBack, 0, 0, 240, ftDarkLetter, -1);
+    pText.PlotTextXY(DXDirty, MsgBack, 0, 0, 128, ftDarkLetter, -1);
 
     Paint;
     MouseCursor.Cleanup;
