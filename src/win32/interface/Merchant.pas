@@ -300,12 +300,11 @@ begin
     DXSellItem.BltFast( 0, 0, DXBack, @pr, DDBLTFAST_WAIT );
     pr := Rect( 385, 362, 577, 386 );
     DXBuyItem.BltFast( 0, 0, DXBack, @pr, DDBLTFAST_WAIT );
-    pText.PlotTextCentered( DXSellItem, txtMessage[ 1 ], 0, 192, 0, 255 );
-    pText.PlotTextCentered( DXBuyItem, txtMessage[ 2 ], 0, 192, 0, 255 );
+    pText.PlotTextXYCentered( DXSellItem, txtMessage[ 1 ], 0, 192, 0, 255, ftLetter);
+    pText.PlotTextXYCentered( DXBuyItem, txtMessage[ 2 ], 0, 192, 0, 255, ftLetter);
 
-    pText.PlotTextCentered( txtMessage[ 1 ], 46 + Offset.X, 298 + Offset.X, 362 + Offset.Y, BuySellAlpha );
-    pText.PlotTextCentered( txtMessage[ 2 ], 355 + Offset.X, 607 + Offset.X, 362 + Offset.Y, BuySellAlpha );
-
+    pText.PlotTextXYCentered( lpDDSBack, txtMessage[ 1 ], 46 + Offset.X, 298 + Offset.X, 362 + Offset.Y, BuySellAlpha, ftLetter);
+    pText.PlotTextXYCentered( lpDDSBack, txtMessage[ 2 ], 355 + Offset.X, 607 + Offset.X, 362 + Offset.Y, BuySellAlpha, ftLetter);
   //Create list
     ItemList := TList<pTempItems>.Create; //create the ItemList
     GroundOrderList := TList<pTempItems>.Create; //and the ground orderlist
@@ -882,8 +881,8 @@ begin
       pr := Rect( 76, 362, 76 + 192, 362 + 24 );
       lpDDSBack.BltFast( 76 + Offset.X, 362 + Offset.Y, DXBack, @pr, DDBLTFAST_WAIT );
     //now replot the text
-      pText.PlotTextCentered( txtMessage[ 1 ], 46 + Offset.X, 298 + Offset.X, 362 + Offset.Y, BuySellAlpha );
-      pText.PlotTextCentered( txtMessage[ 2 ], 355 + Offset.X, 607 + Offset.X, 362 + Offset.Y, BuySellAlpha );
+      pText.PlotTextXYCentered( lpDDSBack, txtMessage[ 1 ], 46 + Offset.X, 298 + Offset.X, 362 + Offset.Y, BuySellAlpha, ftLetter);
+      pText.PlotTextXYCentered( lpDDSBack, txtMessage[ 2 ], 355 + Offset.X, 607 + Offset.X, 362 + Offset.Y, BuySellAlpha, ftLetter);
     //Clean up secondary message line
       if not ( PtInRect( ApplyOffset( Rect( 287, 376, 363, 406 ) ), point( x, y ) ) or   // ground
         PtInRect( ApplyOffset( rect( 46, 38, 298, 353 ) ), point( x, y ) ) or            // left
@@ -1055,8 +1054,8 @@ begin
     pText.PlotText( Merchant.name, 355 + Offset.X, 10 + Offset.Y, Alpha );
     pText.PlotText( IntToStr( Character.money ) + txtMessage[ 0 ], 297 + Offset.X - pText.TextLength( IntToStr( Character.money ) + txtMessage[ 0 ] ), 10 + Offset.Y, Alpha );
   //now the Buy and Sell buttons
-    pText.PlotTextCentered( txtMessage[ 1 ], 46 + Offset.X, 298 + Offset.X, 362 + Offset.Y, BuySellAlpha );
-    pText.PlotTextCentered( txtMessage[ 2 ], 355 + Offset.X, 607 + Offset.X, 362 + Offset.Y, BuySellAlpha );
+    pText.PlotTextXYCentered( lpDDSBack, txtMessage[ 1 ], 46 + Offset.X, 298 + Offset.X, 362 + Offset.Y, BuySellAlpha, ftLetter);
+    pText.PlotTextXYCentered( lpDDSBack, txtMessage[ 2 ], 355 + Offset.X, 607 + Offset.X, 362 + Offset.Y, BuySellAlpha, ftLetter);
 
     SoAOS_DX_BltFront;
   except

@@ -49,9 +49,8 @@ type
   TGameText = class( TObject )
   strict private
     FFonts: TBMPFonts;
-  private
-    function FontType(ft: TBMPFontType): TBMPFont;
   public
+    function FontType(ft: TBMPFontType): TBMPFont;
     constructor Create(const interfaceLanguagePath: string; const useSmallFonts, useCyrillic: Boolean);
     destructor Destroy; override;
 
@@ -68,16 +67,11 @@ type
 
     property Fonts: TBMPFonts read FFonts;
 
-    // These are just wrappers - maybe eventually remove these from game
+    // These are just wrappers - maybe eventually remove these from game or to the single place where used
     procedure PlotText( const Sentence : string; X, Y: Integer; Alpha: integer=240 );
     function PlotTextBlock( const Sentence : string; X1, X2, Y, Alpha : integer; Const UseSmallFnt: Boolean = False; Const UseGold: Boolean = False) : integer;
-    function PlotTextCentered( const Sentence : string; X, X2, Y, Alpha : integer; const UseSmallFnt: Boolean = False) : boolean; overload;
-    function PlotTextCentered( DX : IDirectDrawSurface; Sentence : string; X, X2, Y, Alpha : integer ) : boolean; overload;
 
     function PlotTinyTextBlock( const Sentence : string; X, X2, Y, Alpha : integer ) : integer;
-
-    // use in statistics only
-    function PlotDarkTextCentered( const Sentence : string; X, X2, Y, Alpha : integer ) : boolean;
   end;
 
 implementation
@@ -203,27 +197,9 @@ begin
   end;
 end;
 
-function TGameText.PlotDarkTextCentered(const Sentence: string; X, X2, Y, Alpha: integer): boolean;
-begin
-  Result := PlotTextXYCentered( lpDDSBack, Sentence, X, X2, Y, Alpha, ftDarkLetter, -1);
-end;
-
 procedure TGameText.PlotText( const Sentence : string; X, Y: Integer; Alpha: integer=240 );
 begin
   PlotTextXY(lpDDSBack, Sentence, X, Y, Alpha, ftLetter);
-end;
-
-function TGameText.PlotTextCentered( const Sentence : string; X, X2, Y, Alpha : integer; const UseSmallFnt: Boolean = False) : boolean;
-begin
-  if UseSmallFnt then
-    Result := PlotTextXYCentered( lpDDSBack, Sentence, X, X2, Y, Alpha, ftGoldLetter)
-  else
-    Result := PlotTextXYCentered( lpDDSBack, Sentence, X, X2, Y, Alpha, ftLetter);
-end;
-
-function TGameText.PlotTextCentered(DX: IDirectDrawSurface; Sentence: string; X, X2, Y, Alpha: integer): boolean;
-begin
-  Result := PlotTextXYCentered(DX, Sentence, X, X2, Y, Alpha, ftLetter);
 end;
 
 procedure TGameText.PlotTextXY(DX: IDirectDrawSurface; Sentence: string; X, Y, Alpha: Integer; AFontType: TBMPFontType;

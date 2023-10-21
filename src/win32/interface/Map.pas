@@ -402,7 +402,7 @@ begin
     end;
 
     pText.Fonts.LoadFontGraphic( 'statistics' );
-    pText.PlotTextCentered( MapName, 60 + Offset.X, 623 + Offset.X, 5 + Offset.Y, 128 );
+    pText.PlotTextXYCentered( lpDDSBack, MapName, 60 + Offset.X, 623 + Offset.X, 5 + Offset.Y, 128, ftLetter);
 
     lpDDSFront_Flip( nil, DDFLIP_WAIT );
     pr := Rect( 0, 0, ResWidth, ResHeight );

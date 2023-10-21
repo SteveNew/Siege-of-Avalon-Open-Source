@@ -42,7 +42,7 @@ unit Statistics;
 interface
 
 uses
-//  Winapi.DirectDraw,
+  // Winapi.DirectDraw,
   DirectX,
   System.Types,
   System.Classes,
@@ -53,49 +53,51 @@ uses
 
 type
   InformationRect = record
-    rect : TRect;
-    info : string;
-    Disabled : boolean;
+    rect: TRect;
+    info: string;
+    Disabled: boolean;
   end;
 
-  TStatistics = class( TDialog )
+  TStatistics = class(TDialog)
   private
-    DXBack : IDirectDrawSurface; //DD surface that holds the statistics screen before blit
-    DXRightArrow : IDirectDrawSurface;
-    DXLeftArrow : IDirectDrawSurface;
-    DXBackToGame : IDirectDrawSurface;
-    InfoRect : array[ 0..96 ] of InformationRect; //collision rects for information
-    ArrowRect : array[ 0..15 ] of InformationRect; //collision rects for arrows
-    StatAdjustments : array[ 0..7 ] of integer; //used to see if we've added points to a stat or not
-    StatName : array[ 0..1, 0..11 ] of string;
-    //base stuff - saved in case we do a cancel
-    Damage : TDamageProfile;
-    Resistance : TDamageResistanceProfile;
-    BaseStrength : integer;
-    BaseCoordination : integer;
-    BaseConstitution : integer;
-    BasePerception : integer;
-    BaseCharm : integer;
-    BaseMysticism : integer;
-    BaseCombat : integer;
-    BaseStealth : integer;
-    TrainingPoints : integer;
-    txtMessage : array[ 0..64 ] of string;  //Why 65 in soaos?
-    procedure ArrowInfo( i : integer ); //info can change
-    procedure LoadBaseValues; //saves the base stats of the character
+    DXBack: IDirectDrawSurface; // DD surface that holds the statistics screen before blit
+    DXRightArrow: IDirectDrawSurface;
+    DXLeftArrow: IDirectDrawSurface;
+    DXBackToGame: IDirectDrawSurface;
+    InfoRect: array [0 .. 96] of InformationRect; // collision rects for information
+    ArrowRect: array [0 .. 15] of InformationRect; // collision rects for arrows
+    StatAdjustments: array [0 .. 7] of integer; // used to see if we've added points to a stat or not
+    StatName: array [0 .. 1, 0 .. 11] of string;
+    // base stuff - saved in case we do a cancel
+    Damage: TDamageProfile;
+    Resistance: TDamageResistanceProfile;
+    BaseStrength: integer;
+    BaseCoordination: integer;
+    BaseConstitution: integer;
+    BasePerception: integer;
+    BaseCharm: integer;
+    BaseMysticism: integer;
+    BaseCombat: integer;
+    BaseStealth: integer;
+    TrainingPoints: integer;
+    txtMessage: array [0 .. 64] of string; // Why 65 in soaos?
+    procedure ArrowInfo(i: integer); // info can change
+    procedure LoadBaseValues; // saves the base stats of the character
     procedure LoadNames;
-    procedure CreateCollisionRects; //create the rects for the collision detection
-    procedure ShowStats; //plots all the numbers on the screen
-//    procedure DebugPlot(i: integer);
+    procedure CreateCollisionRects; // create the rects for the collision detection
+    procedure ShowStats; // plots all the numbers on the screen
+    // procedure DebugPlot(i: integer);
+    function PlotTextCentered(const Sentence: string; X, X2, Y: integer): boolean;
+    procedure PlotPrimaryStats(const avalue, bvalue, x1, X2, x3, x4, row: integer; var Y: integer);
+
+    procedure PlotResistance(const Resistance: TDamageResistance; const x1, X2, x3, x4, row: integer; var Y: integer);
+    procedure PlotDamage(const Damage: TDamageRange; const x1, X2, row: integer; var Y: integer);
   protected
-    procedure MouseDown( Sender : TObject; Button : TMouseButton;
-      Shift : TShiftState; X, Y, GridX, GridY : Integer ); override;
-    procedure MouseMove( Sender : TObject;
-      Shift : TShiftState; X, Y, GridX, GridY : Integer ); override;
-    procedure MouseUp( Sender : TObject; Button : TMouseButton;
-      Shift : TShiftState; X, Y, GridX, GridY : Integer ); override;
+    procedure MouseDown(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X, Y, GridX, GridY: integer); override;
+    procedure MouseMove(Sender: TObject; Shift: TShiftState; X, Y, GridX, GridY: integer); override;
+    procedure MouseUp(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X, Y, GridX, GridY: integer); override;
   public
-    Character : Tcharacter;
+    Character: Tcharacter;
     constructor Create;
     destructor Destroy; override;
     procedure Paint; override;
@@ -115,111 +117,115 @@ uses
   System.SysUtils,
   Engine,
   Resource,
-  Logfile;
+  Logfile,
+  SoAOS.Graphics.GameText;
 
 const
-  TRAININGJUMP : integer = 10;
-  TRAININGBASE : integer = 20;
+  TRAININGJUMP: integer = 10;
+  TRAININGBASE: integer = 20;
+  ix = 3; // ix is the number of new items we inserted before these
 
-{ TStatistics }
+  { TStatistics }
 
 constructor TStatistics.Create;
 const
-  FailName : string = 'TStatistics.create';
+  FailName: string = 'TStatistics.create';
 begin
-  Log.DebugLog( FailName );
+  Log.DebugLog(FailName);
   try
     inherited;
   except
-    on E : Exception do
-      Log.log( FailName + E.Message );
+    on E: Exception do
+      Log.Log(FailName + E.Message);
   end;
 end;
 
 destructor TStatistics.Destroy;
 const
-  FailName : string = 'TStatistics.Destroy';
+  FailName: string = 'TStatistics.Destroy';
 begin
-  Log.DebugLog( FailName );
+  Log.DebugLog(FailName);
   try
     inherited;
   except
-    on E : Exception do
-      Log.log( FailName + E.Message );
+    on E: Exception do
+      Log.Log(FailName + E.Message);
   end;
 end;
 
 procedure TStatistics.Init;
 var
-  DXBorder : IDirectDrawSurface;
-  i, width, height : integer;
-  pr : TRect;
+  DXBorder: IDirectDrawSurface;
+  i, width, height: integer;
+  pr: TRect;
 const
-  FailName : string = 'TStatistics.init';
+  FailName: string = 'TStatistics.init';
 begin
-  Log.DebugLog( FailName );
+  Log.DebugLog(FailName);
   try
     if Loaded then
       Exit;
     inherited;
     MouseCursor.Cleanup;
-    pr := Rect( 0, 0, ResWidth, ResHeight );
-    lpDDSBack.BltFast( 0, 0, lpDDSFront, @pr, DDBLTFAST_NOCOLORKEY or DDBLTFAST_WAIT );
+    pr := rect(0, 0, ResWidth, ResHeight);
+    lpDDSBack.BltFast(0, 0, lpDDSFront, @pr, DDBLTFAST_NOCOLORKEY or DDBLTFAST_WAIT);
     MouseCursor.PlotDirty := false;
 
-    ExText.Open( 'Statistics' );
+    ExText.Open('Statistics');
     for i := 0 to 64 do
-      txtMessage[ i ] := ExText.GetText( 'Message' + inttostr( i ) );
+      txtMessage[i] := ExText.GetText('Message' + inttostr(i));
 
-    pText.Fonts.LoadFontGraphic( 'statistics' ); //load the statisctics font graphic in
-//    pText.LoadTinyFontGraphic;
+    pText.Fonts.LoadFontGraphic('statistics'); // load the statisctics font graphic in
+    // pText.LoadTinyFontGraphic;
     LoadNames;
     CreateCollisionRects;
     LoadBaseValues;
 
-  //Load the Background Bitmap and plot it
-    DXRightArrow := SoAOS_DX_LoadBMP( InterfacePath + 'staRightArrow.bmp', cInvisColor );
-    DXLeftArrow := SoAOS_DX_LoadBMP( InterfacePath + 'staLeftArrow.bmp', cInvisColor );
-    DXBackToGame := SoAOS_DX_LoadBMP( InterfaceLanguagePath + 'staBackToGame.bmp', cInvisColor );
-    DXBack := SoAOS_DX_LoadBMP( InterfaceLanguagePath + 'Statistics.bmp', cInvisColor, DlgWidth, DlgHeight );
-  //Plot the arrows on the background
+    // Load the Background Bitmap and plot it
+    DXRightArrow := SoAOS_DX_LoadBMP(InterfacePath + 'staRightArrow.bmp', cInvisColor);
+    DXLeftArrow := SoAOS_DX_LoadBMP(InterfacePath + 'staLeftArrow.bmp', cInvisColor);
+    DXBackToGame := SoAOS_DX_LoadBMP(InterfaceLanguagePath + 'staBackToGame.bmp', cInvisColor);
+    DXBack := SoAOS_DX_LoadBMP(InterfaceLanguagePath + 'Statistics.bmp', cInvisColor, DlgWidth, DlgHeight);
+    // Plot the arrows on the background
     for i := 0 to 15 do
     begin
       if i < 8 then
-        DrawAlpha( DXBack, rect( ArrowRect[ i ].rect.left, ArrowRect[ i ].rect.top, ArrowRect[ i ].rect.left + 20, ArrowRect[ i ].rect.top + 15 ), rect( 0, 0, 20, 15 ), DXLeftArrow, True, 100 )
+        DrawAlpha(DXBack, rect(ArrowRect[i].rect.left, ArrowRect[i].rect.top, ArrowRect[i].rect.left + 20, ArrowRect[i].rect.top + 15),
+          rect(0, 0, 20, 15), DXLeftArrow, True, 100)
       else
-        DrawAlpha( DXBack, rect( ArrowRect[ i ].rect.left - 4, ArrowRect[ i ].rect.top, ArrowRect[ i ].rect.left - 4 + 20, ArrowRect[ i ].rect.top + 15 ), rect( 0, 0, 20, 15 ), DXRightArrow, True, 100 );
-    end; //end for
+        DrawAlpha(DXBack, rect(ArrowRect[i].rect.left - 4, ArrowRect[i].rect.top, ArrowRect[i].rect.left - 4 + 20,
+          ArrowRect[i].rect.top + 15), rect(0, 0, 20, 15), DXRightArrow, True, 100);
+    end; // end for
 
-    pr := Rect( 0, 0, DlgWidth, DlgHeight );
-    lpDDSBack.BltFast( Offset.X, Offset.Y, DXBack, @pr, DDBLTFAST_SRCCOLORKEY or DDBLTFAST_WAIT );
-  //Now for the Alpha'ed edges
-    DXBorder := SoAOS_DX_LoadBMP( InterfacePath + 'staRightshad.bmp', cInvisColor, width, height );
-    DrawSub( lpDDSBack, ApplyOffset( Rect( 647, 0, 647 + width, height ) ), Rect( 0, 0, width, height ), DXBorder, True, 128 );
+    pr := rect(0, 0, DlgWidth, DlgHeight);
+    lpDDSBack.BltFast(Offset.X, Offset.Y, DXBack, @pr, DDBLTFAST_SRCCOLORKEY or DDBLTFAST_WAIT);
+    // Now for the Alpha'ed edges
+    DXBorder := SoAOS_DX_LoadBMP(InterfacePath + 'staRightshad.bmp', cInvisColor, width, height);
+    DrawSub(lpDDSBack, ApplyOffset(rect(647, 0, 647 + width, height)), rect(0, 0, width, height), DXBorder, True, 128);
     DXBorder := nil;
 
-    DXBorder := SoAOS_DX_LoadBMP( InterfacePath + 'staBottomshad.bmp', cInvisColor, width, height );
-    DrawSub( lpDDSBack, ApplyOffset( Rect( 0, 455, width, 455 + height ) ), Rect( 0, 0, width, height ), DXBorder, True, 128 );
-    DXBorder := nil; //release DXBorder
+    DXBorder := SoAOS_DX_LoadBMP(InterfacePath + 'staBottomshad.bmp', cInvisColor, width, height);
+    DrawSub(lpDDSBack, ApplyOffset(rect(0, 455, width, 455 + height)), rect(0, 0, width, height), DXBorder, True, 128);
+    DXBorder := nil; // release DXBorder
 
     ShowStats;
-  //Whew! Now we flip it all to the screen
+    // Whew! Now we flip it all to the screen
     SoAOS_DX_BltFront;
   except
-    on E : Exception do
-      Log.log( FailName + E.Message );
+    on E: Exception do
+      Log.Log(FailName + E.Message);
   end;
 
-end; //TStatistics.Init;
+end; // TStatistics.Init;
 
 procedure TStatistics.Release;
 const
-  FailName : string = 'TStatistics.release';
+  FailName: string = 'TStatistics.release';
 begin
-  Log.DebugLog( FailName );
+  Log.DebugLog(FailName);
   try
 
-//    pText.UnloadTinyFontGraphic;
+    // pText.UnloadTinyFontGraphic;
     ExText.Close;
     DXLeftArrow := nil;
     DXRightArrow := nil;
@@ -228,31 +234,30 @@ begin
 
     inherited;
   except
-    on E : Exception do
-      Log.log( FailName + E.Message );
+    on E: Exception do
+      Log.Log(FailName + E.Message);
   end;
 
-end; //TStatistics.Release
+end; // TStatistics.Release
 
-procedure TStatistics.MouseDown( Sender : TObject; Button : TMouseButton;
-      Shift : TShiftState; X, Y, GridX, GridY : Integer );
+procedure TStatistics.MouseDown(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X, Y, GridX, GridY: integer);
 var
-  B1, B2, B3, B4 : boolean;
-  OneLessBack : boolean;
-  i : integer;
-  PointAdjust : integer;
+  B1, B2, B3, B4: boolean;
+  OneLessBack: boolean;
+  i: integer;
+  PointAdjust: integer;
 const
-  FailName : string = 'TStatistics.Mousedown';
+  FailName: string = 'TStatistics.Mousedown';
 begin
-  Log.DebugLog( FailName );
+  Log.DebugLog(FailName);
   try
 
     i := 0;
     while i < 16 do
     begin
-      if ptInRect( ApplyOffset( ArrowRect[ i ].rect ), point( X, Y ) ) then
-      begin //if over an Arrow
-        //B1:= ((i > 7) and (i < 13 )and(Character.TrainingPoints > 3));
+      if ptInRect(ApplyOffset(ArrowRect[i].rect), point(X, Y)) then
+      begin // if over an Arrow
+        // B1:= ((i > 7) and (i < 13 )and(Character.TrainingPoints > 3));
         B1 := false;
         B2 := false;
         B3 := false;
@@ -264,169 +269,169 @@ begin
           if Character.BaseStrength < TRAININGBASE then
             PointAdjust := 4
           else
-            PointAdjust := ( Character.BaseStrength - TRAININGBASE ) div TRAININGJUMP + 5;
+            PointAdjust := (Character.BaseStrength - TRAININGBASE) div TRAININGJUMP + 5;
           if Character.TrainingPoints >= PointAdjust then
-            B1 := true;
+            B1 := True;
         end
         else if i = 9 then
         begin
           if Character.BaseCoordination < TRAININGBASE then
             PointAdjust := 4
           else
-            PointAdjust := ( Character.BaseCoordination - TRAININGBASE ) div TRAININGJUMP + 5;
+            PointAdjust := (Character.BaseCoordination - TRAININGBASE) div TRAININGJUMP + 5;
           if Character.TrainingPoints >= PointAdjust then
-            B1 := true;
+            B1 := True;
         end
         else if i = 10 then
         begin
           if Character.BaseConstitution < TRAININGBASE then
             PointAdjust := 4
           else
-            PointAdjust := ( Character.BaseConstitution - TRAININGBASE ) div TRAININGJUMP + 5;
+            PointAdjust := (Character.BaseConstitution - TRAININGBASE) div TRAININGJUMP + 5;
           if Character.TrainingPoints >= PointAdjust then
-            B1 := true;
+            B1 := True;
         end
         else if i = 11 then
         begin
           if Character.BasePerception < TRAININGBASE then
             PointAdjust := 4
           else
-            PointAdjust := ( Character.BasePerception - TRAININGBASE ) div TRAININGJUMP + 5;
+            PointAdjust := (Character.BasePerception - TRAININGBASE) div TRAININGJUMP + 5;
           if Character.TrainingPoints >= PointAdjust then
-            B1 := true;
+            B1 := True;
         end
         else if i = 12 then
         begin
           if Character.BaseCharm < TRAININGBASE then
             PointAdjust := 4
           else
-            PointAdjust := ( Character.BaseCharm - TRAININGBASE ) div TRAININGJUMP + 5;
+            PointAdjust := (Character.BaseCharm - TRAININGBASE) div TRAININGJUMP + 5;
           if Character.TrainingPoints >= PointAdjust then
-            B1 := true;
+            B1 := True;
         end
         else if i = 13 then
         begin
           if Character.BaseMysticism < TRAININGBASE then
             PointAdjust := 2
           else
-            PointAdjust := ( Character.BaseMysticism - TRAININGBASE ) div TRAININGJUMP + 3;
+            PointAdjust := (Character.BaseMysticism - TRAININGBASE) div TRAININGJUMP + 3;
           if Character.TrainingPoints >= PointAdjust then
-            B2 := true;
+            B2 := True;
         end
         else if i = 14 then
         begin
           if Character.BaseCombat < TRAININGBASE then
             PointAdjust := 2
           else
-            PointAdjust := ( Character.BaseCombat - TRAININGBASE ) div TRAININGJUMP + 3;
+            PointAdjust := (Character.BaseCombat - TRAININGBASE) div TRAININGJUMP + 3;
           if Character.TrainingPoints >= PointAdjust then
-            B2 := true;
+            B2 := True;
         end
         else if i = 15 then
         begin
           if Character.BaseStealth < TRAININGBASE then
             PointAdjust := 2
           else
-            PointAdjust := ( Character.BaseStealth - TRAININGBASE ) div TRAININGJUMP + 3;
+            PointAdjust := (Character.BaseStealth - TRAININGBASE) div TRAININGJUMP + 3;
           if Character.TrainingPoints >= PointAdjust then
-            B2 := true;
+            B2 := True;
         end
         else if i = 0 then
         begin
           if Character.BaseStrength < TRAININGBASE then
             PointAdjust := 4
           else
-            PointAdjust := ( Character.BaseStrength - TRAININGBASE ) div TRAININGJUMP + 5;
-          OneLessBack := ( Character.BaseStrength >= TRAININGBASE ) and ( ( Character.BaseStrength mod TRAININGJUMP ) = 0 );
-          if StatAdjustments[ i ] > 0 then
-            B3 := true;
+            PointAdjust := (Character.BaseStrength - TRAININGBASE) div TRAININGJUMP + 5;
+          OneLessBack := (Character.BaseStrength >= TRAININGBASE) and ((Character.BaseStrength mod TRAININGJUMP) = 0);
+          if StatAdjustments[i] > 0 then
+            B3 := True;
         end
         else if i = 1 then
         begin
           if Character.BaseCoordination < TRAININGBASE then
             PointAdjust := 4
           else
-            PointAdjust := ( Character.BaseCoordination - TRAININGBASE ) div TRAININGJUMP + 5;
-          OneLessBack := ( Character.BaseCoordination >= TRAININGBASE ) and ( ( Character.BaseCoordination mod TRAININGJUMP ) = 0 );
-          if StatAdjustments[ i ] > 0 then
-            B3 := true;
+            PointAdjust := (Character.BaseCoordination - TRAININGBASE) div TRAININGJUMP + 5;
+          OneLessBack := (Character.BaseCoordination >= TRAININGBASE) and ((Character.BaseCoordination mod TRAININGJUMP) = 0);
+          if StatAdjustments[i] > 0 then
+            B3 := True;
         end
         else if i = 2 then
         begin
           if Character.BaseConstitution < TRAININGBASE then
             PointAdjust := 4
           else
-            PointAdjust := ( Character.BaseConstitution - TRAININGBASE ) div TRAININGJUMP + 5;
-          OneLessBack := ( Character.BaseConstitution >= TRAININGBASE ) and ( ( Character.BaseConstitution mod TRAININGJUMP ) = 0 );
-          if StatAdjustments[ i ] > 0 then
-            B3 := true;
+            PointAdjust := (Character.BaseConstitution - TRAININGBASE) div TRAININGJUMP + 5;
+          OneLessBack := (Character.BaseConstitution >= TRAININGBASE) and ((Character.BaseConstitution mod TRAININGJUMP) = 0);
+          if StatAdjustments[i] > 0 then
+            B3 := True;
         end
         else if i = 3 then
         begin
           if Character.BasePerception < TRAININGBASE then
             PointAdjust := 4
           else
-            PointAdjust := ( Character.BasePerception - TRAININGBASE ) div TRAININGJUMP + 5;
-          OneLessBack := ( Character.BasePerception >= TRAININGBASE ) and ( ( Character.BasePerception mod TRAININGJUMP ) = 0 );
-          if StatAdjustments[ i ] > 0 then
-            B3 := true;
+            PointAdjust := (Character.BasePerception - TRAININGBASE) div TRAININGJUMP + 5;
+          OneLessBack := (Character.BasePerception >= TRAININGBASE) and ((Character.BasePerception mod TRAININGJUMP) = 0);
+          if StatAdjustments[i] > 0 then
+            B3 := True;
         end
         else if i = 4 then
         begin
           if Character.BaseCharm < TRAININGBASE then
             PointAdjust := 4
           else
-            PointAdjust := ( Character.BaseCharm - TRAININGBASE ) div TRAININGJUMP + 5;
-          OneLessBack := ( Character.BaseCharm >= TRAININGBASE ) and ( ( Character.BaseCharm mod TRAININGJUMP ) = 0 );
-          if StatAdjustments[ i ] > 0 then
-            B3 := true;
+            PointAdjust := (Character.BaseCharm - TRAININGBASE) div TRAININGJUMP + 5;
+          OneLessBack := (Character.BaseCharm >= TRAININGBASE) and ((Character.BaseCharm mod TRAININGJUMP) = 0);
+          if StatAdjustments[i] > 0 then
+            B3 := True;
         end
         else if i = 5 then
         begin
           if Character.BaseMysticism < TRAININGBASE then
             PointAdjust := 2
           else
-            PointAdjust := ( Character.BaseMysticism - TRAININGBASE ) div TRAININGJUMP + 3;
-          OneLessBack := ( Character.BaseMysticism >= TRAININGBASE ) and ( ( Character.BaseMysticism mod TRAININGJUMP ) = 0 );
-          if StatAdjustments[ i ] > 0 then
-            B4 := true;
+            PointAdjust := (Character.BaseMysticism - TRAININGBASE) div TRAININGJUMP + 3;
+          OneLessBack := (Character.BaseMysticism >= TRAININGBASE) and ((Character.BaseMysticism mod TRAININGJUMP) = 0);
+          if StatAdjustments[i] > 0 then
+            B4 := True;
         end
         else if i = 6 then
         begin
           if Character.BaseCombat < TRAININGBASE then
             PointAdjust := 2
           else
-            PointAdjust := ( Character.BaseCombat - TRAININGBASE ) div TRAININGJUMP + 3;
-          OneLessBack := ( Character.BaseCombat >= TRAININGBASE ) and ( ( Character.BaseCombat mod TRAININGJUMP ) = 0 );
-          if StatAdjustments[ i ] > 0 then
-            B4 := true;
+            PointAdjust := (Character.BaseCombat - TRAININGBASE) div TRAININGJUMP + 3;
+          OneLessBack := (Character.BaseCombat >= TRAININGBASE) and ((Character.BaseCombat mod TRAININGJUMP) = 0);
+          if StatAdjustments[i] > 0 then
+            B4 := True;
         end
         else if i = 7 then
         begin
           if Character.BaseStealth < TRAININGBASE then
             PointAdjust := 2
           else
-            PointAdjust := ( Character.BaseStealth - TRAININGBASE ) div TRAININGJUMP + 3;
-          OneLessBack := ( Character.BaseStealth >= TRAININGBASE ) and ( ( Character.BaseStealth mod TRAININGJUMP ) = 0 );
-          if StatAdjustments[ i ] > 0 then
-            B4 := true;
+            PointAdjust := (Character.BaseStealth - TRAININGBASE) div TRAININGJUMP + 3;
+          OneLessBack := (Character.BaseStealth >= TRAININGBASE) and ((Character.BaseStealth mod TRAININGJUMP) = 0);
+          if StatAdjustments[i] > 0 then
+            B4 := True;
         end;
 
-        //B2:= ((i > 12) and (Character.TrainingPoints > 1));
-        //B3:= ((i < 5) and (StatAdjustments[i] > 0));
-        //B4:= ((i > 4) and (i < 8) and (StatAdjustments[i] > 0));
+        // B2:= ((i > 12) and (Character.TrainingPoints > 1));
+        // B3:= ((i < 5) and (StatAdjustments[i] > 0));
+        // B4:= ((i > 4) and (i < 8) and (StatAdjustments[i] > 0));
 
         if B1 or B2 or B3 or B4 then
         begin
           if B1 then
-          begin //adjust training points, keep track of training points added
+          begin // adjust training points, keep track of training points added
             Character.TrainingPoints := -PointAdjust;
-            StatAdjustments[ i - 8 ] := StatAdjustments[ i - 8 ] + 1;
+            StatAdjustments[i - 8] := StatAdjustments[i - 8] + 1;
           end
           else if B2 then
           begin
             Character.TrainingPoints := -PointAdjust;
-            StatAdjustments[ i - 8 ] := StatAdjustments[ i - 8 ] + 1;
+            StatAdjustments[i - 8] := StatAdjustments[i - 8] + 1;
           end
           else if B3 then
           begin
@@ -434,7 +439,7 @@ begin
               Character.TrainingPoints := PointAdjust - 1
             else
               Character.TrainingPoints := PointAdjust;
-            StatAdjustments[ i ] := StatAdjustments[ i ] - 1;
+            StatAdjustments[i] := StatAdjustments[i] - 1;
           end
           else
           begin
@@ -442,126 +447,137 @@ begin
               Character.TrainingPoints := PointAdjust - 1
             else
               Character.TrainingPoints := PointAdjust;
-            StatAdjustments[ i ] := StatAdjustments[ i ] - 1;
+            StatAdjustments[i] := StatAdjustments[i] - 1;
           end;
           case i of
-            0 : Character.Strength := Character.BaseStrength - 1;
-            1 : Character.Coordination := Character.BaseCoordination - 1;
-            2 : Character.Constitution := Character.BaseConstitution - 1;
-            3 : Character.Perception := Character.BasePerception - 1;
-            4 : Character.Charm := Character.BaseCharm - 1;
-            5 : Character.Mysticism := Character.BaseMysticism - 1;
-            6 : Character.Combat := Character.BaseCombat - 1;
-            7 : Character.Stealth := Character.BaseStealth - 1;
-            8 : Character.Strength := Character.BaseStrength + 1;
-            9 : Character.Coordination := Character.BaseCoordination + 1;
-            10 : Character.Constitution := Character.BaseConstitution + 1;
-            11 : Character.Perception := Character.BasePerception + 1;
-            12 : Character.Charm := Character.BaseCharm + 1;
-            13 : Character.Mysticism := Character.BaseMysticism + 1;
-            14 : Character.Combat := Character.BaseCombat + 1;
-            15 : Character.Stealth := Character.BaseStealth + 1;
-          end; //case
-          i := 888; //drop out of loop
+            0:
+              Character.Strength := Character.BaseStrength - 1;
+            1:
+              Character.Coordination := Character.BaseCoordination - 1;
+            2:
+              Character.Constitution := Character.BaseConstitution - 1;
+            3:
+              Character.Perception := Character.BasePerception - 1;
+            4:
+              Character.Charm := Character.BaseCharm - 1;
+            5:
+              Character.Mysticism := Character.BaseMysticism - 1;
+            6:
+              Character.Combat := Character.BaseCombat - 1;
+            7:
+              Character.Stealth := Character.BaseStealth - 1;
+            8:
+              Character.Strength := Character.BaseStrength + 1;
+            9:
+              Character.Coordination := Character.BaseCoordination + 1;
+            10:
+              Character.Constitution := Character.BaseConstitution + 1;
+            11:
+              Character.Perception := Character.BasePerception + 1;
+            12:
+              Character.Charm := Character.BaseCharm + 1;
+            13:
+              Character.Mysticism := Character.BaseMysticism + 1;
+            14:
+              Character.Combat := Character.BaseCombat + 1;
+            15:
+              Character.Stealth := Character.BaseStealth + 1;
+          end; // case
+          i := 888; // drop out of loop
         end
         else
         begin
-          //buzzing noise?
-          i := 999; //drop out of loop
-        end; //endif b1 b2 or b3
+          // buzzing noise?
+          i := 999; // drop out of loop
+        end; // endif b1 b2 or b3
       end;
       i := i + 1;
-    end; //wend
+    end; // wend
     if i = 889 then
-    begin //we hit an arrow and changed a stat
-      paint;
+    begin // we hit an arrow and changed a stat
+      Paint;
     end
     else
-    begin //we arent over anything else- check back button
-      if PtinRect( ApplyOffset( Rect( 581, 414, 581 + 81, 414 + 57 ) ), point( X, Y ) ) then
-      begin //over back button
-         //The new data is already saved- if we ever write a Cancel function then we can restore values
-         //Exit the screen
+    begin // we arent over anything else- check back button
+      if ptInRect(ApplyOffset(rect(581, 414, 581 + 81, 414 + 57)), point(X, Y)) then
+      begin // over back button
+        // The new data is already saved- if we ever write a Cancel function then we can restore values
+        // Exit the screen
         Close;
       end;
     end;
 
   except
-    on E : Exception do
-      Log.log( FailName + E.Message );
+    on E: Exception do
+      Log.Log(FailName + E.Message);
   end;
 
-end; //TStatistics.MouseDown
+end; // TStatistics.MouseDown
 
-procedure TStatistics.MouseMove( Sender : TObject;
-      Shift : TShiftState; X, Y, GridX, GridY : Integer );
+procedure TStatistics.MouseMove(Sender: TObject; Shift: TShiftState; X, Y, GridX, GridY: integer);
 var
-  i, j : integer;
-  Info, HitPointSecMsg,
-    HitPointMinMsg,
-    HitPointHrMsg,
-    ManaSecMsg,
-    ManaMinMsg,
-    ManaHrMsg : string;
-  Rate : double;
-  pr : TRect;
+  i, j: integer;
+  info, HitPointSecMsg, HitPointMinMsg, HitPointHrMsg, ManaSecMsg, ManaMinMsg, ManaHrMsg: string;
+  Rate: double;
+  pr: TRect;
 const
-  FailName : string = 'TStatistics.MouseMove';
+  FailName: string = 'TStatistics.MouseMove';
 begin
-  Log.DebugLog( FailName );
+  Log.DebugLog(FailName);
   try
 
-    //Clean up arrows and back to game
-    pr := Rect( 103, 105, 123, 321 );
-    lpDDSBack.BltFast( 103 + Offset.X, 105 + Offset.Y, DXBack, @pr, DDBLTFAST_WAIT );
-    pr := Rect( 188, 105, 210, 315 );
-    lpDDSBack.BltFast( 188 + Offset.X, 105 + Offset.Y, DXBack, @pr, DDBLTFAST_WAIT );
-    pr := Rect( 581, 414, 581 + 81, 414 + 57 );
-    lpDDSBack.BltFast( 581 + Offset.X, 414 + Offset.Y, DXBack, @pr, DDBLTFAST_WAIT );
-    //clear text
-    pr := Rect( 10, 338, 587, 470 );
-    lpDDSBack.BltFast( 10 + Offset.X, 338 + Offset.Y, DXBack, @pr, DDBLTFAST_WAIT );
+    // Clean up arrows and back to game
+    pr := rect(103, 105, 123, 321);
+    lpDDSBack.BltFast(103 + Offset.X, 105 + Offset.Y, DXBack, @pr, DDBLTFAST_WAIT);
+    pr := rect(188, 105, 210, 315);
+    lpDDSBack.BltFast(188 + Offset.X, 105 + Offset.Y, DXBack, @pr, DDBLTFAST_WAIT);
+    pr := rect(581, 414, 581 + 81, 414 + 57);
+    lpDDSBack.BltFast(581 + Offset.X, 414 + Offset.Y, DXBack, @pr, DDBLTFAST_WAIT);
+    // clear text
+    pr := rect(10, 338, 587, 470);
+    lpDDSBack.BltFast(10 + Offset.X, 338 + Offset.Y, DXBack, @pr, DDBLTFAST_WAIT);
     i := 0;
     j := 0;
     while i < 16 do
     begin
-      if ptInRect( ApplyOffset( ArrowRect[ i ].rect ), point( X, Y ) ) then
-      begin //if over an Arrow
-        ArrowInfo( i );
-        pr := Rect( 0, 0, 20, 15 );
+      if ptInRect(ApplyOffset(ArrowRect[i].rect), point(X, Y)) then
+      begin // if over an Arrow
+        ArrowInfo(i);
+        pr := rect(0, 0, 20, 15);
         if i < 8 then
-          lpDDSBack.BltFast( ArrowRect[ i ].rect.left + Offset.X, ArrowRect[ i ].rect.top + Offset.Y, DXLeftArrow, @pr, DDBLTFAST_SRCCOLORKEY or DDBLTFAST_WAIT ) //plot the highlight
+          lpDDSBack.BltFast(ArrowRect[i].rect.left + Offset.X, ArrowRect[i].rect.top + Offset.Y, DXLeftArrow, @pr,
+            DDBLTFAST_SRCCOLORKEY or DDBLTFAST_WAIT) // plot the highlight
         else
-          lpDDSBack.BltFast( ArrowRect[ i ].rect.left - 4 + Offset.X, ArrowRect[ i ].rect.top + Offset.Y, DXRightArrow, @pr, DDBLTFAST_SRCCOLORKEY or DDBLTFAST_WAIT ); //plot the highlight
-        pText.PlotTextBlock( ArrowRect[ i ].Info, 10 + Offset.X, 587 + Offset.X, 376 + Offset.Y, 240, UseSmallFont ); //Plot the info
-        i := 900; //drop out of the loop
+          lpDDSBack.BltFast(ArrowRect[i].rect.left - 4 + Offset.X, ArrowRect[i].rect.top + Offset.Y, DXRightArrow, @pr,
+            DDBLTFAST_SRCCOLORKEY or DDBLTFAST_WAIT); // plot the highlight
+        pText.PlotTextBlock(ArrowRect[i].info, 10 + Offset.X, 587 + Offset.X, 376 + Offset.Y, 240, UseSmallFont); // Plot the info
+        i := 900; // drop out of the loop
       end;
       i := i + 1;
-    end; //wend
+    end; // wend
     if i < 900 then
-    begin //if we aren't over an arrow check all other hot spots
+    begin // if we aren't over an arrow check all other hot spots
       i := 0;
       while i < 95 do
       begin
-        if not InfoRect[ i ].Disabled and ptInRect( ApplyOffset( InfoRect[ i ].rect ), point( X, Y ) ) then
-        begin //if over an Arrow
-          pText.PlotTextBlock( InfoRect[ i ].Info, 10 + Offset.X, 580 + Offset.X, 376 + Offset.Y, 240, UseSmallFont ); //Plot the info
+        if not InfoRect[i].Disabled and ptInRect(ApplyOffset(InfoRect[i].rect), point(X, Y)) then
+        begin // if over an Arrow
+          pText.PlotTextBlock(InfoRect[i].info, 10 + Offset.X, 580 + Offset.X, 376 + Offset.Y, 240, UseSmallFont); // Plot the info
           j := i;
           i := 900;
         end;
         i := i + 1;
-      end; //wend
-    end; //endif i < 900
+      end; // wend
+    end; // endif i < 900
 
-
-    ExText.Open( 'Statistics' );
-    HitPointSecMsg := ExText.GetText( 'HitPointSecMsg' );
-    HitPointMinMsg := ExText.GetText( 'HitPointMinMsg' );
-    HitPointHrMsg := ExText.GetText( 'HitPointHrMsg' );
-    ManaSecMsg := ExText.GetText( 'ManaSecMsg' );
-    ManaMinMsg := ExText.GetText( 'ManaMinMsg' );
-    ManaHrMsg := ExText.GetText( 'ManaHrMsg' );
-    ExtExt.Close;
+    ExText.Open('Statistics');
+    HitPointSecMsg := ExText.GetText('HitPointSecMsg');
+    HitPointMinMsg := ExText.GetText('HitPointMinMsg');
+    HitPointHrMsg := ExText.GetText('HitPointHrMsg');
+    ManaSecMsg := ExText.GetText('ManaSecMsg');
+    ManaMinMsg := ExText.GetText('ManaMinMsg');
+    ManaHrMsg := ExText.GetText('ManaHrMsg');
+    ExText.Close;
     if HitPointSecMsg = '' then
       HitPointSecMsg := ' hit points / sec';
     if HitPointMinMsg = '' then
@@ -577,346 +593,394 @@ begin
 
     if j = 34 then
     begin
-      Rate := 100 * ( Character.HitPoints * Character.HealingRate * Character.Constitution / 1000000 ) / 3;
+      Rate := 100 * (Character.HitPoints * Character.HealingRate * Character.Constitution / 1000000) / 3;
       if Rate > 3 then
-        Info := '* ' + inttostr( round( Rate ) ) + HitPointSecMsg
+        info := '* ' + inttostr(round(Rate)) + HitPointSecMsg
       else if Rate > 0.05 then
-        Info := '* ' + inttostr( round( Rate * 60 ) ) + HitPointMinMsg
+        info := '* ' + inttostr(round(Rate * 60)) + HitPointMinMsg
       else
-        Info := '* ' + inttostr( round( Rate * 3600 ) ) + HitPointHrMsg;
-      pText.PlotTextBlock( Info, 208 + Offset.X, 580 + Offset.X, 338 + Offset.Y, 240, UseSmallFont ); //Plot the info
+        info := '* ' + inttostr(round(Rate * 3600)) + HitPointHrMsg;
+      pText.PlotTextBlock(info, 208 + Offset.X, 580 + Offset.X, 338 + Offset.Y, 240, UseSmallFont); // Plot the info
     end
     else if j = 35 then
     begin
-      Rate := 100 * ( Character.Mana * Character.RechargeRate * Character.Constitution / 500000 ) / 3;
+      Rate := 100 * (Character.Mana * Character.RechargeRate * Character.Constitution / 500000) / 3;
       if Rate > 3 then
-        Info := '* ' + inttostr( round( Rate ) ) + ManaSecMsg
+        info := '* ' + inttostr(round(Rate)) + ManaSecMsg
       else if Rate > 0.05 then
-        Info := '* ' + inttostr( round( Rate * 60 ) ) + ManaMinMsg
+        info := '* ' + inttostr(round(Rate * 60)) + ManaMinMsg
       else
-        Info := '* ' + inttostr( round( Rate * 3600 ) ) + ManaHrMsg;
-      pText.PlotTextBlock( Info, 208 + Offset.X, 580 + Offset.X, 338 + Offset.Y, 240, UseSmallFont ); //Plot the info
+        info := '* ' + inttostr(round(Rate * 3600)) + ManaHrMsg;
+      pText.PlotTextBlock(info, 208 + Offset.X, 580 + Offset.X, 338 + Offset.Y, 240, UseSmallFont); // Plot the info
     end;
 
     if i <> 901 then
-    begin //we arent over anything else- check back button
-      if PtinRect( ApplyOffset( rect( 581, 414, 581 + 81, 414 + 57 ) ), point( X, Y ) ) then
-      begin //over back button
-         //plot highlighted back to game
-        pr := Rect( 0, 0, 81, 57 );
-        lpDDSBack.BltFast( 581 + Offset.X, 414 + Offset.Y, DXBackToGame, @pr, DDBLTFAST_WAIT );
+    begin // we arent over anything else- check back button
+      if ptInRect(ApplyOffset(rect(581, 414, 581 + 81, 414 + 57)), point(X, Y)) then
+      begin // over back button
+        // plot highlighted back to game
+        pr := rect(0, 0, 81, 57);
+        lpDDSBack.BltFast(581 + Offset.X, 414 + Offset.Y, DXBackToGame, @pr, DDBLTFAST_WAIT);
       end;
     end;
 
     SoAOS_DX_BltFront;
   except
-    on E : Exception do
-      Log.log( FailName + E.Message );
+    on E: Exception do
+      Log.Log(FailName + E.Message);
   end;
 
-end; //TStatistics.MouseMove
+end; // TStatistics.MouseMove
 
-procedure TStatistics.MouseUp( Sender : TObject; Button : TMouseButton;
-      Shift : TShiftState; X, Y, GridX, GridY : Integer );
+procedure TStatistics.MouseUp(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X, Y, GridX, GridY: integer);
 const
-  FailName : string = 'TStatistics.Mouseup';
+  FailName: string = 'TStatistics.Mouseup';
 begin
-  Log.DebugLog( FailName );
+  Log.DebugLog(FailName);
   try
 
   except
-    on E : Exception do
-      Log.log( FailName + E.Message );
+    on E: Exception do
+      Log.Log(FailName + E.Message);
   end;
 
 end;
 
 procedure TStatistics.Paint;
 const
-  FailName : string = 'TStatistics.paint';
+  FailName: string = 'TStatistics.paint';
 var
-  pr : TRect;
+  pr: TRect;
 begin
-  Log.DebugLog( FailName );
+  Log.DebugLog(FailName);
   try
 
-  //clear the back down to the text - but dont clear the info block
-    pr := Rect( 0, 0, 677, 367 );
-    lpDDSBack.BltFast( Offset.X, Offset.Y, DXBack, @pr, DDBLTFAST_SRCCOLORKEY or DDBLTFAST_WAIT );
-  //replot the entire screen statistics
+    // clear the back down to the text - but dont clear the info block
+    pr := rect(0, 0, 677, 367);
+    lpDDSBack.BltFast(Offset.X, Offset.Y, DXBack, @pr, DDBLTFAST_SRCCOLORKEY or DDBLTFAST_WAIT);
+    // replot the entire screen statistics
     ShowStats;
     SoAOS_DX_BltFront;
   except
-    on E : Exception do
-      Log.log( FailName + E.Message );
+    on E: Exception do
+      Log.Log(FailName + E.Message);
   end;
+end;
 
-end; //TStatistics.Paint;
+procedure TStatistics.PlotDamage(const Damage: TDamageRange; const x1, X2, row: integer; var Y: integer);
+var
+  a, b: string;
+begin
+  str(round(Damage.Min), a);
+  str(round(Damage.Max), b);
+  PlotTextCentered(a + '-' + b, x1 + Offset.X, X2 + Offset.X, Y + Offset.Y);
+  InfoRect[ix + 80 + row].info := txtMessage[24] + a + txtMessage[25] + b + txtMessage[26] + StatName[1][row] + txtMessage[27];
+  Y := Y + 24;
+end;
+
+procedure TStatistics.PlotPrimaryStats(const avalue, bvalue, x1, X2, x3, x4, row: integer; var Y: integer);
+var
+  a, b: string;
+begin
+  str(avalue, a);
+  str(bvalue, b);
+  if StatAdjustments[row] < 1 then
+  begin
+    PlotTextCentered(a, x1 + Offset.X, X2 + Offset.X, Y + Offset.Y);
+    PlotTextCentered(b, x3 + Offset.X, x4 + Offset.X, Y + Offset.Y);
+  end
+  else
+  begin // darken it up
+    pText.PlotTextXYCentered(lpDDSBack, a, x1 + Offset.X, X2 + Offset.X, Y + Offset.Y, 240, ftDarkLetter, -1);
+    pText.PlotTextXYCentered(lpDDSBack, b, x3 + Offset.X, x4 + Offset.X, Y + Offset.Y, 240, ftDarkLetter, -1);
+  end;
+  Y := Y + 24;
+end;
+
+procedure TStatistics.PlotResistance(const Resistance: TDamageResistance; const x1, X2, x3, x4, row: integer; var Y: integer);
+var
+  a, b: string;
+begin
+  str(round(Resistance.Invulnerability), a);
+  PlotTextCentered(a, x1 + Offset.X, X2 + Offset.X, Y + Offset.Y);
+  str(round(Resistance.Resistance * 100), b);
+  PlotTextCentered(b, x3 + Offset.X, x4 + Offset.X, Y + Offset.Y);
+  InfoRect[ix + 47 + row].info := txtMessage[19] + a + txtMessage[20] + StatName[1][row] + txtMessage[21];
+  InfoRect[ix + 47 + row + 11].info := txtMessage[22] + b + txtMessage[23] + StatName[1][row] + txtMessage[21];
+  Y := Y + 24;
+end;
+
+function TStatistics.PlotTextCentered(const Sentence: string; X, X2, Y: integer): boolean;
+begin
+  Result := pText.PlotTextXYCentered(lpDDSBack, Sentence, X, X2, Y, 240, ftLetter);
+end;
+
+// TStatistics.Paint;
 
 procedure TStatistics.CreateCollisionRects;
 var
-  i, j : integer;
-  LineHeight : integer;
+  i, j: integer;
+  LineHeight: integer;
 const
-  FailName : string = 'TStatistics.CreateCollisonrects';
+  FailName: string = 'TStatistics.CreateCollisonrects';
 begin
-  Log.DebugLog( FailName );
+  Log.DebugLog(FailName);
   try
     LineHeight := 24;
-   //first the ArrowRects
+    // first the ArrowRects
     for i := 0 to 7 do
     begin
-      ArrowRect[ i ].rect.left := 103;
-      ArrowRect[ i + 8 ].rect.left := 194;
-      ArrowRect[ i ].rect.right := 118;
-      ArrowRect[ i + 8 ].rect.right := 207;
+      ArrowRect[i].rect.left := 103;
+      ArrowRect[i + 8].rect.left := 194;
+      ArrowRect[i].rect.right := 118;
+      ArrowRect[i + 8].rect.right := 207;
       if i < 5 then
-      begin //there is a break in the graphic
-        ArrowRect[ i ].rect.top := 106 + i * LineHeight;
-        ArrowRect[ i + 8 ].rect.top := 106 + i * LineHeight;
-        ArrowRect[ i ].rect.bottom := 106 + i * LineHeight + LineHeight;
-        ArrowRect[ i + 8 ].rect.bottom := 106 + i * LineHeight + LineHeight;
+      begin // there is a break in the graphic
+        ArrowRect[i].rect.top := 106 + i * LineHeight;
+        ArrowRect[i + 8].rect.top := 106 + i * LineHeight;
+        ArrowRect[i].rect.bottom := 106 + i * LineHeight + LineHeight;
+        ArrowRect[i + 8].rect.bottom := 106 + i * LineHeight + LineHeight;
       end
       else
       begin
-        ArrowRect[ i ].rect.top := 249 + ( i - 5 ) * LineHeight;
-        ArrowRect[ i + 8 ].rect.top := 249 + ( i - 5 ) * LineHeight;
-        ArrowRect[ i ].rect.bottom := 249 + ( i - 5 ) * LineHeight + LineHeight;
-        ArrowRect[ i + 8 ].rect.bottom := 249 + ( i - 5 ) * LineHeight + LineHeight;
+        ArrowRect[i].rect.top := 249 + (i - 5) * LineHeight;
+        ArrowRect[i + 8].rect.top := 249 + (i - 5) * LineHeight;
+        ArrowRect[i].rect.bottom := 249 + (i - 5) * LineHeight + LineHeight;
+        ArrowRect[i + 8].rect.bottom := 249 + (i - 5) * LineHeight + LineHeight;
       end;
-      ArrowRect[ i ].info := txtMessage[ 32 ] + StatName[ 0 ][ i + 1 ] + '.';
+      ArrowRect[i].info := txtMessage[32] + StatName[0][i + 1] + '.';
 
-       //  if i < 5 then
-       //     ArrowRect[i+8].info:='blah'//This arrow adds training points to '+ StatName[0][i+1]+'.  It costs '+
-                                 //'4 training points to raise your '+StatName[0][i+1]+' 1 point.'
-       //  else
-       //     ArrowRect[i+8].info:='blah';//'This arrow adds training points to '+ StatName[0][i+1]+'.  It costs '+
-                                 //'2 training points to raise your '+StatName[0][i+1]+' 1 point.';
+      // if i < 5 then
+      // ArrowRect[i+8].info:='blah'//This arrow adds training points to '+ StatName[0][i+1]+'.  It costs '+
+      // '4 training points to raise your '+StatName[0][i+1]+' 1 point.'
+      // else
+      // ArrowRect[i+8].info:='blah';//'This arrow adds training points to '+ StatName[0][i+1]+'.  It costs '+
+      // '2 training points to raise your '+StatName[0][i+1]+' 1 point.';
 
-    end; //end for
+    end; // end for
 
-   //Training points
-    InfoRect[ 0 ].rect.left := 8;
-    InfoRect[ 0 ].rect.top := 42;
-    InfoRect[ 0 ].rect.right := 157;
-    InfoRect[ 0 ].rect.bottom := 72;
-    InfoRect[ 0 ].info := txtMessage[ 33 ];
-   //Primary->Stealth
+    // Training points
+    InfoRect[0].rect.left := 8;
+    InfoRect[0].rect.top := 42;
+    InfoRect[0].rect.right := 157;
+    InfoRect[0].rect.bottom := 72;
+    InfoRect[0].info := txtMessage[33];
+    // Primary->Stealth
     for i := 1 to 9 do
     begin
-      InfoRect[ i ].rect.left := 2;
-      InfoRect[ i ].rect.right := 101;
+      InfoRect[i].rect.left := 2;
+      InfoRect[i].rect.right := 101;
       if i < 7 then
-      begin //there is a break in the graphic between the first 5 primaries and the last 3
-        InfoRect[ i ].rect.top := 81 + ( i - 1 ) * LineHeight;
-        InfoRect[ i ].rect.bottom := 81 + ( i - 1 ) * LineHeight + LineHeight;
+      begin // there is a break in the graphic between the first 5 primaries and the last 3
+        InfoRect[i].rect.top := 81 + (i - 1) * LineHeight;
+        InfoRect[i].rect.bottom := 81 + (i - 1) * LineHeight + LineHeight;
       end
       else
       begin
-        InfoRect[ i ].rect.top := 249 + ( i - 7 ) * LineHeight;
-        InfoRect[ i ].rect.bottom := 249 + ( i - 7 ) * LineHeight + LineHeight;
+        InfoRect[i].rect.top := 249 + (i - 7) * LineHeight;
+        InfoRect[i].rect.bottom := 249 + (i - 7) * LineHeight + LineHeight;
       end;
     end;
-    InfoRect[ 1 ].info := txtMessage[ 34 ];
-    InfoRect[ 2 ].info := txtMessage[ 35 ];
-    InfoRect[ 3 ].info := txtMessage[ 36 ];
-    InfoRect[ 4 ].info := txtMessage[ 37 ];
-    InfoRect[ 5 ].info := txtMessage[ 38 ];
+    InfoRect[1].info := txtMessage[34];
+    InfoRect[2].info := txtMessage[35];
+    InfoRect[3].info := txtMessage[36];
+    InfoRect[4].info := txtMessage[37];
+    InfoRect[5].info := txtMessage[38];
 
-    InfoRect[ 6 ].info := txtMessage[ 39 ];
-    InfoRect[ 7 ].info := txtMessage[ 40 ];
-    InfoRect[ 8 ].info := txtMessage[ 41 ];
-    InfoRect[ 9 ].info := txtMessage[ 42 ];
+    InfoRect[6].info := txtMessage[39];
+    InfoRect[7].info := txtMessage[40];
+    InfoRect[8].info := txtMessage[41];
+    InfoRect[9].info := txtMessage[42];
 
-
-   //Base and adjusted columns
+    // Base and adjusted columns
     i := 10;
-    InfoRect[ 10 ].info := txtMessage[ 43 ];
-    InfoRect[ 19 ].info := txtMessage[ 44 ];
+    InfoRect[10].info := txtMessage[43];
+    InfoRect[19].info := txtMessage[44];
     for j := 0 to 8 do
     begin
-      InfoRect[ i ].rect.left := 118;
-      InfoRect[ i ].rect.right := 157;
-      InfoRect[ i + 9 ].rect.left := 157; //adj
-      InfoRect[ i + 9 ].rect.right := 193; //adj
+      InfoRect[i].rect.left := 118;
+      InfoRect[i].rect.right := 157;
+      InfoRect[i + 9].rect.left := 157; // adj
+      InfoRect[i + 9].rect.right := 193; // adj
       if j < 6 then
-      begin //there is a break in the graphic between the first 5 primaries and the last 3
-        InfoRect[ i ].rect.top := 81 + j * LineHeight;
-        InfoRect[ i ].rect.bottom := 81 + j * LineHeight + LineHeight;
-        InfoRect[ i + 9 ].rect.top := 81 + j * LineHeight;
-        InfoRect[ i + 9 ].rect.bottom := 81 + j * LineHeight + LineHeight;
+      begin // there is a break in the graphic between the first 5 primaries and the last 3
+        InfoRect[i].rect.top := 81 + j * LineHeight;
+        InfoRect[i].rect.bottom := 81 + j * LineHeight + LineHeight;
+        InfoRect[i + 9].rect.top := 81 + j * LineHeight;
+        InfoRect[i + 9].rect.bottom := 81 + j * LineHeight + LineHeight;
       end
       else
       begin
-        InfoRect[ i ].rect.top := 249 + ( j - 6 ) * LineHeight;
-        InfoRect[ i ].rect.bottom := 249 + ( j - 6 ) * LineHeight + LineHeight;
-        InfoRect[ i + 9 ].rect.top := 249 + ( j - 6 ) * LineHeight;
-        InfoRect[ i + 9 ].rect.bottom := 249 + ( j - 6 ) * LineHeight + LineHeight;
+        InfoRect[i].rect.top := 249 + (j - 6) * LineHeight;
+        InfoRect[i].rect.bottom := 249 + (j - 6) * LineHeight + LineHeight;
+        InfoRect[i + 9].rect.top := 249 + (j - 6) * LineHeight;
+        InfoRect[i + 9].rect.bottom := 249 + (j - 6) * LineHeight + LineHeight;
       end;
       if j > 0 then
       begin
-        InfoRect[ i ].info := InfoRect[ 10 ].info + '  ' + InfoRect[ j + 1 ].info; //add the base and stat string together
-        InfoRect[ i + 9 ].info := InfoRect[ 19 ].info + '  ' + InfoRect[ j + 1 ].info; //add the adj and stat string together
+        InfoRect[i].info := InfoRect[10].info + '  ' + InfoRect[j + 1].info; // add the base and stat string together
+        InfoRect[i + 9].info := InfoRect[19].info + '  ' + InfoRect[j + 1].info; // add the adj and stat string together
       end;
       i := i + 1;
     end;
-    i := i + 9; //add 9 more -we did the adjusted as well
-   //Secondary column
-    InfoRect[ i ].info := txtMessage[ 45 ];
-   //start new
-    InfoRect[ i + 1 ].info := txtMessage[ 46 ];
-    InfoRect[ i + 2 ].info := txtMessage[ 47 ];
-    InfoRect[ i + 3 ].info := txtMessage[ 48 ];
-   //end new
-    InfoRect[ i + 4 ].info := txtMessage[ 49 ];
-    InfoRect[ i + 5 ].info := txtMessage[ 50 ];
-    InfoRect[ i + 6 ].info := txtMessage[ 51 ];
-    InfoRect[ i + 7 ].info := txtMessage[ 52 ];
-    InfoRect[ i + 8 ].info := txtMessage[ 53 ];
-    InfoRect[ i + 9 ].info := txtMessage[ 54 ];
-    InfoRect[ i + 10 ].info := ''; //fix because we cut recovery
+    i := i + 9; // add 9 more -we did the adjusted as well
+    // Secondary column
+    InfoRect[i].info := txtMessage[45];
+    // start new
+    InfoRect[i + 1].info := txtMessage[46];
+    InfoRect[i + 2].info := txtMessage[47];
+    InfoRect[i + 3].info := txtMessage[48];
+    // end new
+    InfoRect[i + 4].info := txtMessage[49];
+    InfoRect[i + 5].info := txtMessage[50];
+    InfoRect[i + 6].info := txtMessage[51];
+    InfoRect[i + 7].info := txtMessage[52];
+    InfoRect[i + 8].info := txtMessage[53];
+    InfoRect[i + 9].info := txtMessage[54];
+    InfoRect[i + 10].info := ''; // fix because we cut recovery
 
     for j := 0 to 10 do
-    begin //7 do begin
-      InfoRect[ i ].rect.left := 208;
-      InfoRect[ i ].rect.right := 352;
-      InfoRect[ i ].rect.top := 81 + j * LineHeight;
-      InfoRect[ i ].rect.bottom := 81 + j * LineHeight + LineHeight;
+    begin // 7 do begin
+      InfoRect[i].rect.left := 208;
+      InfoRect[i].rect.right := 352;
+      InfoRect[i].rect.top := 81 + j * LineHeight;
+      InfoRect[i].rect.bottom := 81 + j * LineHeight + LineHeight;
       i := i + 1;
     end;
-    InfoRect[ i ].info := txtMessage[ 55 ];
-   //resistance column
+    InfoRect[i].info := txtMessage[55];
+    // resistance column
     for j := 0 to 10 do
     begin
-      InfoRect[ i ].rect.left := 353;
-      InfoRect[ i ].rect.right := 439;
-      InfoRect[ i ].rect.top := 81 + j * LineHeight;
-      InfoRect[ i ].rect.bottom := 81 + j * LineHeight + LineHeight;
+      InfoRect[i].rect.left := 353;
+      InfoRect[i].rect.right := 439;
+      InfoRect[i].rect.top := 81 + j * LineHeight;
+      InfoRect[i].rect.bottom := 81 + j * LineHeight + LineHeight;
       if j > 0 then
-        InfoRect[ i ].info := txtMessage[ 56 ] + StatName[ 1 ][ j ] + txtMessage[ 57 ] + StatName[ 1 ][ j ] + txtMessage[ 58 ] + StatName[ 1 ][ j ] + txtMessage[ 59 ];
+        InfoRect[i].info := txtMessage[56] + StatName[1][j] + txtMessage[57] + StatName[1][j] + txtMessage[58] + StatName[1][j] +
+          txtMessage[59];
 
-      InfoRect[ i ].Disabled := ( j >= 9 );
+      InfoRect[i].Disabled := (j >= 9);
       i := i + 1;
     end;
-   //Invincibility and Resistance
-    InfoRect[ i ].info := txtMessage[ 60 ];
-    InfoRect[ i + 11 ].info := txtMessage[ 61 ];
+    // Invincibility and Resistance
+    InfoRect[i].info := txtMessage[60];
+    InfoRect[i + 11].info := txtMessage[61];
     for j := 0 to 10 do
     begin
-      InfoRect[ i ].rect.left := 439;
-      InfoRect[ i ].rect.right := 478;
-      InfoRect[ i + 11 ].rect.left := 478; //res
-      InfoRect[ i + 11 ].rect.right := 517; //res
-      InfoRect[ i ].rect.top := 81 + j * LineHeight;
-      InfoRect[ i ].rect.bottom := 81 + j * LineHeight + LineHeight;
-      InfoRect[ i + 11 ].rect.top := 81 + j * LineHeight;
-      InfoRect[ i + 11 ].rect.bottom := 81 + j * LineHeight + LineHeight;
-     {  if j > 0 then begin
-             InfoRect[i].info:='The Invincibility modifier represents how much damage of a particular type '+
-                     'a character repels during an attack.  This character would resist X points of '+
-                     'a '+ StatName[1][j]+ ' attack.';
-             InfoRect[i+11].info:='The Resistance modifier represents what percentage of damage of a particular type '+
-                     'a character repels during an attack.  This character would resist X percent of '+
-                     'a '+ StatName[1][j]+ ' attack.';
+      InfoRect[i].rect.left := 439;
+      InfoRect[i].rect.right := 478;
+      InfoRect[i + 11].rect.left := 478; // res
+      InfoRect[i + 11].rect.right := 517; // res
+      InfoRect[i].rect.top := 81 + j * LineHeight;
+      InfoRect[i].rect.bottom := 81 + j * LineHeight + LineHeight;
+      InfoRect[i + 11].rect.top := 81 + j * LineHeight;
+      InfoRect[i + 11].rect.bottom := 81 + j * LineHeight + LineHeight;
+      { if j > 0 then begin
+        InfoRect[i].info:='The Invincibility modifier represents how much damage of a particular type '+
+        'a character repels during an attack.  This character would resist X points of '+
+        'a '+ StatName[1][j]+ ' attack.';
+        InfoRect[i+11].info:='The Resistance modifier represents what percentage of damage of a particular type '+
+        'a character repels during an attack.  This character would resist X percent of '+
+        'a '+ StatName[1][j]+ ' attack.';
 
-       end;  }
+        end; }
       i := i + 1;
     end;
-    i := i + 11; //add 11 more -we did the resistance as well
-   //finally the damage  column
-    InfoRect[ i ].info := txtMessage[ 62 ];
+    i := i + 11; // add 11 more -we did the resistance as well
+    // finally the damage  column
+    InfoRect[i].info := txtMessage[62];
 
     for j := 0 to 11 do
     begin
-      InfoRect[ i ].rect.left := 518;
-      InfoRect[ i ].rect.right := 588;
-      InfoRect[ i ].rect.top := 81 + j * LineHeight;
-      InfoRect[ i ].rect.bottom := 81 + j * LineHeight + LineHeight;
+      InfoRect[i].rect.left := 518;
+      InfoRect[i].rect.right := 588;
+      InfoRect[i].rect.top := 81 + j * LineHeight;
+      InfoRect[i].rect.bottom := 81 + j * LineHeight + LineHeight;
       if j > 0 then
-        InfoRect[ i ].info := txtMessage[ 63 ] + StatName[ 1 ][ j ] + txtMessage[ 64 ];
-      InfoRect[ i ].Disabled := ( j >= 9 );
+        InfoRect[i].info := txtMessage[63] + StatName[1][j] + txtMessage[64];
+      InfoRect[i].Disabled := (j >= 9);
       i := i + 1;
     end;
-   //now the damage numbers column
+    // now the damage numbers column
     for j := 0 to 10 do
     begin
-      InfoRect[ i ].rect.left := 588;
-      InfoRect[ i ].rect.right := 646;
-      InfoRect[ i ].rect.top := 105 + j * LineHeight;
-      InfoRect[ i ].rect.bottom := 105 + j * LineHeight + LineHeight;
-       //InfoRect[i].info:='This character will do X-X points of ' + StatName[1][j+1]+
-       //                  ' damage when attacking.';
+      InfoRect[i].rect.left := 588;
+      InfoRect[i].rect.right := 646;
+      InfoRect[i].rect.top := 105 + j * LineHeight;
+      InfoRect[i].rect.bottom := 105 + j * LineHeight + LineHeight;
+      // InfoRect[i].info:='This character will do X-X points of ' + StatName[1][j+1]+
+      // ' damage when attacking.';
       i := i + 1;
     end;
   except
-    on E : Exception do
-      Log.log( FailName + E.Message );
+    on E: Exception do
+      Log.Log(FailName + E.Message);
   end;
 
-end; //TStatistics.CreateCollisionRects;
+end; // TStatistics.CreateCollisionRects;
 
-{procedure TStatistics.DebugPlot(i: integer);
-var
- a : string;
-const
+{ procedure TStatistics.DebugPlot(i: integer);
+  var
+  a : string;
+  const
   FailName: string = 'TStatistics.Debugplot';
-begin
+  begin
   Log.DebugLog( FailName );
-{try
+  {try
 
-lpDDSBack.BltFast(20,237,DXBack,Rect(20,237,20+50,237+25),DDBLTFAST_WAIT); //clean up before we plot text
-str(i,a);
-pText.PlotText(a,20,237,0);
-except
-   on E: Exception do Log.log(FailName+E.Message);
-end;
+  lpDDSBack.BltFast(20,237,DXBack,Rect(20,237,20+50,237+25),DDBLTFAST_WAIT); //clean up before we plot text
+  str(i,a);
+  pText.PlotText(a,20,237,0);
+  except
+  on E: Exception do Log.log(FailName+E.Message);
+  end;
 
-end;  }
+  end; }
 
 procedure TStatistics.LoadNames;
 const
-  FailName : string = 'TStatistics.LoadNames';
+  FailName: string = 'TStatistics.LoadNames';
 begin
-  Log.DebugLog( FailName );
+  Log.DebugLog(FailName);
   try
 
-  //Loads all the names we use in the Mouseover help
-    StatName[ 0 ][ 1 ] := txtMessage[ 0 ]; //'Strength';
-    StatName[ 0 ][ 2 ] := txtMessage[ 1 ]; //'Coordination';
-    StatName[ 0 ][ 3 ] := txtMessage[ 2 ]; //'Constitution';
-    StatName[ 0 ][ 4 ] := txtMessage[ 3 ]; //'Perception';
-    StatName[ 0 ][ 5 ] := txtMessage[ 4 ]; //'Charm';
-    StatName[ 0 ][ 6 ] := txtMessage[ 5 ]; //'Mysticism';
-    StatName[ 0 ][ 7 ] := txtMessage[ 6 ]; //'Combat';
-    StatName[ 0 ][ 8 ] := txtMessage[ 7 ]; //'Stealth';
+    // Loads all the names we use in the Mouseover help
+    StatName[0][1] := txtMessage[0]; // 'Strength';
+    StatName[0][2] := txtMessage[1]; // 'Coordination';
+    StatName[0][3] := txtMessage[2]; // 'Constitution';
+    StatName[0][4] := txtMessage[3]; // 'Perception';
+    StatName[0][5] := txtMessage[4]; // 'Charm';
+    StatName[0][6] := txtMessage[5]; // 'Mysticism';
+    StatName[0][7] := txtMessage[6]; // 'Combat';
+    StatName[0][8] := txtMessage[7]; // 'Stealth';
 
-    StatName[ 1 ][ 1 ] := txtMessage[ 8 ]; //'Piercing';
-    StatName[ 1 ][ 2 ] := txtMessage[ 9 ]; //'Crushing';
-    StatName[ 1 ][ 3 ] := txtMessage[ 10 ]; //'Cutting';
-    StatName[ 1 ][ 4 ] := txtMessage[ 11 ]; //'Heat';
-    StatName[ 1 ][ 5 ] := txtMessage[ 12 ]; //'Cold';
-    StatName[ 1 ][ 6 ] := txtMessage[ 13 ]; //'Electric';
-    StatName[ 1 ][ 7 ] := txtMessage[ 15 ]; //'Poison'; //Now Magic
-    StatName[ 1 ][ 8 ] := txtMessage[ 17 ]; //'Magic';  //Now Stun
-    StatName[ 1 ][ 9 ]:=txtMessage[18];//'Special';
-    StatName[ 1 ][ 10 ] := txtMessage[ 14 ]; //'Poison';
-    StatName[ 1 ][ 11 ]:=txtMessage[16];//'Mental';
+    StatName[1][1] := txtMessage[8]; // 'Piercing';
+    StatName[1][2] := txtMessage[9]; // 'Crushing';
+    StatName[1][3] := txtMessage[10]; // 'Cutting';
+    StatName[1][4] := txtMessage[11]; // 'Heat';
+    StatName[1][5] := txtMessage[12]; // 'Cold';
+    StatName[1][6] := txtMessage[13]; // 'Electric';
+    StatName[1][7] := txtMessage[15]; // 'Poison'; //Now Magic
+    StatName[1][8] := txtMessage[17]; // 'Magic';  //Now Stun
+    StatName[1][9] := txtMessage[18]; // 'Special';
+    StatName[1][10] := txtMessage[14]; // 'Poison';
+    StatName[1][11] := txtMessage[16]; // 'Mental';
   except
-    on E : Exception do
-      Log.log( FailName + E.Message );
+    on E: Exception do
+      Log.Log(FailName + E.Message);
   end;
 
 end;
 
 procedure TStatistics.LoadBaseValues;
 var
-  i : integer;
+  i: integer;
 const
-  FailName : string = 'TStatistics.LoadBaseValues';
+  FailName: string = 'TStatistics.LoadBaseValues';
 begin
-  Log.DebugLog( FailName );
+  Log.DebugLog(FailName);
   try
-  //we store thse values so that we can keep the player from lowering his score beyon its start
+    // we store thse values so that we can keep the player from lowering his score beyon its start
     Damage := Character.Damage;
     Resistance := Character.Resistance;
     BaseStrength := Character.BaseStrength;
@@ -930,426 +994,203 @@ begin
     TrainingPoints := Character.TrainingPoints;
 
     for i := 0 to 7 do
-    begin //initialize adjustments to zero
-      StatAdjustments[ i ] := 0;
+    begin // initialize adjustments to zero
+      StatAdjustments[i] := 0;
     end;
   except
-    on E : Exception do
-      Log.log( FailName + E.Message );
+    on E: Exception do
+      Log.Log(FailName + E.Message);
   end;
 
-end; //TStatistics.LoadBaseValues;
+end; // TStatistics.LoadBaseValues;
 
 procedure TStatistics.ShowStats;
 var
-  a, b : string;
-  i, Alpha : integer;
-  ix : integer;
-  x1, x2, x3, x4 : integer;
+  a, b: string;
+  i, Alpha: integer;
+  x1, X2, x3, x4: integer;
 const
-  FailName : string = 'TStatistics.Showstats';
+  FailName: string = 'TStatistics.Showstats';
 begin
-  Log.DebugLog( FailName );
+  Log.DebugLog(FailName);
   try
 
-    Alpha := 240; //blend value
-    pText.PlotTextCentered(Character.Name, 120 + Offset.X, 640 + Offset.X, 8 + Offset.Y, Alpha );
-    str( Character.TrainingPoints, a );
-    pText.PlotText( a, 130 + Offset.X, 46 + Offset.Y, Alpha );
-   //primary stats column
+    Alpha := 240; // blend value
+    PlotTextCentered(Character.Name, 120 + Offset.X, 640 + Offset.X, 8 + Offset.Y);
+    str(Character.TrainingPoints, a);
+    pText.PlotText(a, 130 + Offset.X, 46 + Offset.Y, Alpha);
+    // primary stats column
     x1 := 118;
-    x2 := 156;
-    x3 := x2;
+    X2 := 156;
+    x3 := X2;
     x4 := 194;
     i := 104;
-    str( Character.BaseStrength, a );
-    str( Character.Strength, b );
-    if StatAdjustments[ 0 ] < 1 then
-    begin
-      pText.PlotTextCentered( a, x1 + Offset.X, x2 + Offset.X, i + Offset.Y, Alpha );
-      pText.PlotTextCentered( b, x3 + Offset.X, x4 + Offset.X, i + Offset.Y, Alpha );
-    end
-    else
-    begin //darken it up
-      pText.PlotDarkTextCentered( a, x1 + Offset.X, x2 + Offset.X, i + Offset.Y, 240 );
-      pText.PlotDarkTextCentered( b, x3 + Offset.X, x4 + Offset.X, i + Offset.Y, 240 );
-    end;
-    i := i + 24;
-    str( Character.BaseCoordination, a );
-    str( Character.Coordination, b );
-    if StatAdjustments[ 1 ] < 1 then
-    begin
-      pText.PlotTextCentered( a, x1 + Offset.X, x2 + Offset.X, i + Offset.Y, Alpha );
-      pText.PlotTextCentered( b, x3 + Offset.X, x4 + Offset.X, i + Offset.Y, Alpha );
-    end
-    else
-    begin //darken it up
-      pText.PlotDarkTextCentered( a, x1 + Offset.X, x2 + Offset.X, i + Offset.Y, 240 );
-      pText.PlotDarkTextCentered( b, x3 + Offset.X, x4 + Offset.X, i + Offset.Y, 240 );
-    end;
-    i := i + 24;
-    str( Character.BaseConstitution, a );
-    str( Character.Constitution, b );
-    if StatAdjustments[ 2 ] < 1 then
-    begin
-      pText.PlotTextCentered( a, x1 + Offset.X, x2 + Offset.X, i + Offset.Y, Alpha );
-      pText.PlotTextCentered( b, x3 + Offset.X, x4 + Offset.X, i + Offset.Y, Alpha );
-    end
-    else
-    begin //darken it up
-      pText.PlotDarkTextCentered( a, x1 + Offset.X, x2 + Offset.X, i + Offset.Y, 240 );
-      pText.PlotDarkTextCentered( b, x3 + Offset.X, x4 + Offset.X, i + Offset.Y, 240 );
-    end;
-    i := i + 24;
-    str( Character.BasePerception, a );
-    str( Character.Perception, b );
-    if StatAdjustments[ 3 ] < 1 then
-    begin
-      pText.PlotTextCentered( a, x1 + Offset.X, x2 + Offset.X, i + Offset.Y, Alpha );
-      pText.PlotTextCentered( b, x3 + Offset.X, x4 + Offset.X, i + Offset.Y, Alpha );
-    end
-    else
-    begin //darken it up
-      pText.PlotDarkTextCentered( a, x1 + Offset.X, x2 + Offset.X, i + Offset.Y, 240 );
-      pText.PlotDarkTextCentered( b, x3 + Offset.X, x4 + Offset.X, i + Offset.Y, 240 );
-    end;
-    i := i + 24;
-    str( Character.BaseCharm, a );
-    str( Character.Charm, b );
-    if StatAdjustments[ 4 ] < 1 then
-    begin
-      pText.PlotTextCentered( a, x1 + Offset.X, x2 + Offset.X, i + Offset.Y, Alpha );
-      pText.PlotTextCentered( b, x3 + Offset.X, x4 + Offset.X, i + Offset.Y, Alpha );
-    end
-    else
-    begin //darken it up
-      pText.PlotDarkTextCentered( a, x1 + Offset.X, x2 + Offset.X, i + Offset.Y, 240 );
-      pText.PlotDarkTextCentered( b, x3 + Offset.X, x4 + Offset.X, i + Offset.Y, 240 );
-    end;
+    PlotPrimaryStats(Character.BaseStrength, Character.Strength, x1, X2, x3, x4, 0, i);
+    PlotPrimaryStats(Character.BaseCoordination, Character.Coordination, x1, X2, x3, x4, 1, i);
+    PlotPrimaryStats(Character.BaseConstitution, Character.Constitution, x1, X2, x3, x4, 2, i);
+    PlotPrimaryStats(Character.BasePerception, Character.Perception, x1, X2, x3, x4, 3, i);
+    PlotPrimaryStats(Character.BaseCharm, Character.Charm, x1, X2, x3, x4, 4, i);
     i := 248;
-    str( Character.BaseMysticism, a );
-    str( Character.Mysticism, b );
-    if StatAdjustments[ 5 ] < 1 then
-    begin
-      pText.PlotTextCentered( a, x1 + Offset.X, x2 + Offset.X, i + Offset.Y, Alpha );
-      pText.PlotTextCentered( b, x3 + Offset.X, x4 + Offset.X, i + Offset.Y, Alpha );
-    end
-    else
-    begin //darken it up
-      pText.PlotDarkTextCentered( a, x1 + Offset.X, x2 + Offset.X, i + Offset.Y, 240 );
-      pText.PlotDarkTextCentered( b, x3 + Offset.X, x4 + Offset.X, i + Offset.Y, 240 );
-    end;
-    i := i + 24;
-    str( Character.BaseCombat, a );
-    str( Character.Combat, b );
-    if StatAdjustments[ 6 ] < 1 then
-    begin
-      pText.PlotTextCentered( a, x1 + Offset.X, x2 + Offset.X, i + Offset.Y, Alpha );
-      pText.PlotTextCentered( b, x3 + Offset.X, x4 + Offset.X, i + Offset.Y, Alpha );
-    end
-    else
-    begin //darken it up
-      pText.PlotDarkTextCentered( a, x1 + Offset.X, x2 + Offset.X, i + Offset.Y, 240 );
-      pText.PlotDarkTextCentered( b, x3 + Offset.X, x4 + Offset.X, i + Offset.Y, 240 );
-    end;
-    i := i + 24;
-    str( Character.BaseStealth, a );
-    str( Character.Stealth, b );
-    if StatAdjustments[ 7 ] < 1 then
-    begin
-      pText.PlotTextCentered( a, x1 + Offset.X, x2 + Offset.X, i + Offset.Y, Alpha );
-      pText.PlotTextCentered( b, x3 + Offset.X, x4 + Offset.X, i + Offset.Y, Alpha );
-    end
-    else
-    begin //darken it up
-      pText.PlotDarkTextCentered( a, x1 + Offset.X, x2 + Offset.X, i + Offset.Y, 240 );
-      pText.PlotDarkTextCentered( b, x3 + Offset.X, x4 + Offset.X, i + Offset.Y, 240 );
-    end;
+    PlotPrimaryStats(Character.BaseMysticism, Character.Mysticism, x1, X2, x3, x4, 5, i);
+    PlotPrimaryStats(Character.BaseCombat, Character.Combat, x1, X2, x3, x4, 6, i);
+    PlotPrimaryStats(Character.BaseStealth, Character.Stealth, x1, X2, x3, x4, 7, i);
 
-
-   //Secondary stats column
+    // Secondary stats column
     x1 := 315;
-    x2 := 352;
+    X2 := 352;
     i := 104;
-   //New
-    str( round( Character.AttackBonus ), a );
-    pText.PlotTextCentered( a, x1 + Offset.X, x2 + Offset.X, i + Offset.Y, Alpha );
+    // New
+    str(round(Character.AttackBonus), a);
+    PlotTextCentered(a, x1 + Offset.X, X2 + Offset.X, i + Offset.Y);
     i := i + 24;
-    str( round( Character.Defense ), a );
-    pText.PlotTextCentered( a, x1 + Offset.X, x2 + Offset.X, i + Offset.Y, Alpha );
+    str(round(Character.Defense), a);
+    PlotTextCentered(a, x1 + Offset.X, X2 + Offset.X, i + Offset.Y);
     i := i + 24;
-    str( Character.AttackRecovery, a );
-    pText.PlotTextCentered( a, x1 + Offset.X, x2 + Offset.X, i + Offset.Y, Alpha );
+    str(Character.AttackRecovery, a);
+    PlotTextCentered(a, x1 + Offset.X, X2 + Offset.X, i + Offset.Y);
     i := i + 24;
-   //end new
-    str( Character.restriction, a );
-    pText.PlotTextCentered( a, x1 + Offset.X, x2 + Offset.X, i + Offset.Y, Alpha );
+    // end new
+    str(Character.restriction, a);
+    PlotTextCentered(a, x1 + Offset.X, X2 + Offset.X, i + Offset.Y);
     i := i + 24;
-//   str(round(Character.movement),a);
-    str( round( TCharacterResource( Character.resource ).speed ), a );
-    pText.PlotTextCentered( a, x1 + Offset.X, x2 + Offset.X, i + Offset.Y, Alpha );
+    // str(round(Character.movement),a);
+    str(round(TCharacterResource(Character.Resource).speed), a);
+    PlotTextCentered(a, x1 + Offset.X, X2 + Offset.X, i + Offset.Y);
     i := i + 24;
-   //str(Character.recovery,a);
-   //pText.PlotText(a),327,i,Alpha);
-   //i:=i+24;
-//   str(Character.healingrate,a);
-//   str(round(Character.HitPoints * Character.HealingRate * Character.Constitution / 1000),a);
+    // str(Character.recovery,a);
+    // pText.PlotText(a),327,i,Alpha);
+    // i:=i+24;
+    // str(Character.healingrate,a);
+    // str(round(Character.HitPoints * Character.HealingRate * Character.Constitution / 1000),a);
     a := '*';
-    pText.PlotTextCentered( a, x1 + Offset.X, x2 + Offset.X, i + Offset.Y, Alpha );
+    PlotTextCentered(a, x1 + Offset.X, X2 + Offset.X, i + Offset.Y);
     i := i + 24;
-//   str(Character.rechargerate,a);
-//   str(round(Character.Mana * Character.RechargeRate * Character.Constitution / 200),a);
+    // str(Character.rechargerate,a);
+    // str(round(Character.Mana * Character.RechargeRate * Character.Constitution / 200),a);
     a := '*';
-    pText.PlotTextCentered( a, x1 + Offset.X, x2 + Offset.X, i + Offset.Y, Alpha );
+    PlotTextCentered(a, x1 + Offset.X, X2 + Offset.X, i + Offset.Y);
     i := i + 24;
-    str( round( Character.hitpoints ), a );
-    str( round( Character.hitpoints - character.wounds ), b );
-    pText.PlotTextCentered( b + '/' + a, x1 + 10 + Offset.X, x2 + 10 + Offset.X, i + Offset.Y, Alpha );
+    str(round(Character.HitPoints), a);
+    str(round(Character.HitPoints - Character.wounds), b);
+    PlotTextCentered(b + '/' + a, x1 + 10 + Offset.X, X2 + 10 + Offset.X, i + Offset.Y);
     i := i + 24;
-    str( round( Character.mana ), a );
-    str( round( Character.mana - character.drain ), b );
-    pText.PlotTextCentered( b + '/' + a, x1 + 10 + Offset.X, x2 + 10 + Offset.X, i + Offset.Y, Alpha );
-    i := i + 24; //Show too, because it's no longer zero in basevalues
-    str( round( Character.Hitrecovery ), a );
-    pText.PlotTextCentered( a, x1 + Offset.X, x2 + Offset.X, i + Offset.Y, Alpha );
-   //Resistance column
+    str(round(Character.Mana), a);
+    str(round(Character.Mana - Character.drain), b);
+    PlotTextCentered(b + '/' + a, x1 + 10 + Offset.X, X2 + 10 + Offset.X, i + Offset.Y);
+    i := i + 24; // Show too, because it's no longer zero in basevalues
+    str(round(Character.Hitrecovery), a);
+    PlotTextCentered(a, x1 + Offset.X, X2 + Offset.X, i + Offset.Y);
+    // Resistance column
     x1 := 439;
-    x2 := 478;
-    x3 := x2;
+    X2 := 478;
+    x3 := X2;
     x4 := 517;
     i := 104;
-    ix := 3; //ix is the number of new items we inserted before these
-    str( Round( Character.resistance.Piercing.Invulnerability ), a );
-    pText.PlotTextCentered( a, x1 + Offset.X, x2 + Offset.X, i + Offset.Y, Alpha );
-    str( Round( Character.resistance.Piercing.Resistance * 100 ), b );
-    pText.PlotTextCentered( b, x3 + Offset.X, x4 + Offset.X, i + Offset.Y, Alpha );
-    InfoRect[ ix + 48 ].info := txtMessage[ 19 ] + a + txtMessage[ 20 ] + StatName[ 1 ][ 1 ] + txtMessage[ 21 ];
-    InfoRect[ ix + 48 + 11 ].info := txtMessage[ 22 ] + b + txtMessage[ 23 ] + StatName[ 1 ][ 1 ] + txtMessage[ 21 ];
 
-    i := i + 24;
-    str( Round( Character.resistance.crushing.Invulnerability ), a );
-    pText.PlotTextCentered( a, x1 + Offset.X, x2 + Offset.X, i + Offset.Y, Alpha );
-    str( Round( Character.resistance.crushing.Resistance * 100 ), b );
-    pText.PlotTextCentered( b, x3 + Offset.X, x4 + Offset.X, i + Offset.Y, Alpha );
-    InfoRect[ ix + 49 ].info := txtMessage[ 19 ] + a + txtMessage[ 20 ] + StatName[ 1 ][ 2 ] + txtMessage[ 21 ];
-    InfoRect[ ix + 49 + 11 ].info := txtMessage[ 22 ] + b + txtMessage[ 23 ] + StatName[ 1 ][ 2 ] + txtMessage[ 21 ];
+    PlotResistance(Character.Resistance.Piercing, x1, X2, x3, x4, 1, i);
+    PlotResistance(Character.Resistance.Crushing, x1, X2, x3, x4, 2, i);
+    PlotResistance(Character.Resistance.Cutting, x1, X2, x3, x4, 3, i);
+    PlotResistance(Character.Resistance.Heat, x1, X2, x3, x4, 4, i);
+    PlotResistance(Character.Resistance.Cold, x1, X2, x3, x4, 5, i);
+    PlotResistance(Character.Resistance.Electric, x1, X2, x3, x4, 6, i);
+    PlotResistance(Character.Resistance.Magic, x1, X2, x3, x4, 7, i);
+    PlotResistance(Character.Resistance.Stun, x1, X2, x3, x4, 8, i);
+    PlotResistance(Character.Resistance.Poison, x1, X2, x3, x4, 9, i);
+    PlotResistance(Character.Resistance.Mental, x1, X2, x3, x4, 10, i);
 
-    i := i + 24;
-    str( Round( Character.resistance.cutting.Invulnerability ), a );
-    pText.PlotTextCentered( a, x1 + Offset.X, x2 + Offset.X, i + Offset.Y, Alpha );
-    str( Round( Character.resistance.cutting.Resistance * 100 ), b );
-    pText.PlotTextCentered( b, x3 + Offset.X, x4 + Offset.X, i + Offset.Y, Alpha );
-    InfoRect[ ix + 50 ].info := txtMessage[ 19 ] + a + txtMessage[ 20 ] + StatName[ 1 ][ 3 ] + txtMessage[ 21 ];
-    InfoRect[ ix + 50 + 11 ].info := txtMessage[ 22 ] + b + txtMessage[ 23 ] + StatName[ 1 ][ 3 ] + txtMessage[ 21 ];
-
-    i := i + 24;
-    str( Round( Character.resistance.heat.Invulnerability ), a );
-    pText.PlotTextCentered( a, x1 + Offset.X, x2 + Offset.X, i + Offset.Y, Alpha );
-    str( Round( Character.resistance.heat.Resistance * 100 ), b );
-    pText.PlotTextCentered( b, x3 + Offset.X, x4 + Offset.X, i + Offset.Y, Alpha );
-    InfoRect[ ix + 51 ].info := txtMessage[ 19 ] + a + txtMessage[ 20 ] + StatName[ 1 ][ 4 ] + txtMessage[ 21 ];
-    InfoRect[ ix + 51 + 11 ].info := txtMessage[ 22 ] + b + txtMessage[ 23 ] + StatName[ 1 ][ 4 ] + txtMessage[ 21 ];
-    i := i + 24;
-    str( Round( Character.resistance.cold.Invulnerability ), a );
-    pText.PlotTextCentered( a, x1 + Offset.X, x2 + Offset.X, i + Offset.Y, Alpha );
-    str( Round( Character.resistance.cold.Resistance * 100 ), b );
-    pText.PlotTextCentered( b, x3 + Offset.X, x4 + Offset.X, i + Offset.Y, Alpha );
-    InfoRect[ ix + 52 ].info := txtMessage[ 19 ] + a + txtMessage[ 20 ] + StatName[ 1 ][ 5 ] + txtMessage[ 21 ];
-    InfoRect[ ix + 52 + 11 ].info := txtMessage[ 22 ] + b + txtMessage[ 23 ] + StatName[ 1 ][ 5 ] + txtMessage[ 21 ];
-    i := i + 24;
-    str( Round( Character.resistance.electric.Invulnerability ), a );
-    pText.PlotTextCentered( a, x1 + Offset.X, x2 + Offset.X, i + Offset.Y, Alpha );
-    str( Round( Character.resistance.electric.Resistance * 100 ), b );
-    pText.PlotTextCentered( b, x3 + Offset.X, x4 + Offset.X, i + Offset.Y, Alpha );
-    InfoRect[ ix + 53 ].info := txtMessage[ 19 ] + a + txtMessage[ 20 ] + StatName[ 1 ][ 6 ] + txtMessage[ 21 ];
-    InfoRect[ ix + 53 + 11 ].info := txtMessage[ 22 ] + b + txtMessage[ 23 ] + StatName[ 1 ][ 6 ] + txtMessage[ 21 ];
-
-    i := i + 24;
-    str( Round( Character.resistance.magic.Invulnerability ), a );
-    pText.PlotTextCentered( a, x1 + Offset.X, x2 + Offset.X, i + Offset.Y, Alpha );
-    str( Round( Character.resistance.magic.Resistance * 100 ), b );
-    pText.PlotTextCentered( b, x3 + Offset.X, x4 + Offset.X, i + Offset.Y, Alpha );
-    InfoRect[ ix + 54 ].info := txtMessage[ 19 ] + a + txtMessage[ 20 ] + StatName[ 1 ][ 7 ] + txtMessage[ 21 ];
-    InfoRect[ ix + 54 + 11 ].info := txtMessage[ 22 ] + b + txtMessage[ 23 ] + StatName[ 1 ][ 7 ] + txtMessage[ 21 ];
-
-    i := i + 24;
-    str( Round( Character.resistance.stun.Invulnerability ), a );
-    pText.PlotTextCentered( a, x1 + Offset.X, x2 + Offset.X, i + Offset.Y, Alpha );
-    str( Round( Character.resistance.stun.Resistance * 100 ), b );
-    pText.PlotTextCentered( b, x3 + Offset.X, x4 + Offset.X, i + Offset.Y, Alpha );
-    InfoRect[ ix + 55 ].info := txtMessage[ 19 ] + a + txtMessage[ 20 ] + StatName[ 1 ][ 8 ] + txtMessage[ 21 ];
-    InfoRect[ ix + 55 + 11 ].info := txtMessage[ 22 ] + b + txtMessage[ 23 ] + StatName[ 1 ][ 8 ] + txtMessage[ 21 ];
-    (*InfoRect[ ix + 56 ].Disabled := true;
-    InfoRect[ ix + 56 + 11 ].Disabled := true;
-    InfoRect[ ix + 57 ].Disabled := true;
-    InfoRect[ ix + 57 + 11 ].Disabled := true;*)
-    //Posion
-    i:=i+24;
-    str(Round(Character.resistance.poison.Invulnerability),a);
-    pText.PlotTextCentered( a, x1 + Offset.X, x2 + Offset.X, i + Offset.Y, Alpha );
-    str(Round(Character.resistance.poison.Resistance*100),b);
-    pText.PlotTextCentered( b, x3 + Offset.X, x4 + Offset.X, i + Offset.Y, Alpha );
-    InfoRect[ix+56].info:=txtMessage[19]+ a +txtMessage[20]+ StatName[1][10]+ txtMessage[21];
-    InfoRect[ix+56+11].info:=txtMessage[22]+ b +txtMessage[23]+ StatName[1][10]+ txtMessage[21];
-    //Mental
-    i:=i+24;
-    str(Round(Character.resistance.mental.Invulnerability),a);
-    pText.PlotTextCentered( a, x1 + Offset.X, x2 + Offset.X, i + Offset.Y, Alpha );
-    str(Round(Character.resistance.mental.Resistance*100),b);
-    pText.PlotTextCentered( b, x3 + Offset.X, x4 + Offset.X, i + Offset.Y, Alpha );
-    InfoRect[ix+57].info:=txtMessage[19]+ a +txtMessage[20]+ StatName[1][11]+ txtMessage[21];
-    InfoRect[ix+57+11].info:=txtMessage[22]+ b +txtMessage[23]+ StatName[1][11]+ txtMessage[21];
-
-   //Damage column
+    // Damage column
     x1 := 588;
-    x2 := 646;
+    X2 := 646;
     i := 104;
-    str( Round( Character.damage.Piercing.Min ), a );
-    str( Round( Character.damage.Piercing.Max ), b );
-    pText.PlotTextCentered( a + '-' + b, x1 + Offset.X, x2 + Offset.X, i + Offset.Y, Alpha );
-    InfoRect[ ix + 81 ].info := txtMessage[ 24 ] + a + txtMessage[ 25 ] + b + txtMessage[ 26 ] + StatName[ 1 ][ 1 ] +
-      txtMessage[ 27 ];
-    i := i + 24;
-    str( Round( Character.damage.crushing.Min ), a );
-    str( Round( Character.damage.crushing.Max ), b );
-    pText.PlotTextCentered( a + '-' + b, x1 + Offset.X, x2 + Offset.X, i + Offset.Y, Alpha );
-    InfoRect[ ix + 82 ].info := txtMessage[ 24 ] + a + txtMessage[ 25 ] + b + txtMessage[ 26 ] + StatName[ 1 ][ 2 ] +
-      txtMessage[ 27 ];
-    i := i + 24;
-    str( Round( Character.damage.cutting.Min ), a );
-    str( Round( Character.damage.cutting.Max ), b );
-    pText.PlotTextCentered( a + '-' + b, x1 + Offset.X, x2 + Offset.X, i + Offset.Y, Alpha );
-    InfoRect[ ix + 83 ].info := txtMessage[ 24 ] + a + txtMessage[ 25 ] + b + txtMessage[ 26 ] + StatName[ 1 ][ 3 ] +
-      txtMessage[ 27 ];
-    i := i + 24;
-    str( Round( Character.damage.heat.Min ), a );
-    str( Round( Character.damage.heat.Max ), b );
-    pText.PlotTextCentered( a + '-' + b, x1 + Offset.X, x2 + Offset.X, i + Offset.Y, Alpha );
-    InfoRect[ ix + 84 ].info := txtMessage[ 24 ] + a + txtMessage[ 25 ] + b + txtMessage[ 26 ] + StatName[ 1 ][ 4 ] +
-      txtMessage[ 27 ];
-    i := i + 24;
-    str( Round( Character.damage.cold.Min ), a );
-    str( Round( Character.damage.cold.Max ), b );
-    pText.PlotTextCentered( a + '-' + b, x1 + Offset.X, x2 + Offset.X, i + Offset.Y, Alpha );
-    InfoRect[ ix + 85 ].info := txtMessage[ 24 ] + a + txtMessage[ 25 ] + b + txtMessage[ 26 ] + StatName[ 1 ][ 5 ] +
-      txtMessage[ 27 ];
-    i := i + 24;
-    str( Round( Character.damage.electric.Min ), a );
-    str( Round( Character.damage.electric.Max ), b );
-    pText.PlotTextCentered( a + '-' + b, x1 + Offset.X, x2 + Offset.X, i + Offset.Y, Alpha );
-    InfoRect[ ix + 86 ].info := txtMessage[ 24 ] + a + txtMessage[ 25 ] + b + txtMessage[ 26 ] + StatName[ 1 ][ 6 ] +
-      txtMessage[ 27 ];
-    i := i + 24;
-    str( Round( Character.damage.magic.Min ), a );
-    str( Round( Character.damage.magic.Max ), b );
-    pText.PlotTextCentered( a + '-' + b, x1 + Offset.X, x2 + Offset.X, i + Offset.Y, Alpha );
-    InfoRect[ ix + 87 ].info := txtMessage[ 24 ] + a + txtMessage[ 25 ] + b + txtMessage[ 26 ] + StatName[ 1 ][ 7 ] +
-      txtMessage[ 27 ];
-    i := i + 24;
-    str( Round( Character.damage.stun.Min ), a );
-    str( Round( Character.damage.stun.Max ), b );
-    pText.PlotTextCentered( a + '-' + b, x1 + Offset.X, x2 + Offset.X, i + Offset.Y, Alpha );
-    InfoRect[ ix + 88 ].info := txtMessage[ 24 ] + a + txtMessage[ 25 ] + b + txtMessage[ 26 ] + StatName[ 1 ][ 8 ] +
-      txtMessage[ 27 ];
-
-    i:=i+24;
-    str(Round(Character.damage.special.Min),a);
-    str(Round(Character.damage.special.Max),b);
-    pText.PlotTextCentered( a + '-' + b, x1 + Offset.X, x2 + Offset.X, i + Offset.Y, Alpha );
-    InfoRect[ix+89].info:=txtMessage[24]+ a + txtMessage[25] + b + txtMessage[26] + StatName[ 1 ][ 9 ]+
-                      txtMessage[27];
-
-    i:=i+24;
-    str(Round(Character.damage.poison.Min),a);
-    str(Round(Character.damage.poison.Max),b);
-    pText.PlotTextCentered( a + '-' + b, x1 + Offset.X, x2 + Offset.X, i + Offset.Y, Alpha );
-    InfoRect[ix+90].info:=txtMessage[24]+ a + txtMessage[25] + b + txtMessage[26] + StatName[ 1 ][ 10 ]+
-                      txtMessage[27];
-    i:=i+24;
-    str(Round(Character.damage.mental.Min),a);
-    str(Round(Character.damage.mental.Max),b);
-    pText.PlotTextCentered( a + '-' + b, x1 + Offset.X, x2 + Offset.X, i + Offset.Y, Alpha );
-    InfoRect[ix+91].info:=txtMessage[24]+ a + txtMessage[25] + b + txtMessage[26] + StatName[ 1 ][ 11 ]+
-                      txtMessage[27];
+    PlotDamage(Character.Damage.Piercing, x1, X2, 1, i);
+    PlotDamage(Character.Damage.Crushing, x1, X2, 2, i);
+    PlotDamage(Character.Damage.Cutting, x1, X2, 3, i);
+    PlotDamage(Character.Damage.Heat, x1, X2, 4, i);
+    PlotDamage(Character.Damage.Cold, x1, X2, 5, i);
+    PlotDamage(Character.Damage.Electric, x1, X2, 6, i);
+    PlotDamage(Character.Damage.Magic, x1, X2, 7, i);
+    PlotDamage(Character.Damage.Stun, x1, X2, 8, i);
+    PlotDamage(Character.Damage.Special, x1, X2, 9, i);
+    PlotDamage(Character.Damage.Poison, x1, X2, 10, i);
+    PlotDamage(Character.Damage.Mental, x1, X2, 11, i);
   except
-    on E : Exception do
-      Log.log( FailName + E.Message );
+    on E: Exception do
+      Log.Log(FailName + E.Message);
   end;
 
 end;
 
-
-procedure TStatistics.ArrowInfo( i : integer );
+procedure TStatistics.ArrowInfo(i: integer);
 var
-  PointAdjust : integer;
+  PointAdjust: integer;
 
 begin
 
   PointAdjust := 0;
 
-  if ( i > 7 ) and ( i < 16 ) then
+  if (i > 7) and (i < 16) then
   begin
     if i = 8 then
     begin
       if Character.BaseStrength < TRAININGBASE then
         PointAdjust := 4
       else
-        PointAdjust := ( Character.BaseStrength - TRAININGBASE ) div TRAININGJUMP + 5;
+        PointAdjust := (Character.BaseStrength - TRAININGBASE) div TRAININGJUMP + 5;
     end
     else if i = 9 then
     begin
       if Character.BaseCoordination < TRAININGBASE then
         PointAdjust := 4
       else
-        PointAdjust := ( Character.BaseCoordination - TRAININGBASE ) div TRAININGJUMP + 5;
+        PointAdjust := (Character.BaseCoordination - TRAININGBASE) div TRAININGJUMP + 5;
     end
     else if i = 10 then
     begin
       if Character.BaseConstitution < TRAININGBASE then
         PointAdjust := 4
       else
-        PointAdjust := ( Character.BaseConstitution - TRAININGBASE ) div TRAININGJUMP + 5;
+        PointAdjust := (Character.BaseConstitution - TRAININGBASE) div TRAININGJUMP + 5;
     end
     else if i = 11 then
     begin
       if Character.BasePerception < TRAININGBASE then
         PointAdjust := 4
       else
-        PointAdjust := ( Character.BasePerception - TRAININGBASE ) div TRAININGJUMP + 5;
+        PointAdjust := (Character.BasePerception - TRAININGBASE) div TRAININGJUMP + 5;
     end
     else if i = 12 then
     begin
       if Character.BaseCharm < TRAININGBASE then
         PointAdjust := 4
       else
-        PointAdjust := ( Character.BaseCharm - TRAININGBASE ) div TRAININGJUMP + 5;
+        PointAdjust := (Character.BaseCharm - TRAININGBASE) div TRAININGJUMP + 5;
     end
     else if i = 13 then
     begin
       if Character.BaseMysticism < TRAININGBASE then
         PointAdjust := 2
       else
-        PointAdjust := ( Character.BaseMysticism - TRAININGBASE ) div TRAININGJUMP + 3;
+        PointAdjust := (Character.BaseMysticism - TRAININGBASE) div TRAININGJUMP + 3;
     end
     else if i = 14 then
     begin
       if Character.BaseCombat < TRAININGBASE then
         PointAdjust := 2
       else
-        PointAdjust := ( Character.BaseCombat - TRAININGBASE ) div TRAININGJUMP + 3;
+        PointAdjust := (Character.BaseCombat - TRAININGBASE) div TRAININGJUMP + 3;
     end
     else if i = 15 then
     begin
       if Character.BaseStealth < TRAININGBASE then
         PointAdjust := 2
       else
-        PointAdjust := ( Character.BaseStealth - TRAININGBASE ) div TRAININGJUMP + 3;
+        PointAdjust := (Character.BaseStealth - TRAININGBASE) div TRAININGJUMP + 3;
     end;
 
-    ArrowRect[ i ].info := txtMessage[ 28 ] + StatName[ 0 ][ i - 8 + 1 ] + txtMessage[ 29 ] +
-      intToStr( PointAdjust ) + txtMessage[ 30 ] + StatName[ 0 ][ i - 8 + 1 ] + txtMessage[ 31 ];
-  end; //endif
+    ArrowRect[i].info := txtMessage[28] + StatName[0][i - 8 + 1] + txtMessage[29] + inttostr(PointAdjust) + txtMessage[30] +
+      StatName[0][i - 8 + 1] + txtMessage[31];
+  end; // endif
 
-end; //TStartisticsArrowinfo
+end; // TStartisticsArrowinfo
 
 end.

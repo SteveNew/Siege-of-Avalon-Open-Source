@@ -72,6 +72,17 @@ type
 
     INI : TMemINIFile;
     procedure LoadConversation;
+    /// <summary>
+    ///   Prints on lpDDSBack the Sentence between margins X1 and X2, starting at Y from the top.
+    /// </summary>
+    /// <remarks>
+    ///   Currently only used in Converse.<para/>
+    ///   The parameter UseSmallFnt is used for Font selection, and the TGameText private FUseSmallFnt is currently not used, since it seems overruling is wanted.
+    /// </remarks>
+    /// <returns>
+    ///   Returns text block heights in pixels
+    /// </returns>
+    function PlotTextBlockPX(const Sentence: string; X1, X2, Y, Alpha: integer; const UseSmallFnt: Boolean): integer;
   protected
     Image : IDirectDrawSurface;
     procedure MouseDown( Sender : TObject; Button : TMouseButton;
@@ -132,7 +143,8 @@ uses
   Engine,
   LogFile,
   AniDemo,
-  Resource;
+  Resource,
+  SoAOS.Graphics.BMPFonts;
 
 { TConverseBox }
 
@@ -222,7 +234,6 @@ begin
     end;
 
     SoAOS_DX_BltFront;
-//    pText.LoadTinyFontGraphic;
 
     Paint;
   except
@@ -645,10 +656,7 @@ begin
       R.Left := X1 + 30;
       R.Top := j;
       R.Right := X1 + W - 30;
-      if UseSmallFont then
-        j := j + 18 * pText.PlotTextXYBlock( lpDDSBack, Caption, R.Left + Offset.X, R.Right + Offset.X, R.Top + Offset.Y, 240, ftTinyLetter ) + 10
-      else
-        j := j + 22 * pText.PlotTextBlock( Caption, R.Left + Offset.X, R.Right + Offset.X, R.Top + Offset.Y, 240 ) + 10;
+      j := j + PlotTextBlockPX( Caption, R.Left + Offset.X, R.Right + Offset.X, R.Top + Offset.Y, 240, UseSmallFont ) + 10;
       R.Bottom := j;
 
       if bTraining then
@@ -664,19 +672,9 @@ begin
       R.Right := X1 + W - 30;
       { TODO : Wrap pText plot into existing DIalogs PlotTexts }
       if i = HLText then
-      begin
-        if UseSmallFont then
-          j := j + 18 * pText.PlotTextXYBlock( lpDDSBack, S, R.Left + Offset.X, R.Right + Offset.X, R.Top + Offset.Y, 240, ftTinyLetter )
-        else
-          j := j + 22 * pText.PlotTextBlock( S, R.Left + Offset.X, R.Right + Offset.X, R.Top + Offset.Y, 240 );
-      end
+        j := j + PlotTextBlockPX( S, R.Left + Offset.X, R.Right + Offset.X, R.Top + Offset.Y, 240, UseSmallFont )
       else
-      begin
-        if UseSmallFont then
-          j := j + 18 * pText.PlotTextXYBlock( lpDDSBack, S, R.Left + Offset.X, R.Right + Offset.X, R.Top + Offset.Y, 120, ftTinyLetter )
-        else
-          j := j + 22 * pText.PlotTextBlock( S, R.Left + Offset.X, R.Right + Offset.X, R.Top + Offset.Y, 120 );
-      end;
+        j := j + PlotTextBlockPX( S, R.Left + Offset.X, R.Right + Offset.X, R.Top + Offset.Y, 120, UseSmallFont );
       R.Bottom := j;
       Responses[ i ].Rect := R;
       Inc( j, 10 );
@@ -686,6 +684,21 @@ begin
     on E : Exception do
       Log.log( FailName, E.Message, [ ] );
   end;
+end;
+
+function TConverseBox.PlotTextBlockPX(const Sentence: string; X1, X2, Y, Alpha: integer;
+  const UseSmallFnt: Boolean): integer;
+var
+  LFontType: TBMPFontType;
+  LFont: TBMPFont;
+begin
+  if UseSmallFnt then
+    LFontType := ftTinyLetter
+  else
+    LFontType := ftLetter;
+
+  LFont := pText.FontType(LFontType);
+  Result := LFont.Height * pText.PlotTextXYBlock( lpDDSBack, Sentence, X1, X2, Y, Alpha, LFontType);
 end;
 
 procedure TConverseBox.Release;
@@ -705,7 +718,6 @@ begin
       Responses[ i ].Free;
     Responses.Clear;
     slResponse.Clear;
-//    pText.UnloadTinyFontGraphic;
   except
     on E : Exception do
       Log.log( FailName, E.Message, [ ] );

@@ -259,7 +259,7 @@ begin
     MaxScroll := 0;
     if ( My + 40 > ScrollStartValue ) and ( My + 40 < ScrollEndValue ) then
     begin
-      if pText.PlotTextCentered( StatsScrollItem.Name, Mx + Offset.X, Mx + 330 + Offset.X, My + 40 + Offset.Y, 0 ) then
+      if pText.PlotTextXYCentered( lpDDSBack, StatsScrollItem.Name, Mx + Offset.X, Mx + 330 + Offset.X, My + 40 + Offset.Y, 0, ftLetter ) then
       begin
       //DebugPrint('Error- not enough room to center name of item ' + StatsScrollItem.Name);
       end;
@@ -301,7 +301,7 @@ begin
         MaxScroll := -( ScrollFactor - ( ( My + 40 + YAdj + TitleY * 22 ) - 88 ) );
         if ( ( My + 40 + TitleY * 22 ) > ScrollStartValue ) and ( ( My + 40 + TitleY * 22 ) < ScrollEndValue - 24 ) then
         begin
-          pText.PlotTextCentered( txtMessage[ 3 ], Mx + Offset.X, Mx + 330 + Offset.X, My + 40 + TitleY * 22 + Offset.Y, 0 );
+          pText.PlotTextXYCentered( lpDDSBack, txtMessage[ 3 ], Mx + Offset.X, Mx + 330 + Offset.X, My + 40 + TitleY * 22 + Offset.Y, 0, ftLetter );
         end;
         i := i + 2;
         TitleY := i - 1;
@@ -335,7 +335,7 @@ begin
       MaxScroll := -( ScrollFactor - ( ( My + 40 + YAdj + TitleY * 22 ) - 88 ) );
       if ( ( My + 40 + TitleY * 22 ) > ScrollStartValue ) and ( ( My + 40 + TitleY * 22 ) < ScrollEndValue - 24 ) then
       begin
-        pText.PlotTextCentered( txtMessage[ 21 ], Mx + Offset.X, Mx + 330 + Offset.X, My + 40 + TitleY * 22 + Offset.Y, 0 );
+        pText.PlotTextXYCentered( lpDDSBack, txtMessage[ 21 ], Mx + Offset.X, Mx + 330 + Offset.X, My + 40 + TitleY * 22 + Offset.Y, 0, ftLetter );
       end;
       i := i + 1;
       TitleY := i - 1;
@@ -359,7 +359,7 @@ begin
       MaxScroll := -( ScrollFactor - ( ( My + 40 + YAdj + TitleY * 22 ) - 88 ) );
       if ( ( My + 40 + YAdj + TitleY * 22 ) > ScrollStartValue ) and ( ( My + 40 + Yadj + TitleY * 22 ) < ScrollEndValue - 24 ) then
       begin
-        pText.PlotTextCentered( txtMessage[ 32 ], Mx + Offset.X, Mx + 330 + Offset.X, My + 40 + Yadj + TitleY * 22 + Offset.Y, 0 );
+        pText.PlotTextXYCentered( lpDDSBack, txtMessage[ 32 ], Mx + Offset.X, Mx + 330 + Offset.X, My + 40 + Yadj + TitleY * 22 + Offset.Y, 0, ftLetter );
       end;
       i := i + 1;
       TitleY := i - 1;
@@ -384,7 +384,7 @@ begin
       MaxScroll := -( ScrollFactor - ( ( My + 40 + YAdj + TitleY * 22 ) - 88 ) );
       if ( ( My + 40 + YAdj + TitleY * 22 ) > ScrollStartValue ) and ( ( My + 40 + Yadj + TitleY * 22 ) < ScrollEndValue - 24 ) then
       begin
-        pText.PlotTextCentered( txtMessage[ 34 ], Mx + Offset.X, Mx + 330 + Offset.X, My + 40 + Yadj + TitleY * 22 + Offset.Y, 0 );
+        pText.PlotTextXYCentered( lpDDSBack, txtMessage[ 34 ], Mx + Offset.X, Mx + 330 + Offset.X, My + 40 + Yadj + TitleY * 22 + Offset.Y, 0, ftLetter );
       end;
     end;
 

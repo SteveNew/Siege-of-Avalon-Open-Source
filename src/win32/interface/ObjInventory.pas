@@ -247,11 +247,8 @@ begin
     DXBorder := nil; //release DXBorder
 
   //Now put the names up
-    pText.PlotTextCentered( Character.name, 27 + Offset.X, 243 + Offset.X, 10 + Offset.Y, Alpha );
-    if OtherOb is TCharacter then
-      pText.PlotTextCentered( TCharacter( OtherOb ).name, 417 + Offset.X, 633 + Offset.X, 10 + Offset.Y, Alpha )
-    else
-      pText.PlotTextCentered( TContainer( OtherOb ).name, 417 + Offset.X, 633 + Offset.X, 10 + Offset.Y, Alpha );
+    pText.PlotTextXYCentered( lpDDSBack, Character.Name, 27 + Offset.X, 243 + Offset.X, 10 + Offset.Y, Alpha, ftLetter);
+    pText.PlotTextXYCentered( lpDDSBack, OtherOb.Name, 417 + Offset.X, 633 + Offset.X, 10 + Offset.Y, Alpha, ftLetter);
 
   //Create list
     ItemList := TList<pTempItems>.Create; //create the ItemList
@@ -977,11 +974,8 @@ begin
     end;
 
   //Now put the names up
-    pText.PlotTextCentered( Character.name, 27 + Offset.X, 243 + Offset.X, 10 + Offset.Y, Alpha );
-    if OtherOb is TCharacter then
-      pText.PlotTextCentered( TCharacter( OtherOb ).name, 417 + Offset.X, 633 + Offset.X, 10 + Offset.Y, Alpha )
-    else
-      pText.PlotTextCentered( TContainer( OtherOb ).name, 417 + Offset.X, 633 + Offset.X, 10 + Offset.Y, Alpha );
+    pText.PlotTextXYCentered( lpDDSBack, Character.Name, 27 + Offset.X, 243 + Offset.X, 10 + Offset.Y, Alpha, ftLetter);
+    pText.PlotTextXYCentered( lpDDSBack, OtherOb.Name, 417 + Offset.X, 633 + Offset.X, 10 + Offset.Y, Alpha, ftLetter);
 
     SoAOS_DX_BltFront;
   except

@@ -60,16 +60,16 @@ uses
   SoAOS.Intrface.Dialogs;
 
 type
-  TBoxEnum = (bxNone = -1, bxShirt = 12, bxPants = 13, bxHairColor = 14,
-    bxHairStyle = 15, bxBeard = 16, bxTraining = 17);
+  TBoxEnum = (bxNone = -1, bxShirt = 12, bxPants = 13, bxHairColor = 14, bxHairStyle = 15, bxBeard = 16, bxTraining = 17);
 
   TCreation = class(TDialog)
   strict private // actions
+    x1, x2, y, ox1, ox2, oy: Integer;
     procedure selectCharLeft;
     procedure selectCharRight;
     procedure TutorialYesNo;
-    procedure Gendernote; //SoA is not intended to be played as a woman
-    procedure ClearHairBeard; //Reset/update hairstyle and beard label
+    procedure Gendernote; // SoA is not intended to be played as a woman
+    procedure ClearHairBeard; // Reset/update hairstyle and beard label
     procedure selectShirt(const val: Integer);
     procedure selectPants(const val: Integer);
     procedure selectHairColor(const val: Integer);
@@ -127,7 +127,7 @@ type
     BoxOpen: TBoxEnum;
     LoopCounter, Spinner: Integer;
     DoAStart: boolean; // Days of Ahoul, Check if Race and Training is OK
-    txtMessage: array [0 .. 110] of string; //was 105
+    txtMessage: array [0 .. 110] of string; // was 105
     rLeftArrow, rRightArrow: TRect;
     rGenderNote: TRect;
 
@@ -147,24 +147,19 @@ type
     procedure ShowStats; // plots all the numbers on the screen
     // procedure DebugPlot(i: integer);
     procedure CharCreationDraw(Sender: TObject);
-    procedure FormMouseDown(Sender: TObject; Button: TMouseButton;
-      Shift: TShiftState; X, Y: Integer);
-    procedure FormMouseMove(Sender: TObject; Shift: TShiftState; X, Y: Integer);
+    procedure FormMouseDown(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X, y: Integer);
+    procedure FormMouseMove(Sender: TObject; Shift: TShiftState; X, y: Integer);
     function GetCancelRect: TRect;
     function GetContinueRect: TRect;
 
     procedure updateClothing;
     function GetPlayerININame: string;
-
+    function PlotTextCentered( const Sentence : string; X, X2, Y: integer; const UseSmallFnt: Boolean = False; Alpha: INteger = 240) : boolean;
   protected
-    procedure MouseDown(Sender: TObject; Button: TMouseButton;
-      Shift: TShiftState; X, Y, GridX, GridY: Integer); override;
-    procedure MouseMove(Sender: TObject; Shift: TShiftState;
-      X, Y, GridX, GridY: Integer); override;
-    procedure MouseUp(Sender: TObject; Button: TMouseButton; Shift: TShiftState;
-      X, Y, GridX, GridY: Integer); override;
-    procedure KeyDown(Sender: TObject; var key: Word;
-      Shift: TShiftState); override;
+    procedure MouseDown(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X, y, GridX, GridY: Integer); override;
+    procedure MouseMove(Sender: TObject; Shift: TShiftState; X, y, GridX, GridY: Integer); override;
+    procedure MouseUp(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X, y, GridX, GridY: Integer); override;
+    procedure KeyDown(Sender: TObject; var key: Word; Shift: TShiftState); override;
   private
     ixSelectedShirt: Integer; // current selected shirt color
     ixSelectedPants: Integer; // current selected pants color
@@ -212,6 +207,7 @@ implementation
 uses
   System.SysUtils,
   System.IOUtils,
+  System.StrUtils,
   DXEffects,
   DFX,
   SoAOS.Graphics.Types,
@@ -245,7 +241,7 @@ begin
     FOnDraw := CharCreationDraw;
 
     ExText.Open('CharCreation');
-    for i := 0 to 110 do //was 105
+    for i := 0 to 110 do // was 105
       txtMessage[i] := ExText.GetText('Message' + inttostr(i));
 
     ChosenTraining := -1; // initialize training to nothing
@@ -257,9 +253,7 @@ begin
     BoxOpen := bxNone;
     CaratTimer := TTimer.Create(nil);
     CaratTimer.onTimer := CaratTimerEvent;
-    // CaratTimer.TimerPriority:=tpNormal;
     CaratTimer.Interval := 100;
-    // CaratTimer.resolution := 1;
     LoopCounter := 0;
     CaratTimer.enabled := True;
     CaratPosition := 0;
@@ -292,9 +286,8 @@ begin
     else
       SelectedTraining := 0;
     Hardmode := false;
-//    if UseSmallFont then
-//      pText.LoadGoldFontGraphic;
-    pText.Fonts.LoadFontGraphic('CreateChar'); // load the statisctics font graphic in
+    pText.Fonts.LoadFontGraphic('CreateChar');
+    // load the statisctics font graphic in
     LoadNames;
     LoadBaseValues;
 
@@ -303,12 +296,10 @@ begin
     begin
       if ExtractFileName(playpox) = 'PlayerOgre.pox' then
         continue;
-      if FileExists(ResourcePath + 'Engine\LayeredImages\' + NakedName(playpox))
-      then
+      if FileExists(ResourcePath + 'Engine\LayeredImages\' + NakedName(playpox)) then
         Players.Add('players\' + ExtractFileName(playpox))
     end;
-    PlayerResourceIdx := Players.IndexOf(TCharacterResource(Character.Resource)
-      .Filename);
+    PlayerResourceIdx := Players.IndexOf(TCharacterResource(Character.Resource).Filename);
     if PlayerResourceIdx = -1 then // non-selected or selectable
       PlayerResourceIdx := 0; // first
 
@@ -316,43 +307,37 @@ begin
     begin
       rLeftArrow := Rect(100, 140, 115, 170);
       rRightArrow := Rect(260, 140, 275, 170);
-      rGendernote := Rect(566, 400, 611, 428);
+      rGenderNote := Rect(566, 400, 611, 428);
     end
     else
     begin
       rLeftArrow := Rect(-100, 140, -115, 170);
       rRightArrow := Rect(-260, 140, -275, 170);
-      rGendernote := Rect(-165, 188, -210, 216);
+      rGenderNote := Rect(-165, 188, -210, 216);
     end;
     // Load the Background Bitmap and plot it
     DXHardmode := SoAOS_DX_LoadBMP(InterfacePath + 'opyellow.bmp', cInvisColor);
     DXCircle := SoAOS_DX_LoadBMP(InterfacePath + 'chaRedOval.bmp', cInvisColor);
     DXBlack := SoAOS_DX_LoadBMP(InterfacePath + 'chaBlack.bmp', cInvisColor);
-    DXBox := SoAOS_DX_LoadBMP(InterfaceLanguagePath + 'chaChooseBox.bmp',
-      cInvisColor);
+    DXBox := SoAOS_DX_LoadBMP(InterfaceLanguagePath + 'chaChooseBox.bmp', cInvisColor);
 
-    DXContinue := SoAOS_DX_LoadBMP(InterfaceLanguagePath + 'chaContinue.bmp',
-      cInvisColor);
-    DXCancel := SoAOS_DX_LoadBMP(InterfaceLanguagePath + 'chaCancel.bmp',
-      cInvisColor, width, height);
+    DXContinue := SoAOS_DX_LoadBMP(InterfaceLanguagePath + 'chaContinue.bmp', cInvisColor);
+    DXCancel := SoAOS_DX_LoadBMP(InterfaceLanguagePath + 'chaCancel.bmp', cInvisColor, width, height);
 
-    DXBack := SoAOS_DX_LoadBMP(InterfaceLanguagePath + 'CharCreate.bmp',
-      cInvisColor, DlgWidth, DlgHeight);
+    DXBack := SoAOS_DX_LoadBMP(InterfaceLanguagePath + 'CharCreate.bmp', cInvisColor, DlgWidth, DlgHeight);
     if ScreenMetrics.borderFile <> '' then
-    // Neu hinpinseln, da z.B. DoA ein grünes Menü hat
-      lpDDSBack.BltFast(0, 0, TfrmMain(frmMain).FillBorder, nil,
-        DDBLTFAST_SRCCOLORKEY or DDBLTFAST_WAIT);
-    if (Players.Count > 1) and (modselection = TModSelection.SoA) then // zur Sicherheit
+      // Neu hinpinseln, da z.B. DoA ein grünes Menü hat
+      lpDDSBack.BltFast(0, 0, TfrmMain(frmMain).FillBorder, nil, DDBLTFAST_SRCCOLORKEY or DDBLTFAST_WAIT);
+    if (Players.Count > 1) and (modselection = TModSelection.SoA) then
+    // zur Sicherheit
     begin
       pr := Rect(0, 0, 15, 30);
       DXLeftArrow := SoAOS_DX_LoadBMPResource('chaLeftArrow', cInvisColor);
-      DXBack.BltFast(rLeftArrow.Left, rLeftArrow.Top, DXLeftArrow, @pr,
-        DDBLTFAST_WAIT);
+      DXBack.BltFast(rLeftArrow.Left, rLeftArrow.Top, DXLeftArrow, @pr, DDBLTFAST_WAIT);
       DXLeftArrow := nil;
 
       DXRightArrow := SoAOS_DX_LoadBMPResource('chaRightArrow', cInvisColor);
-      DXBack.BltFast(rRightArrow.Left, rRightArrow.Top, DXRightArrow, @pr,
-        DDBLTFAST_WAIT);
+      DXBack.BltFast(rRightArrow.Left, rRightArrow.Top, DXRightArrow, @pr, DDBLTFAST_WAIT);
       DXRightArrow := nil;
 
       rLeftArrow.Offset(Offset);
@@ -361,18 +346,22 @@ begin
     end;
 
     pr := Rect(0, 0, DlgWidth, DlgHeight);
-    lpDDSBack.BltFast(Offset.X, Offset.Y, DXBack, @pr, DDBLTFAST_SRCCOLORKEY or
-      DDBLTFAST_WAIT);
+    lpDDSBack.BltFast(Offset.X, Offset.y, DXBack, @pr, DDBLTFAST_SRCCOLORKEY or DDBLTFAST_WAIT);
     // Hardmode
     prHarti := Rect(0, 0, 12, 12);
-    lpDDSBack.BltFast(Offset.X + 450, Offset.Y + 35, DXHardmode, @prHarti,
-      DDBLTFAST_WAIT);
+    lpDDSBack.BltFast(Offset.X + 450, Offset.y + 35, DXHardmode, @prHarti, DDBLTFAST_WAIT);
     CreateCollisionRects; // Must be called after "Offset" is ready
+    // setup readablility "constants"
+    x1 := 279;
+    x2 := 279 + 123;
+    ox1 := x1 + Offset.X;
+    ox2 := x2 + Offset.X;
+    y := 239;
+    oy := Offset.y;
 
     ShowStats;
 
-    Player.Resource := LoadArtResource(ChangeFileExt(Players[PlayerResourceIdx],
-      '.gif'));
+    Player.Resource := LoadArtResource(ChangeFileExt(Players[PlayerResourceIdx], '.gif'));
     Player.LoadEquipment(True);
 
     updateClothing;
@@ -392,9 +381,6 @@ const
 begin
   Log.DebugLog(FailName);
   try
-
-//    pText.UnLoadGoldFontGraphic;
-
     ExText.close;
     DXHardmode := nil;
     DXBox := nil;
@@ -421,24 +407,18 @@ begin
 end;
 
 procedure TCreation.selectBeard(const val: Integer);
+var
+  txt: string;
 begin
   ixSelectedBeard := val - 16;
-  DrawAlpha(DXBack, Rect(113, 406, 261, 434), Rect(0, 0, 25, 25), DXBlack,
-    false, 255);
-  if not female then
-  begin
+  DrawAlpha(DXBack, Rect(113, 406, 261, 434), Rect(0, 0, 25, 25), DXBlack, false, 255);
+
   if val = 16 then
-    pText.PlotTextCentered(DXBack, txtMessage[3], 113, 261, 409, 250)
+    txt := IfThen(Female, txtMessage[107], txtMessage[3])
   else
-    pText.PlotTextCentered(DXBack, txtMessage[4], 113, 261, 409, 250);
-  end
-  else
-  begin
-  if val = 16 then
-    pText.PlotTextCentered(DXBack, txtMessage[107], 113, 261, 409, 250)
-  else
-    pText.PlotTextCentered(DXBack, txtMessage[108], 113, 261, 409, 250);
-  end;
+    txt := IfThen(Female, txtMessage[108], txtMessage[4]);
+
+  pText.PlotTextXYCentered(DXBack, txt, 113, 261, 409, 250, ftLetter);
 end;
 
 procedure TCreation.selectCharLeft;
@@ -447,14 +427,14 @@ begin
     PlayerResourceIdx := Players.Count - 1
   else
     Dec(PlayerResourceIdx);
-  Player.Resource := LoadArtResource(ChangeFileExt(Players[PlayerResourceIdx],
-    '.gif'));
+  Player.Resource := LoadArtResource(ChangeFileExt(Players[PlayerResourceIdx], '.gif'));
   Player.LoadEquipment(True);
   updateClothing;
-  if female then
-  Gendernote;
+  if Female then
+    Gendernote;
   ClearHairBeard;
-  CreateCollisionRects;//reinit for beard or braided/normal hairstyle, but after updateclothing
+  CreateCollisionRects;
+  // reinit for beard or braided/normal hairstyle, but after updateclothing
 end;
 
 procedure TCreation.selectCharRight;
@@ -463,33 +443,30 @@ begin
     PlayerResourceIdx := 0
   else
     Inc(PlayerResourceIdx);
-  Player.Resource := LoadArtResource(ChangeFileExt(Players[PlayerResourceIdx],
-    '.gif'));
+  Player.Resource := LoadArtResource(ChangeFileExt(Players[PlayerResourceIdx], '.gif'));
   Player.LoadEquipment(True);
   updateClothing;
-  if female then
-  Gendernote;
+  if Female then
+    Gendernote;
   ClearHairBeard;
-  CreateCollisionRects;//reinit for beard or braided/normal hairstyle, but after updateclothing
+  CreateCollisionRects;
+  // reinit for beard or braided/normal hairstyle, but after updateclothing
 end;
 
 procedure TCreation.Gendernote;
 var
   pr: TRect;
-  width1, height1: integer;
+  width1, height1: Integer;
 const
   FailName: string = 'TCreation.Gendernote ';
 begin
   Log.DebugLog(FailName);
   try
-    Genderboxopen := true;
-    DXGenderNote := SoAOS_DX_LoadBMP(InterfacePath + 'Genderbox.bmp',
-      cInvisColor, width1, height1);
+    Genderboxopen := True;
+    DXGenderNote := SoAOS_DX_LoadBMP(InterfacePath + 'Genderbox.bmp', cInvisColor, width1, height1);
     pr := Rect(0, 0, width1, height1);
-    lpDDSBack.BltFast(528 + Offset.X, 255 + Offset.Y, DXGenderNote, @pr,
-    DDBLTFAST_SRCCOLORKEY or DDBLTFAST_WAIT);
-    ptext.PlotTextBlock(txtMessage[109], 528 + Offset.X + 12, 528 + Offset.X + 110,
-    255 + Offset.Y + 13, 250);
+    lpDDSBack.BltFast(528 + Offset.X, 255 + Offset.y, DXGenderNote, @pr, DDBLTFAST_SRCCOLORKEY or DDBLTFAST_WAIT);
+    pText.PlotTextBlock(txtMessage[109], 528 + Offset.X + 12, 528 + Offset.X + 110, 255 + Offset.y + 13, 250);
     SoAOS_DX_BltFront;
   except
     on E: Exception do
@@ -500,22 +477,19 @@ end;
 procedure TCreation.TutorialYesNo;
 var
   pr: TRect;
-  width1, height1: integer;
+  width1, height1: Integer;
 const
   FailName: string = 'TCreation.TutorialYesNo ';
 begin
   Log.DebugLog(FailName);
   try
-    Tutorialboxopen := true;
-    DXTutorialBox := SoAOS_DX_LoadBMP(InterfaceLanguagePath + 'ldChoosebox.bmp',
-      cInvisColor, width1, height1);
+    Tutorialboxopen := True;
+    DXTutorialBox := SoAOS_DX_LoadBMP(InterfaceLanguagePath + 'ldChoosebox.bmp', cInvisColor, width1, height1);
     pr := Rect(0, 0, width1, height1);
-    lpDDSBack.BltFast(screenmetrics.ScreenWidth div 2 - width1 div 2,
-    screenmetrics.ScreenHeight div 2 - height1 div 2, DXTutorialBox, @pr,
-    DDBLTFAST_SRCCOLORKEY or DDBLTFAST_WAIT);
-    ptext.PlotTextBlock(txtMessage[110], screenmetrics.ScreenWidth div 2 -
-    width1 div 2 + 22, screenmetrics.ScreenWidth div 2 - width1 div 2 + 255,
-    screenmetrics.ScreenHeight div 2 - height1 div 2 + 20, 250);
+    lpDDSBack.BltFast(ScreenMetrics.ScreenWidth div 2 - width1 div 2, ScreenMetrics.ScreenHeight div 2 - height1 div 2, DXTutorialBox, @pr,
+      DDBLTFAST_SRCCOLORKEY or DDBLTFAST_WAIT);
+    pText.PlotTextBlock(txtMessage[110], ScreenMetrics.ScreenWidth div 2 - width1 div 2 + 22, ScreenMetrics.ScreenWidth div 2 - width1 div 2
+      + 255, ScreenMetrics.ScreenHeight div 2 - height1 div 2 + 20, 250);
     SoAOS_DX_BltFront;
   except
     on E: Exception do
@@ -531,43 +505,38 @@ const
 begin
   Log.DebugLog(FailName);
   try
-    if female then
-    begin //Beard label
-      DrawAlpha(DXBack, Rect(113, 406, 261, 434), Rect(0, 0, 25, 25), DXBlack,
-      false, 255);
+    if Female then
+    begin // Beard label
+      DrawAlpha(DXBack, Rect(113, 406, 261, 434), Rect(0, 0, 25, 25), DXBlack, false, 255);
       if ixSelectedBeard = 0 then
-      pText.PlotTextCentered(DXBack, txtMessage[107], 113, 261, 409, 250)
+        pText.PlotTextXYCentered(DXBack, txtMessage[107], 113, 261, 409, 250, ftLetter)
       else
-      pText.PlotTextCentered(DXBack, txtMessage[108], 113, 261, 409, 250);
-      if ixSelectedHairStyle = 3 then//male was bald, female now medium hair
-      begin //Hairstyle label
-        DrawAlpha(DXBack, Rect(113, 366, 261, 386), Rect(0, 0, 25, 25), DXBlack,
-        false, 255);
-        pText.PlotTextCentered(DXBack, txtMessage[106] + txtMessage[2], 113, 261, 366, 250);
+        pText.PlotTextXYCentered(DXBack, txtMessage[108], 113, 261, 409, 250, ftLetter);
+      if ixSelectedHairStyle = 3 then // male was bald, female now medium hair
+      begin // Hairstyle label
+        DrawAlpha(DXBack, Rect(113, 366, 261, 386), Rect(0, 0, 25, 25), DXBlack, false, 255);
+        pText.PlotTextXYCentered(DXBack, txtMessage[106] + txtMessage[2], 113, 261, 366, 250, ftLetter);
       end;
-      pr := Rect(114, 366, 261, 434); //Update screen
-      lpDDSBack.BltFast(pr.Left + Offset.X, pr.Top + Offset.Y, DXBack, @pr,
-      DDBLTFAST_WAIT);
+      pr := Rect(114, 366, 261, 434); // Update screen
+      lpDDSBack.BltFast(pr.Left + Offset.X, pr.Top + Offset.y, DXBack, @pr, DDBLTFAST_WAIT);
     end
-    else //male
+    else // male
     begin
-      DrawAlpha(DXBack, Rect(113, 406, 261, 434), Rect(0, 0, 25, 25), DXBlack,
-      false, 255);
+      DrawAlpha(DXBack, Rect(113, 406, 261, 434), Rect(0, 0, 25, 25), DXBlack, false, 255);
       if ixSelectedBeard = 0 then
-      pText.PlotTextCentered(DXBack, txtMessage[3], 113, 261, 409, 250)
+        pText.PlotTextXYCentered(DXBack, txtMessage[3], 113, 261, 409, 250, ftLetter)
       else
-      pText.PlotTextCentered(DXBack, txtMessage[4], 113, 261, 409, 250);
-      if ixSelectedHairStyle = 3 then//female had medium hair, male is now bald
-      begin //Hairstyle label
-        DrawAlpha(DXBack, Rect(113, 366, 261, 386), Rect(0, 0, 25, 25), DXBlack,
-        false, 255);
-        pText.PlotTextCentered(DXBack, txtMessage[23], 113, 261, 366, 250);
+        pText.PlotTextXYCentered(DXBack, txtMessage[4], 113, 261, 409, 250, ftLetter);
+      if ixSelectedHairStyle = 3 then
+      // female had medium hair, male is now bald
+      begin // Hairstyle label
+        DrawAlpha(DXBack, Rect(113, 366, 261, 386), Rect(0, 0, 25, 25), DXBlack, false, 255);
+        pText.PlotTextXYCentered(DXBack, txtMessage[23], 113, 261, 366, 250, ftLetter);
       end;
-      pr := Rect(114, 366, 261, 434); //Update screen
-      lpDDSBack.BltFast(pr.Left + Offset.X, pr.Top + Offset.Y, DXBack, @pr,
-      DDBLTFAST_WAIT);
+      pr := Rect(114, 366, 261, 434); // Update screen
+      lpDDSBack.BltFast(pr.Left + Offset.X, pr.Top + Offset.y, DXBack, @pr, DDBLTFAST_WAIT);
     end;
-  SoAOS_DX_BltFront;
+    SoAOS_DX_BltFront;
   except
     on E: Exception do
       Log.Log(FailName, E.Message, []);
@@ -577,122 +546,102 @@ end;
 procedure TCreation.selectHairColor(const val: Integer);
 begin
   ixSelectedHair := val - 8;
-  DrawAlpha(DXBack, Rect(113, 321, 261, 348), Rect(0, 0, 25, 25), DXBlack,
-    false, 255);
-  pText.PlotTextCentered(DXBack, SelectRect[val].Text + txtMessage[2], 113,
-    261, 324, 250)
+  DrawAlpha(DXBack, Rect(113, 321, 261, 348), Rect(0, 0, 25, 25), DXBlack, false, 255);
+  pText.PlotTextXYCentered(DXBack, SelectRect[val].Text + txtMessage[2], 113, 261, 324, 250, ftLetter)
 end;
 
 procedure TCreation.selectHairStyle(const val: Integer);
 begin
   ixSelectedHairStyle := val - 12;
-  DrawAlpha(DXBack, Rect(113, 363, 261, 391), Rect(0, 0, 25, 25), DXBlack,
-    false, 255);
+  DrawAlpha(DXBack, Rect(113, 363, 261, 391), Rect(0, 0, 25, 25), DXBlack, false, 255);
   if val < 14 then
-    pText.PlotTextCentered(DXBack, SelectRect[val].Text + txtMessage[2], 113,
-      261, 366, 250)
+    pText.PlotTextXYCentered(DXBack, SelectRect[val].Text + txtMessage[2], 113, 261, 366, 250, ftLetter)
   else if val = 14 then
-  pText.PlotTextCentered(DXBack, SelectRect[val].Text, 113, 261, 366, 250)
+    pText.PlotTextXYCentered(DXBack, SelectRect[val].Text, 113, 261, 366, 250, ftLetter)
   else
   begin
-  if not female then
-    pText.PlotTextCentered(DXBack, SelectRect[val].Text, 113, 261, 366, 250)
-  else //Medium hair
-    pText.PlotTextCentered(DXBack, txtMessage[106] + txtMessage[2], 113, 261, 366, 250);
+    if not Female then
+      pText.PlotTextXYCentered(DXBack, SelectRect[val].Text, 113, 261, 366, 250, ftLetter)
+    else // Medium hair
+      pText.PlotTextXYCentered(DXBack, txtMessage[106] + txtMessage[2], 113, 261, 366, 250, ftLetter);
   end;
 end;
 
 procedure TCreation.selectPants(const val: Integer);
 begin
   ixSelectedPants := val - 4;
-  DrawAlpha(DXBack, Rect(113, 278, 261, 306), Rect(0, 0, 25, 25), DXBlack,
-    false, 255);
-  pText.PlotTextCentered(DXBack, SelectRect[val].Text + txtMessage[1], 113,
-    261, 281, 250);
+  DrawAlpha(DXBack, Rect(113, 278, 261, 306), Rect(0, 0, 25, 25), DXBlack, false, 255);
+  pText.PlotTextXYCentered(DXBack, SelectRect[val].Text + txtMessage[1], 113, 261, 281, 250, ftLetter);
 end;
 
 procedure TCreation.selectShirt(const val: Integer);
 begin
   ixSelectedShirt := val;
-  DrawAlpha(DXBack, Rect(113, 236, 261, 264), Rect(0, 0, 25, 25), DXBlack,
-    false, 255);
-  pText.PlotTextCentered(DXBack, SelectRect[val].Text + txtMessage[0], 113,
-    261, 239, 250)
+  DrawAlpha(DXBack, Rect(113, 236, 261, 264), Rect(0, 0, 25, 25), DXBlack, false, 255);
+  pText.PlotTextXYCentered(DXBack, SelectRect[val].Text + txtMessage[0], 113, 261, y, 250, ftLetter)
 end;
 
 procedure TCreation.selectBase(const val: Integer); // Doa
 begin
   if val = 1 then
-  Player.Resource := LoadArtResource(ChangeFileExt('players\playerahoul.pox', '.gif'))
+    Player.Resource := LoadArtResource(ChangeFileExt('players\playerahoul.pox', '.gif'))
   else
-  Player.Resource := LoadArtResource(ChangeFileExt('players\player.pox', '.gif'));
+    Player.Resource := LoadArtResource(ChangeFileExt('players\player.pox', '.gif'));
   ixSelectedBase := val;
   AhoulRace := val + 1; // AhoulRace but 1-3 and not 0-2
   DoAStart := false; // New Training to choose
   if ixselectedDoAHair = 0 then // Safety, clear Box
   begin
     ixselectedDoAHair := 3; // Safety reason
-    DrawAlpha(DXBack, Rect(113, 363, 261, 391), Rect(0, 0, 25, 25), DXBlack,
-      false, 255);
-    pText.PlotTextCentered(DXBack, SelectRect[15].Text, 113, 261, 366, 250);
+    DrawAlpha(DXBack, Rect(113, 363, 261, 391), Rect(0, 0, 25, 25), DXBlack, false, 255);
+    pText.PlotTextXYCentered(DXBack, SelectRect[15].Text, 113, 261, 366, 250, ftLetter);
     // no [ val ], instead value for Bald = 15, SelectRect... matches luckily
   end;
   // Clear selected Training
-  DrawAlpha(DXBack, Rect(300, 132, 448, 160), Rect(0, 0, 25, 25), DXBlack,
-    false, 255);
-  DrawAlpha(DXBack, Rect(113, 236, 261, 264), Rect(0, 0, 25, 25), DXBlack,
-    false, 255);
-  pText.PlotTextCentered(DXBack, txtMessage[val + 16], 113, 261, 239, 250);
+  DrawAlpha(DXBack, Rect(300, 132, 448, 160), Rect(0, 0, 25, 25), DXBlack, false, 255);
+  DrawAlpha(DXBack, Rect(113, 236, 261, 264), Rect(0, 0, 25, 25), DXBlack, false, 255);
+  pText.PlotTextXYCentered(DXBack, txtMessage[val + 16], 113, 261, y, 250, ftLetter);
 end;
 
 procedure TCreation.selectTattoo(const val: Integer);
 begin
   ixSelectedTattoo := val - 8;
-  DrawAlpha(DXBack, Rect(113, 321, 261, 348), Rect(0, 0, 25, 25), DXBlack,
-    false, 255);
+  DrawAlpha(DXBack, Rect(113, 321, 261, 348), Rect(0, 0, 25, 25), DXBlack, false, 255);
   if ixSelectedTattoo = 0 then
-    pText.PlotTextCentered(DXBack, txtMessage[15] + txtMessage[0], 113, 261,
-      324, 250)
+    pText.PlotTextXYCentered(DXBack, txtMessage[15] + txtMessage[0], 113, 261, 324, 250, ftLetter)
   else if ixSelectedTattoo = 1 then
-    pText.PlotTextCentered(DXBack, txtMessage[14] + txtMessage[0], 113, 261,
-      324, 250)
+    pText.PlotTextXYCentered(DXBack, txtMessage[14] + txtMessage[0], 113, 261, 324, 250, ftLetter)
   else
   begin
     if language = 'german' then
-      pText.PlotTextCentered(DXBack, 'Kein' + txtMessage[0], 113,
-        261, 324, 250)
+      pText.PlotTextXYCentered(DXBack, 'Kein' + txtMessage[0], 113, 261, 324, 250, ftLetter)
     else
-      pText.PlotTextCentered(DXBack, 'No' + txtMessage[0], 113, 261, 324, 250);
+      pText.PlotTextXYCentered(DXBack, 'No' + txtMessage[0], 113, 261, 324, 250, ftLetter);
   end;
-  // pText.PlotTextCentered2( DXBack, SelectRect[ val ].Text + txtMessage[ 0 ], 113, 261, 324, 250 );
 end;
 
 procedure TCreation.selectDoAHair(const val: Integer);
 begin
   ixselectedDoAHair := val - 12;
-  DrawAlpha(DXBack, Rect(113, 363, 261, 391), Rect(0, 0, 25, 25), DXBlack,
-    false, 255);
+  DrawAlpha(DXBack, Rect(113, 363, 261, 391), Rect(0, 0, 25, 25), DXBlack, false, 255);
   if ixselectedDoAHair = 0 then // war =12
   begin
     if AhoulRace > 1 then // No Shaman, Orkhead possible
     begin
-      pText.PlotTextCentered(DXBack, txtMessage[81], 113, 261, 366, 250);
+      pText.PlotTextXYCentered(DXBack, txtMessage[81], 113, 261, 366, 250, ftLetter);
     end
     else // Long Shaman hair possible
     begin
-      pText.PlotTextCentered(DXBack, SelectRect[val].Text, 113, 261, 366, 250);
+      pText.PlotTextXYCentered(DXBack, SelectRect[val].Text, 113, 261, 366, 250, ftLetter);
     end;
   end
   else if ixselectedDoAHair = 1 then // war =13
-    pText.PlotTextCentered(DXBack, SelectRect[val].Text + txtMessage[3], 113,
-      261, 366, 250)
+    pText.PlotTextXYCentered(DXBack, SelectRect[val].Text + txtMessage[3], 113, 261, 366, 250, ftLetter)
   else if ixselectedDoAHair > 1 then // war >13
-    pText.PlotTextCentered(DXBack, SelectRect[val].Text, 113, 261, 366, 250);
+    pText.PlotTextXYCentered(DXBack, SelectRect[val].Text, 113, 261, 366, 250, ftLetter);
 end;
-// TCreation.Release
 
-procedure TCreation.MouseDown(Sender: TObject; Button: TMouseButton;
-  Shift: TShiftState; X, Y, GridX, GridY: Integer);
+procedure TCreation.MouseDown(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X, y, GridX, GridY: Integer);
 var
   i: Integer;
   bx: TBoxEnum;
@@ -705,372 +654,356 @@ const
 begin
   Log.DebugLog(FailName);
   try
-  if GenderBoxopen then
+    if Genderboxopen then
     begin
-    if rGenderNote.Contains(point(X, Y)) then
+      if rGenderNote.Contains(point(X, y)) then
       begin
-        //redraw the screen
-        paint;
-        GenderBoxopen := false; //reset
+        // redraw the screen
+        Paint;
+        Genderboxopen := false; // reset
       end;
     end
-  else if tutorialboxopen then
+    else if Tutorialboxopen then
     begin
-      if PtInRect(ApplyOffset(Rect(437, 320, 489, 352)), point(X, Y)) then
+      if PtInRect(ApplyOffset(Rect(437, 320, 489, 352)), point(X, y)) then
       begin
         Tutorial := false;
         Character.Name := CharacterName;
-        Tutorialboxopen := false; //reset
+        Tutorialboxopen := false; // reset
         close;
       end
-      else if PtInRect(ApplyOffset(Rect(303, 320, 355, 352)), point(X, Y)) then
+      else if PtInRect(ApplyOffset(Rect(303, 320, 355, 352)), point(X, y)) then
       begin
-        Tutorial := true;
+        Tutorial := True;
         Character.Name := CharacterName;
-        Tutorialboxopen := false; //reset
+        Tutorialboxopen := false; // reset
         close;
-      end;
-    end
-  else
-  begin
-    BoxClosed := false;
-    // Hardmode
-    prHarti := Rect(0, 0, 12, 12);
-    prUnHarti1 := Rect(450, 35, 462, 47);
-    prUnHarti2 := Rect(410, 35, 422, 47);
-    if ptInRect(ApplyOffset(Rect(410, 35, 422, 47)), point(X, Y)) then
-    begin
-      Hardmode := True;
-      DrawAlpha(lpDDSBack, ApplyOffset(Rect(410, 35, 422, 47)),
-        Rect(0, 0, 12, 12), DXHardmode, True, 255);
-      lpDDSBack.BltFast(450 + Offset.X, 35 + Offset.Y, DXBack, @prUnHarti1,
-        DDBLTFAST_WAIT);
-    end;
-    if ptInRect(ApplyOffset(Rect(450, 35, 462, 47)), point(X, Y)) then
-    begin
-      Hardmode := false;
-      DrawAlpha(lpDDSBack, ApplyOffset(Rect(450, 35, 462, 47)),
-        Rect(0, 0, 12, 12), DXHardmode, false, 255);
-      lpDDSBack.BltFast(410 + Offset.X, 35 + Offset.Y, DXBack, @prUnHarti2,
-        DDBLTFAST_WAIT);
-    end;
-    // Ende Hardmode
-    if rLeftArrow.Contains(point(X, Y)) then
-      selectCharLeft
-    else if rRightArrow.Contains(point(X, Y)) then
-      selectCharRight
-    else if BoxOpen = bxNone then
-    begin
-      for i := 0 to 15 do
-        if ArrowRect[i].Contains(point(X, Y)) then
-        begin
-          if adjustStat(i) then
-            Paint;
-          break;
-        end;
-    end;
-
-    r1 := ApplyOffset(Rect(465, 59, 465 + 123, 59 + 181));
-    r2 := ApplyOffset(Rect(279, 239 + (ord(BoxOpen) - 12) * 42, 279 + 123,
-      239 + (ord(BoxOpen) - 12) * 42 + 181));
-    // check for click in box
-    if (r1.Contains(point(X, Y)) or r2.Contains(point(X, Y))) and
-      (BoxOpen > bxNone) then
-    begin // check to see if box is open
-      i := 0;
-      while i < 21 do
-      begin
-        if SelectRect[i].Contains(point(X, Y)) then
-        begin // if over an item
-          // set the selected for each type based on which text the user hit
-          if i < 4 then
-            if modselection <> TModSelection.DoA then
-            begin
-              selectShirt(i);
-            end
-            else // DoA - Race/Base
-            begin
-              if i < 3 then //no 3, because only 3 races
-              begin
-                selectBase(i);
-              end;
-            end
-          else if i < 8 then
-            if modselection <> TModSelection.DoA then
-            begin
-              selectPants(i);
-            end
-            else // DoA - only 2 pants
-            begin
-              if i < 6 then
-                selectPants(i);
-            end
-          else if i < 12 then
-            if modselection <> TModSelection.DoA then
-            begin
-              selectHairColor(i);
-            end
-            else // DoA - Tattoo
-            begin
-              if i < 11 then // no 11, or rather no fourth tattoo
-                selectTattoo(i);
-            end
-          else if i < 16 then
-            if modselection <> TModSelection.DoA then
-            begin
-              selectHairStyle(i);
-            end
-            else // DoA - Hair
-            begin
-              selectDoAHair(i);
-            end
-          else if i < 18 then
-            if modselection <> TModSelection.DoA then
-            begin
-              selectBeard(i);
-            end
-            else // DoA - No special Beard selectable
-            begin
-              Exit
-            end
-          else
-          begin
-            if ChosenTraining = 0 then
-            begin
-              if modselection = TModSelection.AoA then
-                Character.Strength := Character.BaseStrength - 4
-              else
-                Character.Strength := Character.BaseStrength - 5;
-              Character.Coordination := Character.BaseCoordination - 2;
-              if modselection = TModSelection.AoA then
-                Character.Constitution := Character.BaseConstitution - 2
-              else
-                Character.Constitution := Character.BaseConstitution - 3;
-              Character.Perception := Character.BasePerception + 3;
-              if modselection = TModSelection.AoA then
-                Character.Charm := Character.BaseCharm + 1
-              else
-                Character.Charm := Character.BaseCharm + 3;
-              Character.Mysticism := Character.BaseMysticism + 3;
-              Character.Combat := Character.BaseCombat - 10;
-              Character.Stealth := Character.BaseStealth - 0;
-              if modselection = TModSelection.DoA then
-                DoAStart := True;
-            end
-            else if ChosenTraining = 1 then
-            begin
-              Character.Strength := Character.BaseStrength - 2;
-              Character.Coordination := Character.BaseCoordination - 5;
-              Character.Constitution := Character.BaseConstitution - 0;
-              Character.Perception := Character.BasePerception - 0;
-              Character.Charm := Character.BaseCharm + 3;
-              Character.Mysticism := Character.BaseMysticism + 3;
-              Character.Combat := Character.BaseCombat - 0;
-              Character.Stealth := Character.BaseStealth - 10;
-              if modselection = TModSelection.DoA then
-                DoAStart := True;
-            end
-            else if ChosenTraining = 2 then
-            begin
-              Character.Strength := Character.BaseStrength - 0;
-              Character.Coordination := Character.BaseCoordination - 3;
-              Character.Constitution := Character.BaseConstitution - 2;
-              Character.Perception := Character.BasePerception - 2;
-              Character.Charm := Character.BaseCharm + 3;
-              Character.Mysticism := Character.BaseMysticism - 10;
-              Character.Combat := Character.BaseCombat - 0;
-              Character.Stealth := Character.BaseStealth + 3;
-              if modselection = TModSelection.DoA then
-                DoAStart := True;
-            end;
-            SelectedTraining := i - 18;
-            ChosenTraining := i - 18;
-            // why do this twice? Because SelectedTraining must be initalized for drawing the select box,
-            // yet we must know if the picked a class or not- we dont let them leave without selecting a class.
-            // This is a change, so a bit kludgy, but it's the 11th hour here at Digital Tome 6/11/00
-            r := ApplyOffset(Rect(300, 132, 448, 160));
-            DrawAlpha(lpDDSBack, r, Rect(0, 0, 25, 25), DXBlack, false, 255);
-            if i = 18 then
-            begin
-              pText.PlotTextCentered(txtMessage[5], 300 + Offset.X, 448 + Offset.X, 135 + Offset.Y, 250, UseSmallFont);
-              if modselection = TModSelection.AoA then
-                Character.Strength := Character.BaseStrength + 4
-              else
-                Character.Strength := Character.BaseStrength + 5;
-              Character.Coordination := Character.BaseCoordination + 2;
-              if modselection = TModSelection.AoA then
-                Character.Constitution := Character.BaseConstitution + 2
-              else
-                Character.Constitution := Character.BaseConstitution + 3;
-              Character.Perception := Character.BasePerception - 3;
-              if modselection = TModSelection.AoA then
-                Character.Charm := Character.BaseCharm - 1
-              else
-                Character.Charm := Character.BaseCharm - 3;
-              Character.Mysticism := Character.BaseMysticism - 3;
-              Character.Combat := Character.BaseCombat + 10;
-              Character.Stealth := Character.BaseStealth + 0;
-              if modselection = TModSelection.DoA then
-                DoAStart := True;
-            end
-            else if i = 19 then
-            begin
-              pText.PlotTextCentered(txtMessage[6], 300 + Offset.X, 448 + Offset.X, 135 + Offset.Y, 250, UseSmallFont);
-              Character.Strength := Character.BaseStrength + 2;
-              Character.Coordination := Character.BaseCoordination + 5;
-              Character.Constitution := Character.BaseConstitution + 0;
-              Character.Perception := Character.BasePerception + 0;
-              Character.Charm := Character.BaseCharm - 3;
-              Character.Mysticism := Character.BaseMysticism - 3;
-              Character.Combat := Character.BaseCombat + 0;
-              Character.Stealth := Character.BaseStealth + 10;
-              if modselection = TModSelection.DoA then
-                DoAStart := True;
-            end
-            else if i = 20 then
-            begin
-              pText.PlotTextCentered(txtMessage[7], 300 + Offset.X, 448 + Offset.X, 135 + Offset.Y, 250, UseSmallFont);
-              Character.Strength := Character.BaseStrength + 0;
-              Character.Coordination := Character.BaseCoordination + 3;
-              Character.Constitution := Character.BaseConstitution + 2;
-              Character.Perception := Character.BasePerception + 2;
-              Character.Charm := Character.BaseCharm - 3;
-              Character.Mysticism := Character.BaseMysticism + 10;
-              Character.Combat := Character.BaseCombat + 0;
-              Character.Stealth := Character.BaseStealth - 3;
-              if modselection = TModSelection.DoA then
-                DoAStart := True;
-            end;
-            Paint;
-          end;
-          i := 900; // drop out of the loop
-        end;
-        i := i + 1;
-      end; // wend
-
-      r1 := ApplyOffset(Rect(465, 59, 465 + 123, 59 + 181));
-      r2 := ApplyOffset(Rect(279, 239 + (ord(BoxOpen) - 12) * 42, 279 + 123,
-        239 + (ord(BoxOpen) - 12) * 42 + 181));
-      if i = 901 then
-      begin // reopen and refresh new selection
-        OpenBox(BoxOpen);
-        DrawNewPlayer;
-      end // check to see if the hit the ok button   //CHECK
-      else if (r1.Contains(point(X, Y)) and (Y > 59 + 141)) or
-        (r2.Contains(point(X, Y)) and (Y > 239 + (ord(BoxOpen) - 12) * 42 + 141))
-      then
-      begin
-        // clean up any dimmed text
-        pr := Rect(114, 237, 261, 439);
-        lpDDSBack.BltFast(pr.Left + Offset.X, pr.Top + Offset.Y, DXBack, @pr,
-          DDBLTFAST_WAIT);
-        // clean up after old boxes
-        pr := Rect(279, 239, 402, 588);
-        lpDDSBack.BltFast(pr.Left + Offset.X, pr.Top + Offset.Y, DXBack, @pr,
-          DDBLTFAST_WAIT);
-        pr := Rect(465, 59, 465 + 123, 59 + 181);
-        lpDDSBack.BltFast(pr.Left + Offset.X, pr.Top + Offset.Y, DXBack, @pr,
-          DDBLTFAST_WAIT);
-        BoxOpen := bxNone;
-        BoxClosed := True;
       end;
     end
     else
-    begin // see if we're opening the box
-      BoxWasOpened := false;
-      for bx := bxShirt to bxTraining do
-      begin
-        if InfoRect[ord(bx)].Contains(point(X, Y)) then
-        begin
-          OpenBox(bx);
-          BoxWasOpened := True;
-        end;
-      end;
-      if (BoxWasOpened = false) and (BoxOpen > bxNone) then
-      begin // close the box -they clicked outside
-        // clean up any dimmed text
-        pr := Rect(114, 237, 261, 439);
-        lpDDSBack.BltFast(pr.Left + Offset.X, pr.Top + Offset.Y, DXBack, @pr,
-          DDBLTFAST_WAIT);
-        // clean up after old boxes
-        pr := Rect(279, 239, 402, 588);
-        lpDDSBack.BltFast(pr.Left + Offset.X, pr.Top + Offset.Y, DXBack, @pr,
-          DDBLTFAST_WAIT);
-        pr := Rect(465, 59, 465 + 123, 59 + 181);
-        lpDDSBack.BltFast(pr.Left + Offset.X, pr.Top + Offset.Y, DXBack, @pr,
-          DDBLTFAST_WAIT);
-        BoxOpen := bxNone;
-        BoxClosed := True;
-      end; // endif
-
-    end;
-    // else begin//we arent over anything else- check back button
-    if (BoxOpen = bxNone) and not BoxClosed then
     begin
-      if ContinueRect.Contains(point(X, Y)) then
-      begin // over continue
-        // The new data is already saved- if we ever write a Cancel function then we can restore values
-        // Exit the screen if the length of name is 1 or greater
-        if (Length(Trim(CharacterName)) > 0) and (ChosenTraining > -1) then
-        begin
-          if modselection = TModSelection.SoA then //SoA now has a Tutorial
+      BoxClosed := false;
+      // Hardmode
+      prHarti := Rect(0, 0, 12, 12);
+      prUnHarti1 := Rect(450, 35, 462, 47);
+      prUnHarti2 := Rect(410, 35, 422, 47);
+      if PtInRect(ApplyOffset(Rect(410, 35, 422, 47)), point(X, y)) then
+      begin
+        Hardmode := True;
+        DrawAlpha(lpDDSBack, ApplyOffset(Rect(410, 35, 422, 47)), Rect(0, 0, 12, 12), DXHardmode, True, 255);
+        lpDDSBack.BltFast(450 + Offset.X, 35 + Offset.y, DXBack, @prUnHarti1, DDBLTFAST_WAIT);
+      end;
+      if PtInRect(ApplyOffset(Rect(450, 35, 462, 47)), point(X, y)) then
+      begin
+        Hardmode := false;
+        DrawAlpha(lpDDSBack, ApplyOffset(Rect(450, 35, 462, 47)), Rect(0, 0, 12, 12), DXHardmode, false, 255);
+        lpDDSBack.BltFast(410 + Offset.X, 35 + Offset.y, DXBack, @prUnHarti2, DDBLTFAST_WAIT);
+      end;
+      // Ende Hardmode
+      if rLeftArrow.Contains(point(X, y)) then
+        selectCharLeft
+      else if rRightArrow.Contains(point(X, y)) then
+        selectCharRight
+      else if BoxOpen = bxNone then
+      begin
+        for i := 0 to 15 do
+          if ArrowRect[i].Contains(point(X, y)) then
           begin
-            if fileexists('maps/tutorial.lvl') then //Check for Patch 1.08
-              TutorialYesNo
+            if adjustStat(i) then
+              Paint;
+            break;
+          end;
+      end;
+
+      r1 := ApplyOffset(Rect(465, 59, 465 + 123, 59 + 181));
+      r2 := ApplyOffset(Rect(x1, 239 + (ord(BoxOpen) - 12) * 42, x2, 239 + (ord(BoxOpen) - 12) * 42 + 181));
+      // check for click in box
+      if (r1.Contains(point(X, y)) or r2.Contains(point(X, y))) and (BoxOpen > bxNone) then
+      begin // check to see if box is open
+        i := 0;
+        while i < 21 do
+        begin
+          if SelectRect[i].Contains(point(X, y)) then
+          begin // if over an item
+            // set the selected for each type based on which text the user hit
+            if i < 4 then
+              if modselection <> TModSelection.DoA then
+              begin
+                selectShirt(i);
+              end
+              else // DoA - Race/Base
+              begin
+                if i < 3 then // no 3, because only 3 races
+                begin
+                  selectBase(i);
+                end;
+              end
+            else if i < 8 then
+              if modselection <> TModSelection.DoA then
+              begin
+                selectPants(i);
+              end
+              else // DoA - only 2 pants
+              begin
+                if i < 6 then
+                  selectPants(i);
+              end
+            else if i < 12 then
+              if modselection <> TModSelection.DoA then
+              begin
+                selectHairColor(i);
+              end
+              else // DoA - Tattoo
+              begin
+                if i < 11 then // no 11, or rather no fourth tattoo
+                  selectTattoo(i);
+              end
+            else if i < 16 then
+              if modselection <> TModSelection.DoA then
+              begin
+                selectHairStyle(i);
+              end
+              else // DoA - Hair
+              begin
+                selectDoAHair(i);
+              end
+            else if i < 18 then
+              if modselection <> TModSelection.DoA then
+              begin
+                selectBeard(i);
+              end
+              else // DoA - No special Beard selectable
+              begin
+                Exit
+              end
             else
             begin
-              Character.Name := CharacterName;
-              Close;
+              if ChosenTraining = 0 then
+              begin
+                if modselection = TModSelection.AoA then
+                  Character.Strength := Character.BaseStrength - 4
+                else
+                  Character.Strength := Character.BaseStrength - 5;
+                Character.Coordination := Character.BaseCoordination - 2;
+                if modselection = TModSelection.AoA then
+                  Character.Constitution := Character.BaseConstitution - 2
+                else
+                  Character.Constitution := Character.BaseConstitution - 3;
+                Character.Perception := Character.BasePerception + 3;
+                if modselection = TModSelection.AoA then
+                  Character.Charm := Character.BaseCharm + 1
+                else
+                  Character.Charm := Character.BaseCharm + 3;
+                Character.Mysticism := Character.BaseMysticism + 3;
+                Character.Combat := Character.BaseCombat - 10;
+                Character.Stealth := Character.BaseStealth - 0;
+                if modselection = TModSelection.DoA then
+                  DoAStart := True;
+              end
+              else if ChosenTraining = 1 then
+              begin
+                Character.Strength := Character.BaseStrength - 2;
+                Character.Coordination := Character.BaseCoordination - 5;
+                Character.Constitution := Character.BaseConstitution - 0;
+                Character.Perception := Character.BasePerception - 0;
+                Character.Charm := Character.BaseCharm + 3;
+                Character.Mysticism := Character.BaseMysticism + 3;
+                Character.Combat := Character.BaseCombat - 0;
+                Character.Stealth := Character.BaseStealth - 10;
+                if modselection = TModSelection.DoA then
+                  DoAStart := True;
+              end
+              else if ChosenTraining = 2 then
+              begin
+                Character.Strength := Character.BaseStrength - 0;
+                Character.Coordination := Character.BaseCoordination - 3;
+                Character.Constitution := Character.BaseConstitution - 2;
+                Character.Perception := Character.BasePerception - 2;
+                Character.Charm := Character.BaseCharm + 3;
+                Character.Mysticism := Character.BaseMysticism - 10;
+                Character.Combat := Character.BaseCombat - 0;
+                Character.Stealth := Character.BaseStealth + 3;
+                if modselection = TModSelection.DoA then
+                  DoAStart := True;
+              end;
+              SelectedTraining := i - 18;
+              ChosenTraining := i - 18;
+              // why do this twice? Because SelectedTraining must be initalized for drawing the select box,
+              // yet we must know if the picked a class or not- we dont let them leave without selecting a class.
+              // This is a change, so a bit kludgy, but it's the 11th hour here at Digital Tome 6/11/00
+              r := ApplyOffset(Rect(300, 132, 448, 160));
+              DrawAlpha(lpDDSBack, r, Rect(0, 0, 25, 25), DXBlack, false, 255);
+              if i = 18 then
+              begin
+                PlotTextCentered(txtMessage[5], 300 + Offset.X, 448 + Offset.X, 135 + Offset.y, UseSmallFont, 250);
+                if modselection = TModSelection.AoA then
+                  Character.Strength := Character.BaseStrength + 4
+                else
+                  Character.Strength := Character.BaseStrength + 5;
+                Character.Coordination := Character.BaseCoordination + 2;
+                if modselection = TModSelection.AoA then
+                  Character.Constitution := Character.BaseConstitution + 2
+                else
+                  Character.Constitution := Character.BaseConstitution + 3;
+                Character.Perception := Character.BasePerception - 3;
+                if modselection = TModSelection.AoA then
+                  Character.Charm := Character.BaseCharm - 1
+                else
+                  Character.Charm := Character.BaseCharm - 3;
+                Character.Mysticism := Character.BaseMysticism - 3;
+                Character.Combat := Character.BaseCombat + 10;
+                Character.Stealth := Character.BaseStealth + 0;
+                if modselection = TModSelection.DoA then
+                  DoAStart := True;
+              end
+              else if i = 19 then
+              begin
+                PlotTextCentered(txtMessage[6], 300 + Offset.X, 448 + Offset.X, 135 + Offset.y, UseSmallFont, 250);
+                Character.Strength := Character.BaseStrength + 2;
+                Character.Coordination := Character.BaseCoordination + 5;
+                Character.Constitution := Character.BaseConstitution + 0;
+                Character.Perception := Character.BasePerception + 0;
+                Character.Charm := Character.BaseCharm - 3;
+                Character.Mysticism := Character.BaseMysticism - 3;
+                Character.Combat := Character.BaseCombat + 0;
+                Character.Stealth := Character.BaseStealth + 10;
+                if modselection = TModSelection.DoA then
+                  DoAStart := True;
+              end
+              else if i = 20 then
+              begin
+                PlotTextCentered(txtMessage[7], 300 + Offset.X, 448 + Offset.X, 135 + Offset.y, UseSmallFont, 250);
+                Character.Strength := Character.BaseStrength + 0;
+                Character.Coordination := Character.BaseCoordination + 3;
+                Character.Constitution := Character.BaseConstitution + 2;
+                Character.Perception := Character.BasePerception + 2;
+                Character.Charm := Character.BaseCharm - 3;
+                Character.Mysticism := Character.BaseMysticism + 10;
+                Character.Combat := Character.BaseCombat + 0;
+                Character.Stealth := Character.BaseStealth - 3;
+                if modselection = TModSelection.DoA then
+                  DoAStart := True;
+              end;
+              Paint;
             end;
-          end
-          else if modselection = TModSelection.DoA then
-          // DoA change of Race needs new selected Training
+            i := 900; // drop out of the loop
+          end;
+          i := i + 1;
+        end; // wend
+        // TODO: Below two values have not changed - remove
+        r1 := ApplyOffset(Rect(465, 59, 465 + 123, 59 + 181));
+        r2 := ApplyOffset(Rect(x1, 239 + (ord(BoxOpen) - 12) * 42, x2, 239 + (ord(BoxOpen) - 12) * 42 + 181));
+        if i = 901 then
+        begin // reopen and refresh new selection
+          OpenBox(BoxOpen);
+          DrawNewPlayer;
+        end // check to see if the hit the ok button   //CHECK
+        else if (r1.Contains(point(X, y)) and (y > 59 + 141)) or (r2.Contains(point(X, y)) and (y > 239 + (ord(BoxOpen) - 12) * 42 + 141))
+        then
+        begin
+          // clean up any dimmed text
+          pr := Rect(114, 237, 261, 439);
+          lpDDSBack.BltFast(pr.Left + Offset.X, pr.Top + Offset.y, DXBack, @pr, DDBLTFAST_WAIT);
+          // clean up after old boxes
+          pr := Rect(x1, 239, x2, 588);
+          lpDDSBack.BltFast(pr.Left + Offset.X, pr.Top + Offset.y, DXBack, @pr, DDBLTFAST_WAIT);
+          pr := Rect(465, 59, 465 + 123, 59 + 181);
+          lpDDSBack.BltFast(pr.Left + Offset.X, pr.Top + Offset.y, DXBack, @pr, DDBLTFAST_WAIT);
+          BoxOpen := bxNone;
+          BoxClosed := True;
+        end;
+      end
+      else
+      begin // see if we're opening the box
+        BoxWasOpened := false;
+        for bx := bxShirt to bxTraining do
+        begin
+          if InfoRect[ord(bx)].Contains(point(X, y)) then
           begin
-            if not DoAStart then
-            pText.PlotTextBlock(txtMessage[4], 500 + Offset.X, 682 + Offset.X, 239 + Offset.Y, 240, UseSmallFont, True)
-            else
+            OpenBox(bx);
+            BoxWasOpened := True;
+          end;
+        end;
+        if (BoxWasOpened = false) and (BoxOpen > bxNone) then
+        begin // close the box -they clicked outside
+          // clean up any dimmed text
+          pr := Rect(114, 237, 261, 439);
+          lpDDSBack.BltFast(pr.Left + Offset.X, pr.Top + Offset.y, DXBack, @pr, DDBLTFAST_WAIT);
+          // clean up after old boxes
+          pr := Rect(x1, 239, x2, 588);
+          lpDDSBack.BltFast(pr.Left + Offset.X, pr.Top + Offset.y, DXBack, @pr, DDBLTFAST_WAIT);
+          pr := Rect(465, 59, 465 + 123, 59 + 181);
+          lpDDSBack.BltFast(pr.Left + Offset.X, pr.Top + Offset.y, DXBack, @pr, DDBLTFAST_WAIT);
+          BoxOpen := bxNone;
+          BoxClosed := True;
+        end; // endif
+
+      end;
+      // else begin//we arent over anything else- check back button
+      if (BoxOpen = bxNone) and not BoxClosed then
+      begin
+        if ContinueRect.Contains(point(X, y)) then
+        begin // over continue
+          // The new data is already saved- if we ever write a Cancel function then we can restore values
+          // Exit the screen if the length of name is 1 or greater
+          if (Length(Trim(CharacterName)) > 0) and (ChosenTraining > -1) then
+          begin
+            if modselection = TModSelection.SoA then // SoA now has a Tutorial
+            begin
+              if FileExists('maps/tutorial.lvl') then // Check for Patch 1.08
+                TutorialYesNo
+              else
+              begin
+                Character.Name := CharacterName;
+                close;
+              end;
+            end
+            else if modselection = TModSelection.DoA then
+            // DoA change of Race needs new selected Training
+            begin
+              if not DoAStart then
+                pText.PlotTextBlock(txtMessage[4], 500 + Offset.X, 682 + Offset.X, 239 + Offset.y, 240, UseSmallFont, True)
+              else
+              begin
+                Character.Name := CharacterName;
+                close;
+              end;
+            end
+            else // Every other story
             begin
               Character.Name := CharacterName;
               close;
             end;
           end
-          else // Every other story
-          begin
-            Character.Name := CharacterName;
-            close;
+          else
+          begin // Hasnt entered name- tell player to enter name or pick training
+            if BoxOpen = bxTraining then
+            begin
+              pr := Rect(490, 239, 720, 500); // 682, 430
+              lpDDSBack.BltFast(pr.Left + Offset.X, pr.Top + Offset.y, DXBack, @pr, DDBLTFAST_WAIT);
+              if (ChosenTraining > -1) then
+                pText.PlotTextBlock(txtMessage[8], 500 + Offset.X, 682 + Offset.X, oy, 240, UseSmallFont, True)
+              else
+                pText.PlotTextBlock(txtMessage[9], 500 + Offset.X, 682 + Offset.X, oy, 240, UseSmallFont, True);
+            end
+            else
+            begin
+              pr := Rect(490, 160, 720, 500);
+              lpDDSBack.BltFast(pr.Left + Offset.X, pr.Top + Offset.y, DXBack, @pr, DDBLTFAST_WAIT);
+              if (ChosenTraining > -1) then
+                pText.PlotTextBlock(txtMessage[10], 500 + Offset.X, 682 + Offset.X, 165 + Offset.y, 240, UseSmallFont, True)
+              else
+                pText.PlotTextBlock(txtMessage[11], 500 + Offset.X, 682 + Offset.X, 165 + Offset.y, 240, UseSmallFont, True);
+            end;
           end;
         end
-        else
-        begin // Hasnt entered name- tell player to enter name or pick training
-          if BoxOpen = bxTraining then
-          begin
-            pr := Rect(490, 239, 720, 500); // 682, 430
-            lpDDSBack.BltFast(pr.Left + Offset.X, pr.Top + Offset.Y, DXBack,
-              @pr, DDBLTFAST_WAIT);
-            if (ChosenTraining > -1) then
-              pText.PlotTextBlock(txtMessage[8], 500 + Offset.X, 682 + Offset.X, 239 + Offset.Y, 240, UseSmallFont, True)
-            else
-              pText.PlotTextBlock(txtMessage[9], 500 + Offset.X, 682 + Offset.X, 239 + Offset.Y, 240, UseSmallFont, True);
-          end
-          else
-          begin
-            pr := Rect(490, 160, 720, 500);
-            lpDDSBack.BltFast(pr.Left + Offset.X, pr.Top + Offset.Y, DXBack,
-              @pr, DDBLTFAST_WAIT);
-            if (ChosenTraining > -1) then
-              pText.PlotTextBlock(txtMessage[10], 500 + Offset.X, 682 + Offset.X, 165 + Offset.Y, 240, UseSmallFont, True)
-            else
-              pText.PlotTextBlock(txtMessage[11], 500 + Offset.X, 682 + Offset.X, 165 + Offset.Y, 240, UseSmallFont, True);
-          end;
+        else if CancelRect.Contains(point(X, y)) then
+        begin // over cancel
+          Cancel := True;
+          close;
         end;
-      end
-      else if CancelRect.Contains(point(X, Y)) then
-      begin // over cancel
-        Cancel := True;
-        close;
       end;
-    end;
-  end; //end not GenderBoxopen
+    end; // end not GenderBoxopen
 
   except
     on E: Exception do
@@ -1079,8 +1012,7 @@ begin
 
 end; // TCreation.MouseDown
 
-procedure TCreation.MouseMove(Sender: TObject; Shift: TShiftState;
-  X, Y, GridX, GridY: Integer);
+procedure TCreation.MouseMove(Sender: TObject; Shift: TShiftState; X, y, GridX, GridY: Integer);
 var
   i: Integer;
   pr: TRect;
@@ -1090,154 +1022,143 @@ const
 begin
   Log.DebugLog(FailName);
   try
-  if not Genderboxopen and not tutorialboxopen then
-  begin
-    // Clean up continue and cancel
-    pr := DlgRect.dlgNewContinueRect;
-    lpDDSBack.BltFast(ContinueRect.Left, ContinueRect.Top, DXBack, @pr,
-      DDBLTFAST_WAIT);
-    if BoxOpen = bxNone then
+    if not Genderboxopen and not Tutorialboxopen then
     begin
-      pr := DlgRect.dlgNewCancelRect;
-      lpDDSBack.BltFast(CancelRect.Left, CancelRect.Top, DXBack, @pr,
-        DDBLTFAST_WAIT);
-    end;
-    // clear text
-    if ContinueRect.Contains(point(X, Y)) then
-    begin // over continue
-      // dont clear if over continue, we might have the you must enter name text up -kludgy
-    end
-    else
-    begin
-
-      if BoxOpen = bxTraining then
+      // Clean up continue and cancel
+      pr := DlgRect.dlgNewContinueRect;
+      lpDDSBack.BltFast(ContinueRect.Left, ContinueRect.Top, DXBack, @pr, DDBLTFAST_WAIT);
+      if BoxOpen = bxNone then
       begin
-        pr := Rect(490, 239, 720, 500);
-        lpDDSBack.BltFast(pr.Left + Offset.X, pr.Top + Offset.Y, DXBack, @pr,
-          DDBLTFAST_SRCCOLORKEY or DDBLTFAST_WAIT);
+        pr := DlgRect.dlgNewCancelRect;
+        lpDDSBack.BltFast(CancelRect.Left, CancelRect.Top, DXBack, @pr, DDBLTFAST_WAIT);
+      end;
+      // clear text
+      if ContinueRect.Contains(point(X, y)) then
+      begin // over continue
+        // dont clear if over continue, we might have the you must enter name text up -kludgy
       end
       else
       begin
-        pr := Rect(490, 160, 720, 500);
-        lpDDSBack.BltFast(pr.Left + Offset.X, pr.Top + Offset.Y, DXBack, @pr,
-          DDBLTFAST_SRCCOLORKEY or DDBLTFAST_WAIT);
-      end;
-    end;
 
-    if rLeftArrow.Contains(point(X, Y)) then
-    begin
-      if PlayerResourceIdx = 0 then
-        PlayerInfo := txtMessage[105] +
-          ChangeFileExt(ExtractFileName(Players[Players.Count - 1]), '')
-      else
-        PlayerInfo := txtMessage[105] +
-          ChangeFileExt(ExtractFileName(Players[PlayerResourceIdx - 1]), '');
-
-      if BoxOpen <> bxTraining then
-        pText.PlotTextBlock(PlayerInfo, 500 + Offset.X, 680 + Offset.X, 165 + Offset.Y, 240, UseSmallFont, True)
-      else // Training box in the way - so print below
-        pText.PlotTextBlock(PlayerInfo, 500 + Offset.X, 680 + Offset.X, 239 + Offset.Y, 240, UseSmallFont, True);
-    end;
-
-    if rRightArrow.Contains(point(X, Y)) then
-    begin
-      if PlayerResourceIdx = (Players.Count - 1) then
-        PlayerInfo := txtMessage[105] +
-          ChangeFileExt(ExtractFileName(Players[0]), '')
-      else
-        PlayerInfo := txtMessage[105] +
-          ChangeFileExt(ExtractFileName(Players[PlayerResourceIdx + 1]), '');
-
-      if BoxOpen <> bxTraining then
-        pText.PlotTextBlock(PlayerInfo, 500 + Offset.X, 680 + Offset.X, 165 + Offset.Y, 240, UseSmallFont, True)
-      else // Training box in the way - so print below
-        pText.PlotTextBlock(PlayerInfo, 500 + Offset.X, 680 + Offset.X, 239 + Offset.Y, 240, UseSmallFont, True);
-    end;
-
-    i := 0;
-    if BoxOpen > bxNone then
-    begin
-      i := 0;
-      while i < 21 do
-      begin
-        if SelectRect[i].Contains(point(X, Y)) then
-        begin // if over an item
-          if BoxOpen <> bxTraining then // little kludge here
-            pText.PlotTextBlock(SelectRect[i].Info, 500 + Offset.X, 682 + Offset.X, 165 + Offset.Y, 240, UseSmallFont,
-              True) // Plot the info
-          else
-            pText.PlotTextBlock(SelectRect[i].Info, 500 + Offset.X, 682 + Offset.X, 239 + Offset.Y, 240, UseSmallFont,
-              True); // Plot the info
-          i := 900; // drop out of the loop
+        if BoxOpen = bxTraining then
+        begin
+          pr := Rect(490, 239, 720, 500);
+          lpDDSBack.BltFast(pr.Left + Offset.X, pr.Top + Offset.y, DXBack, @pr, DDBLTFAST_SRCCOLORKEY or DDBLTFAST_WAIT);
+        end
+        else
+        begin
+          pr := Rect(490, 160, 720, 500);
+          lpDDSBack.BltFast(pr.Left + Offset.X, pr.Top + Offset.y, DXBack, @pr, DDBLTFAST_SRCCOLORKEY or DDBLTFAST_WAIT);
         end;
-        i := i + 1;
-      end; // wend
-      if (BoxOpen < bxTraining) and
-        ApplyOffset(Rect(279, 239 + (ord(BoxOpen) - 12) * 42, 279 + 131,
-        239 + (ord(BoxOpen) - 12) * 42 + 181)).Contains(point(X, Y)) then
-        i := 901; // dont show any hot text under this box
-    end; // endif boxopen
-
-    if i <> 901 then
-    begin
-      i := 0;
-      while i < 16 do
-      begin
-        if ArrowRect[i].Contains(point(X, Y)) then
-        begin // if over an Arrow
-          if BoxOpen <> bxTraining then // little kludge here
-            pText.PlotTextBlock(ArrowRect[i].Info, 500 + Offset.X, 682 + Offset.X, 165 + Offset.Y, 240, UseSmallFont,
-              True) // Plot the info
-          else
-            pText.PlotTextBlock(ArrowRect[i].Info, 500 + Offset.X, 682 + Offset.X, 239 + Offset.Y, 240, UseSmallFont,
-              True); // Plot the info
-
-          i := 900; // drop out of the loop
-        end;
-        i := i + 1;
-      end; // wend
-    end; // endif i <> 901
-
-    if i < 900 then
-    begin // if we aren't over an arrow check all other hot spots
-      i := 0;
-      while i < 18 do
-      begin
-        if InfoRect[i].Contains(point(X, Y)) then
-        begin // if over an item
-          if BoxOpen <> bxTraining then // little kludge here
-            pText.PlotTextBlock(InfoRect[i].Info, 500 + Offset.X, 682 + Offset.X, 165 + Offset.Y, 240, UseSmallFont,
-              True) // Plot the info
-          else
-            pText.PlotTextBlock(InfoRect[i].Info, 500 + Offset.X, 682 + Offset.X, 239 + Offset.Y, 240, UseSmallFont,
-              True); // Plot the info
-
-          i := 900; // drop out of the loop
-        end;
-        i := i + 1;
-      end; // wend
-    end; // endif i < 900
-
-    if (i <> 901) and (BoxOpen = bxNone) then
-    begin // we arent over anything else- check back button
-      if ContinueRect.Contains(point(X, Y)) then
-      begin // over Continue
-        // plot highlighted Continue
-        pr := Rect(0, 0, ContinueRect.width, ContinueRect.height);
-        lpDDSBack.BltFast(ContinueRect.Left, ContinueRect.Top, DXContinue, @pr,
-          DDBLTFAST_SRCCOLORKEY or DDBLTFAST_WAIT);
-      end
-      else if CancelRect.Contains(point(X, Y)) then
-      begin // over cancel
-        // plot highlighted cancel
-        pr := Rect(0, 0, CancelRect.width, CancelRect.height);
-        lpDDSBack.BltFast(CancelRect.Left, CancelRect.Top, DXCancel, @pr,
-          DDBLTFAST_SRCCOLORKEY or DDBLTFAST_WAIT);
       end;
 
-    end;
-    MouseCursor.PlotDirty := false;
-  end;//End not Genderboxopen
+      if rLeftArrow.Contains(point(X, y)) then
+      begin
+        if PlayerResourceIdx = 0 then
+          PlayerInfo := txtMessage[105] + ChangeFileExt(ExtractFileName(Players[Players.Count - 1]), '')
+        else
+          PlayerInfo := txtMessage[105] + ChangeFileExt(ExtractFileName(Players[PlayerResourceIdx - 1]), '');
+
+        if BoxOpen <> bxTraining then
+          pText.PlotTextBlock(PlayerInfo, 500 + Offset.X, 680 + Offset.X, 165 + Offset.y, 240, UseSmallFont, True)
+        else // Training box in the way - so print below
+          pText.PlotTextBlock(PlayerInfo, 500 + Offset.X, 680 + Offset.X, oy, 240, UseSmallFont, True);
+      end;
+
+      if rRightArrow.Contains(point(X, y)) then
+      begin
+        if PlayerResourceIdx = (Players.Count - 1) then
+          PlayerInfo := txtMessage[105] + ChangeFileExt(ExtractFileName(Players[0]), '')
+        else
+          PlayerInfo := txtMessage[105] + ChangeFileExt(ExtractFileName(Players[PlayerResourceIdx + 1]), '');
+
+        if BoxOpen <> bxTraining then
+          pText.PlotTextBlock(PlayerInfo, 500 + Offset.X, 680 + Offset.X, 165 + Offset.y, 240, UseSmallFont, True)
+        else // Training box in the way - so print below
+          pText.PlotTextBlock(PlayerInfo, 500 + Offset.X, 680 + Offset.X, oy, 240, UseSmallFont, True);
+      end;
+
+      i := 0;
+      if BoxOpen > bxNone then
+      begin
+        i := 0;
+        while i < 21 do
+        begin
+          if SelectRect[i].Contains(point(X, y)) then
+          begin // if over an item
+            if BoxOpen <> bxTraining then // little kludge here
+              pText.PlotTextBlock(SelectRect[i].Info, 500 + Offset.X, 682 + Offset.X, 165 + Offset.y, 240, UseSmallFont, True)
+              // Plot the info
+            else
+              pText.PlotTextBlock(SelectRect[i].Info, 500 + Offset.X, 682 + Offset.X, oy, 240, UseSmallFont, True);
+            // Plot the info
+            i := 900; // drop out of the loop
+          end;
+          i := i + 1;
+        end; // wend
+        if (BoxOpen < bxTraining) and ApplyOffset(Rect(x1, 239 + (ord(BoxOpen) - 12) * 42, x2, 239 + (ord(BoxOpen) - 12) * 42 + 181))
+          .Contains(point(X, y)) then
+          i := 901; // dont show any hot text under this box
+      end; // endif boxopen
+
+      if i <> 901 then
+      begin
+        i := 0;
+        while i < 16 do
+        begin
+          if ArrowRect[i].Contains(point(X, y)) then
+          begin // if over an Arrow
+            if BoxOpen <> bxTraining then // little kludge here
+              pText.PlotTextBlock(ArrowRect[i].Info, 500 + Offset.X, 682 + Offset.X, 165 + Offset.y, 240, UseSmallFont, True)
+              // Plot the info
+            else
+              pText.PlotTextBlock(ArrowRect[i].Info, 500 + Offset.X, 682 + Offset.X, oy, 240, UseSmallFont, True);
+            // Plot the info
+
+            i := 900; // drop out of the loop
+          end;
+          i := i + 1;
+        end; // wend
+      end; // endif i <> 901
+
+      if i < 900 then
+      begin // if we aren't over an arrow check all other hot spots
+        i := 0;
+        while i < 18 do
+        begin
+          if InfoRect[i].Contains(point(X, y)) then
+          begin // if over an item
+            if BoxOpen <> bxTraining then // little kludge here
+              pText.PlotTextBlock(InfoRect[i].Info, 500 + Offset.X, 682 + Offset.X, 165 + Offset.y, 240, UseSmallFont, True)
+              // Plot the info
+            else
+              pText.PlotTextBlock(InfoRect[i].Info, 500 + Offset.X, 682 + Offset.X, oy, 240, UseSmallFont, True);
+            // Plot the info
+
+            i := 900; // drop out of the loop
+          end;
+          i := i + 1;
+        end; // wend
+      end; // endif i < 900
+
+      if (i <> 901) and (BoxOpen = bxNone) then
+      begin // we arent over anything else- check back button
+        if ContinueRect.Contains(point(X, y)) then
+        begin // over Continue
+          // plot highlighted Continue
+          pr := Rect(0, 0, ContinueRect.width, ContinueRect.height);
+          lpDDSBack.BltFast(ContinueRect.Left, ContinueRect.Top, DXContinue, @pr, DDBLTFAST_SRCCOLORKEY or DDBLTFAST_WAIT);
+        end
+        else if CancelRect.Contains(point(X, y)) then
+        begin // over cancel
+          // plot highlighted cancel
+          pr := Rect(0, 0, CancelRect.width, CancelRect.height);
+          lpDDSBack.BltFast(CancelRect.Left, CancelRect.Top, DXCancel, @pr, DDBLTFAST_SRCCOLORKEY or DDBLTFAST_WAIT);
+        end;
+
+      end;
+      MouseCursor.PlotDirty := false;
+    end; // End not Genderboxopen
   except
     on E: Exception do
       Log.Log(FailName + E.Message);
@@ -1245,8 +1166,7 @@ begin
 
 end; // TCreation.MouseMove
 
-procedure TCreation.MouseUp(Sender: TObject; Button: TMouseButton;
-  Shift: TShiftState; X, Y, GridX, GridY: Integer);
+procedure TCreation.MouseUp(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X, y, GridX, GridY: Integer);
 const
   FailName: string = 'TCreation.MouseUp';
 begin
@@ -1270,17 +1190,24 @@ begin
 
     // clear the back down to the text - but dont clear the info block
     pr := Rect(370, 210, 461, 435);
-    lpDDSBack.BltFast(pr.Left + Offset.X, pr.Top + Offset.Y, DXBack, @pr,
-      DDBLTFAST_SRCCOLORKEY or DDBLTFAST_WAIT);
+    lpDDSBack.BltFast(pr.Left + Offset.X, pr.Top + Offset.y, DXBack, @pr, DDBLTFAST_SRCCOLORKEY or DDBLTFAST_WAIT);
     // replot the entire screen statistics
     ShowStats;
-    pText.PlotText(CharacterName, 310 + Offset.X, 95 + Offset.Y);
+    pText.PlotText(CharacterName, 310 + Offset.X, 95 + Offset.y);
     SoAOS_DX_BltFront;
   except
     on E: Exception do
       Log.Log(FailName + E.Message);
   end;
 
+end;
+
+function TCreation.PlotTextCentered( const Sentence : string; X, X2, Y: integer; const UseSmallFnt: Boolean = False; Alpha: INteger = 240) : boolean;
+begin
+  if UseSmallFnt then
+    Result := pText.PlotTextXYCentered( lpDDSBack, Sentence, X, X2, Y, Alpha, ftGoldLetter)
+  else
+    Result := pText.PlotTextXYCentered( lpDDSBack, Sentence, X, X2, Y, Alpha, ftLetter);
 end;
 
 // TCreation.Paint;
@@ -1313,53 +1240,36 @@ begin
         Bits.BaseX := 0;
         Bits.BaseY := 0;
 
-        TCharacterResource(Player.Resource).NakedResource.RLE.Draw(Frame, 0,
-          0, @Bits);
-        if TCharacterResource(Player.Resource).NakedName <> 'HumanMaleLayers\BaseSkeleton.gif'
-        then
+        TCharacterResource(Player.Resource).NakedResource.RLE.Draw(Frame, 0, 0, @Bits);
+        if TCharacterResource(Player.Resource).NakedName <> 'HumanMaleLayers\BaseSkeleton.gif' then
         begin
-          if Assigned(TCreation(Sender).SelectedPants) and
-            Assigned(TCreation(Sender).SelectedPants.Resource) and
-            Assigned(TLayerResource(TCreation(Sender)
-            .SelectedPants.Resource).RLE) then
-            TLayerResource(TCreation(Sender).SelectedPants.Resource)
-              .RLE.Draw(Frame, 0, 0, @Bits);
+          if Assigned(TCreation(Sender).SelectedPants) and Assigned(TCreation(Sender).SelectedPants.Resource) and
+            Assigned(TLayerResource(TCreation(Sender).SelectedPants.Resource).RLE) then
+            TLayerResource(TCreation(Sender).SelectedPants.Resource).RLE.Draw(Frame, 0, 0, @Bits);
           if modselection = TModSelection.DoA then // Days of Ahoul - Tattoo
-            if Assigned(TCreation(Sender).SelectedTattoo) and
-              Assigned(TCreation(Sender).SelectedTattoo.Resource) and
-              Assigned(TLayerResource(TCreation(Sender).SelectedTattoo.Resource)
-              .RLE) then
-              TLayerResource(TCreation(Sender).SelectedTattoo.Resource)
-                .RLE.Draw(Frame, 0, 0, @Bits);
-          if modselection = TModSelection.SoA then // SoA Stiefel für male und female
+            if Assigned(TCreation(Sender).SelectedTattoo) and Assigned(TCreation(Sender).SelectedTattoo.Resource) and
+              Assigned(TLayerResource(TCreation(Sender).SelectedTattoo.Resource).RLE) then
+              TLayerResource(TCreation(Sender).SelectedTattoo.Resource).RLE.Draw(Frame, 0, 0, @Bits);
+          if modselection = TModSelection.SoA then
+          // SoA Stiefel für male und female
           begin
-            if Assigned(TCreation(Sender).SelectedBoots) and
-              Assigned(TCreation(Sender).SelectedBoots.Resource) and
-              Assigned(TLayerResource(Player.Equipment[slBoot].Resource).RLE)
-            then
-              TLayerResource(TCreation(Sender).SelectedBoots.Resource)
-                .RLE.Draw(Frame, 0, 0, @Bits)
+            if Assigned(TCreation(Sender).SelectedBoots) and Assigned(TCreation(Sender).SelectedBoots.Resource) and
+              Assigned(TLayerResource(Player.Equipment[slBoot].Resource).RLE) then
+              TLayerResource(TCreation(Sender).SelectedBoots.Resource).RLE.Draw(Frame, 0, 0, @Bits)
           end
           else // alle anderen haben festgelegte Stiefel in player.pox, bzw. kein female
           begin
-            if Assigned(Player.Equipment[slBoot]) and
-              Assigned(Player.Equipment[slBoot].Resource) and
-              Assigned(TLayerResource(Player.Equipment[slBoot].Resource).RLE)
-            then
-              TLayerResource(Player.Equipment[slBoot].Resource)
-                .RLE.Draw(Frame, 0, 0, @Bits);
+            if Assigned(Player.Equipment[slBoot]) and Assigned(Player.Equipment[slBoot].Resource) and
+              Assigned(TLayerResource(Player.Equipment[slBoot].Resource).RLE) then
+              TLayerResource(Player.Equipment[slBoot].Resource).RLE.Draw(Frame, 0, 0, @Bits);
           end;
-          if modselection <> TModSelection.DoA then // in Days of Ahoul -> Keine Tunika
-            if Assigned(TCreation(Sender).SelectedShirt) and
-              Assigned(TCreation(Sender).SelectedShirt.Resource) and
-              Assigned(TLayerResource(TCreation(Sender)
-              .SelectedShirt.Resource).RLE) then
-              TLayerResource(TCreation(Sender).SelectedShirt.Resource)
-                .RLE.Draw(Frame, 0, 0, @Bits);
-          if Assigned(TCreation(Sender).SelectedHair) and
-            Assigned(TLayerResource(TCreation(Sender).SelectedHair).RLE) then
-            TLayerResource(TCreation(Sender).SelectedHair)
-              .RLE.Draw(Frame, 0, 0, @Bits);
+          if modselection <> TModSelection.DoA then
+            // in Days of Ahoul -> Keine Tunika
+            if Assigned(TCreation(Sender).SelectedShirt) and Assigned(TCreation(Sender).SelectedShirt.Resource) and
+              Assigned(TLayerResource(TCreation(Sender).SelectedShirt.Resource).RLE) then
+              TLayerResource(TCreation(Sender).SelectedShirt.Resource).RLE.Draw(Frame, 0, 0, @Bits);
+          if Assigned(TCreation(Sender).SelectedHair) and Assigned(TLayerResource(TCreation(Sender).SelectedHair).RLE) then
+            TLayerResource(TCreation(Sender).SelectedHair).RLE.Draw(Frame, 0, 0, @Bits);
         end;
       finally
         lpDDSBack.Unlock(nil);
@@ -1409,11 +1319,9 @@ begin
       ArrowRect[i].Info := txtMessage[26] + StatName[0][i + 1] + '.';
 
       if i < 5 then
-        ArrowRect[i + 8].Info := txtMessage[27] + StatName[0][i + 1] +
-          txtMessage[28] + StatName[0][i + 1] + txtMessage[29]
+        ArrowRect[i + 8].Info := txtMessage[27] + StatName[0][i + 1] + txtMessage[28] + StatName[0][i + 1] + txtMessage[29]
       else
-        ArrowRect[i + 8].Info := txtMessage[30] + StatName[0][i + 1] +
-          txtMessage[31] + StatName[0][i + 1] + txtMessage[29];
+        ArrowRect[i + 8].Info := txtMessage[30] + StatName[0][i + 1] + txtMessage[31] + StatName[0][i + 1] + txtMessage[29];
       ArrowRect[i].Offset(Offset);
       ArrowRect[i + 8].Offset(Offset);
     end; // end for
@@ -1425,8 +1333,7 @@ begin
     // skills, Resistance modifiers and Damage modifers. Training points are used to increase your Primary skills.'
     InfoRect[1] := InformationRect(-100, 0, -90, 0, '');
     for i := 2 to 9 do
-      InfoRect[i] := InformationRect(289, 239 + (i - 2) * LineHeight, 457,
-        239 + (i - 2) * LineHeight + LineHeight, '');
+      InfoRect[i] := InformationRect(289, 239 + (i - 2) * LineHeight, 457, 239 + (i - 2) * LineHeight + LineHeight, '');
 
     InfoRect[2].Info := txtMessage[33];
     // 'Strength represents the physical strength of a character.  Strength affects '+
@@ -1464,11 +1371,11 @@ begin
     // hair color
     InfoRect[15] := InformationRect(113, 363, 281, 391, txtMessage[46]);
     // hair style
-    if not female then
-    InfoRect[16] := InformationRect(113, 406, 281, 434, txtMessage[47])
-    // beard
-    else //braided or normal
-    InfoRect[16] := InformationRect(113, 406, 281, 434, txtMessage[46]);
+    if not Female then
+      InfoRect[16] := InformationRect(113, 406, 281, 434, txtMessage[47])
+      // beard
+    else // braided or normal
+      InfoRect[16] := InformationRect(113, 406, 281, 434, txtMessage[46]);
 
     InfoRect[17] := InformationRect(300, 132, 468, 160, txtMessage[48]);
     // Fighting training places an emphasis on your '+
@@ -1483,77 +1390,62 @@ begin
     if modselection = TModSelection.RoD then // RoD, nur 2 Shirts
     begin
       i := 0;
-      SelectRect[i] := SelectionRect(279, 239 + 34 + 24 * i, 279 + 123,
-        239 + 34 + 24 + 24 * i, txtMessage[49 + i], txtMessage[70 + i]);
+      SelectRect[i] := SelectionRect(x1, 239 + 34 + 24 * i, x2, 239 + 34 + 24 + 24 * i, txtMessage[49 + i], txtMessage[70 + i]);
       Inc(i);
-      SelectRect[i] := SelectionRect(279, 239 + 34 + 24 * i, 279 + 123,
-        239 + 34 + 24 + 24 * i, txtMessage[52], txtMessage[73]);
+      SelectRect[i] := SelectionRect(x1, 239 + 34 + 24 * i, x2, 239 + 34 + 24 + 24 * i, txtMessage[52], txtMessage[73]);
     end
     else
     begin
       for i := 0 to 3 do
-        SelectRect[i] := SelectionRect(279, 239 + 34 + 24 * i, 279 + 123,
-          239 + 34 + 24 + 24 * i, txtMessage[49 + i], txtMessage[70 + i]);
+        SelectRect[i] := SelectionRect(x1, 239 + 34 + 24 * i, x2, 239 + 34 + 24 + 24 * i, txtMessage[49 + i], txtMessage[70 + i]);
     end;
     if modselection = TModSelection.RoD then // RoD, Hose 1 = schwarz
     begin
       i := 0;
-      SelectRect[4 + i] := SelectionRect(279, 239 + 42 + 34 + 24 * i, 279 + 123,
-        239 + 42 + 34 + 24 + 24 * i, txtMessage[53 + i], txtMessage[79]);
+      SelectRect[4 + i] := SelectionRect(x1, 239 + 42 + 34 + 24 * i, x2, 239 + 42 + 34 + 24 + 24 * i, txtMessage[53 + i], txtMessage[79]);
       Inc(i);
-      SelectRect[4 + i] := SelectionRect(279, 239 + 42 + 34 + 24 * i, 279 + 123,
-        239 + 42 + 34 + 24 + 24 * i, txtMessage[53 + i], txtMessage[70 + i]);
+      SelectRect[4 + i] := SelectionRect(x1, 239 + 42 + 34 + 24 * i, x2, 239 + 42 + 34 + 24 + 24 * i, txtMessage[53 + i],
+        txtMessage[70 + i]);
       Inc(i);
-      SelectRect[4 + i] := SelectionRect(279, 239 + 42 + 34 + 24 * i, 279 + 123,
-        239 + 42 + 34 + 24 + 24 * i, txtMessage[53 + i], txtMessage[70 + i]);
+      SelectRect[4 + i] := SelectionRect(x1, 239 + 42 + 34 + 24 * i, x2, 239 + 42 + 34 + 24 + 24 * i, txtMessage[53 + i],
+        txtMessage[70 + i]);
     end
     else
     begin
       // Pants color
       for i := 0 to 3 do
-        SelectRect[4 + i] := SelectionRect(279, 239 + 42 + 34 + 24 * i,
-          279 + 123, 239 + 42 + 34 + 24 + 24 * i, txtMessage[53 + i],
+        SelectRect[4 + i] := SelectionRect(x1, 239 + 42 + 34 + 24 * i, x2, 239 + 42 + 34 + 24 + 24 * i, txtMessage[53 + i],
           txtMessage[70 + i]);
     end;
     // Hair color
-    SelectRect[8] := SelectionRect(279, 357, 402, 381, txtMessage[57],
-      txtMessage[74]);
-    SelectRect[9] := SelectionRect(279, 381, 402, 405, txtMessage[58],
-      txtMessage[71]);
-    SelectRect[10] := SelectionRect(279, 405, 402, 429, txtMessage[59],
-      txtMessage[75]);
-    SelectRect[11] := SelectionRect(279, 429, 402, 453, txtMessage[60],
-      txtMessage[76]);
+    SelectRect[8] := SelectionRect(x1, 357, x2, 381, txtMessage[57], txtMessage[74]);
+    SelectRect[9] := SelectionRect(x1, 381, x2, 405, txtMessage[58], txtMessage[71]);
+    SelectRect[10] := SelectionRect(x1, 405, x2, 429, txtMessage[59], txtMessage[75]);
+    SelectRect[11] := SelectionRect(x1, 429, x2, 453, txtMessage[60], txtMessage[76]);
     // Hair style
     for i := 0 to 3 do
     begin
-    if not female then
-      SelectRect[12 + i] := SelectionRect(279, 399 + 24 * i, 402, 423 + 24 * i,
-        txtMessage[61 + i], txtMessage[77 + i])
-    else
-      begin
-      if i = 3 then
-      SelectRect[12 + i] := SelectionRect(279, 399 + 24 * i, 402, 423 + 24 * i,
-        txtMessage[62], txtMessage[106])
+      if not Female then
+        SelectRect[12 + i] := SelectionRect(x1, 399 + 24 * i, x2, 423 + 24 * i, txtMessage[61 + i], txtMessage[77 + i])
       else
-      SelectRect[12 + i] := SelectionRect(279, 399 + 24 * i, 402, 423 + 24 * i,
-        txtMessage[61 + i], txtMessage[77 + i]);
+      begin
+        if i = 3 then
+          SelectRect[12 + i] := SelectionRect(x1, 399 + 24 * i, x2, 423 + 24 * i, txtMessage[62], txtMessage[106])
+        else
+          SelectRect[12 + i] := SelectionRect(x1, 399 + 24 * i, x2, 423 + 24 * i, txtMessage[61 + i], txtMessage[77 + i]);
       end;
     end;
     // Beard
     for i := 0 to 1 do
     begin
-    if not female then
-      SelectRect[16 + i] := SelectionRect(279, 465 + 24 * i, 402, 489 + 24 * i,
-        txtMessage[65 + i], txtMessage[81 + i])
-    else
-      SelectRect[16 + i] := SelectionRect(279, 465 + 24 * i, 402, 489 + 24 * i,
-        txtMessage[107 + i], txtMessage[107 + i]);
+      if not Female then
+        SelectRect[16 + i] := SelectionRect(x1, 465 + 24 * i, x2, 489 + 24 * i, txtMessage[65 + i], txtMessage[81 + i])
+      else
+        SelectRect[16 + i] := SelectionRect(x1, 465 + 24 * i, x2, 489 + 24 * i, txtMessage[107 + i], txtMessage[107 + i]);
     end;
     // Training
     for i := 0 to 2 do
-      SelectRect[18 + i] := SelectionRect(465, 69 + 38 + 24 * i, 465 + 123,
-        69 + 38 + 24 + 24 * i, txtMessage[67 + i], txtMessage[83 + i]);
+      SelectRect[18 + i] := SelectionRect(465, 69 + 38 + 24 * i, 465 + 123, 69 + 38 + 24 + 24 * i, txtMessage[67 + i], txtMessage[83 + i]);
 
     for i := 0 to 20 do
       SelectRect[i].Offset(Offset);
@@ -1643,39 +1535,39 @@ begin
   try
     X := 167 + Modifier;
     str(Character.TrainingPoints, a);
-    pText.PlotText(a, X + Offset.X, 213 + Offset.Y);
+    pText.PlotText(a, X + Offset.X, 213 + Offset.y);
     // primary stats column
     i := 239;
     str(Character.Strength, b);
-    pText.PlotText(b, X + Offset.X, i + Offset.Y);
+    pText.PlotText(b, X + Offset.X, i + Offset.y);
     i := i + 24;
 
     str(Character.Coordination, b);
-    pText.PlotText(b, X + Offset.X, i + Offset.Y);
+    pText.PlotText(b, X + Offset.X, i + Offset.y);
     i := i + 24;
 
     str(Character.Constitution, b);
-    pText.PlotText(b, X + Offset.X, i + Offset.Y);
+    pText.PlotText(b, X + Offset.X, i + Offset.y);
     i := i + 24;
 
     str(Character.BasePerception, b);
-    pText.PlotText(b, X + Offset.X, i + Offset.Y);
+    pText.PlotText(b, X + Offset.X, i + Offset.y);
     i := i + 24;
 
     str(Character.Charm, b);
-    pText.PlotText(b, X + Offset.X, i + Offset.Y);
+    pText.PlotText(b, X + Offset.X, i + Offset.y);
     i := i + 24;
 
     str(Character.Mysticism, b);
-    pText.PlotText(b, X + Offset.X, i + Offset.Y);
+    pText.PlotText(b, X + Offset.X, i + Offset.y);
     i := i + 24;
 
     str(Character.Combat, b);
-    pText.PlotText(b, X + Offset.X, i + Offset.Y);
+    pText.PlotText(b, X + Offset.X, i + Offset.y);
     i := i + 24;
 
     str(Character.Stealth, b);
-    pText.PlotText(b, X + Offset.X, i + Offset.Y);
+    pText.PlotText(b, X + Offset.X, i + Offset.y);
 
   except
     on E: Exception do
@@ -1690,30 +1582,21 @@ var
 begin
   Female := TCharacterResource(Player.Resource).Female;
 
-  shirt[1] := PartManager.LoadItem('TunicBlue',
-    TCharacterResource(Player.Resource).NakedName);
-  shirt[2] := PartManager.LoadItem('TunicBrown',
-    TCharacterResource(Player.Resource).NakedName);
-  shirt[3] := PartManager.LoadItem('TunicYellow',
-    TCharacterResource(Player.Resource).NakedName);
-  shirt[4] := PartManager.LoadItem('TunicGreen',
-    TCharacterResource(Player.Resource).NakedName);
+  shirt[1] := PartManager.LoadItem('TunicBlue', TCharacterResource(Player.Resource).NakedName);
+  shirt[2] := PartManager.LoadItem('TunicBrown', TCharacterResource(Player.Resource).NakedName);
+  shirt[3] := PartManager.LoadItem('TunicYellow', TCharacterResource(Player.Resource).NakedName);
+  shirt[4] := PartManager.LoadItem('TunicGreen', TCharacterResource(Player.Resource).NakedName);
   for i := 1 to 4 do
     shirt[i].Resource := PartManager.GetLayerResource(shirt[i].LayeredImage);
   if modselection <> TModSelection.DoA then
   begin
-    pants[1] := PartManager.LoadItem('BluePants',
-      TCharacterResource(Player.Resource).NakedName);
-    pants[2] := PartManager.LoadItem('BrownPants',
-      TCharacterResource(Player.Resource).NakedName);
-    pants[3] := PartManager.LoadItem('YellowPants',
-      TCharacterResource(Player.Resource).NakedName);
-    pants[4] := PartManager.LoadItem('GreenPants',
-      TCharacterResource(Player.Resource).NakedName);
+    pants[1] := PartManager.LoadItem('BluePants', TCharacterResource(Player.Resource).NakedName);
+    pants[2] := PartManager.LoadItem('BrownPants', TCharacterResource(Player.Resource).NakedName);
+    pants[3] := PartManager.LoadItem('YellowPants', TCharacterResource(Player.Resource).NakedName);
+    pants[4] := PartManager.LoadItem('GreenPants', TCharacterResource(Player.Resource).NakedName);
     if modselection = TModSelection.SoA then
     begin
-      boots := PartManager.LoadItem('LowLeatherBoots',
-        TCharacterResource(Player.Resource).NakedName);
+      boots := PartManager.LoadItem('LowLeatherBoots', TCharacterResource(Player.Resource).NakedName);
       boots.Resource := PartManager.GetLayerResource(boots.LayeredImage);
     end;
     for i := 1 to 4 do
@@ -1721,10 +1604,8 @@ begin
   end
   else // Days of Ahoul
   begin
-    pants[1] := PartManager.LoadItem('Patchworkpants1',
-      TCharacterResource(Player.Resource).NakedName);
-    pants[2] := PartManager.LoadItem('Patchworkpants2',
-      TCharacterResource(Player.Resource).NakedName);
+    pants[1] := PartManager.LoadItem('Patchworkpants1', TCharacterResource(Player.Resource).NakedName);
+    pants[2] := PartManager.LoadItem('Patchworkpants2', TCharacterResource(Player.Resource).NakedName);
     for i := 1 to 2 do
       pants[i].Resource := PartManager.GetLayerResource(pants[i].LayeredImage);
   end;
@@ -1732,14 +1613,11 @@ begin
 
   if modselection = TModSelection.DoA then
   begin
-    tattoo[1] := PartManager.LoadItem('Tatoo2',
-      TCharacterResource(Player.Resource).NakedName);
-    tattoo[2] := PartManager.LoadItem('Tatoo1',
-      TCharacterResource(Player.Resource).NakedName);
+    tattoo[1] := PartManager.LoadItem('Tatoo2', TCharacterResource(Player.Resource).NakedName);
+    tattoo[2] := PartManager.LoadItem('Tatoo1', TCharacterResource(Player.Resource).NakedName);
     tattoo[3] := nil;
     for i := 1 to 2 do
-      tattoo[i].Resource := PartManager.GetLayerResource
-        (tattoo[i].LayeredImage);
+      tattoo[i].Resource := PartManager.GetLayerResource(tattoo[i].LayeredImage);
 
     LayeredImage := S + 'ShamanHair2'; // Only as Shaman
     DoAHair[1] := PartManager.GetLayerResource(LayeredImage);
@@ -1755,90 +1633,90 @@ begin
   end
   else
   begin
-    if not female then  //decombine for a better overview
+    if not Female then // decombine for a better overview
     begin
-    hair[1, 1, 1] := PartManager.GetLayerResource(S + 'ShortHairBeardLight');
-    hair[1, 2, 1] := PartManager.GetLayerResource(S + 'LongHairBeardLight');
-    hair[1, 3, 1] := PartManager.GetLayerResource(S + 'PonyBeardLight');
-    hair[1, 4, 1] := PartManager.GetLayerResource(S + 'BeardLight');
+      hair[1, 1, 1] := PartManager.GetLayerResource(S + 'ShortHairBeardLight');
+      hair[1, 2, 1] := PartManager.GetLayerResource(S + 'LongHairBeardLight');
+      hair[1, 3, 1] := PartManager.GetLayerResource(S + 'PonyBeardLight');
+      hair[1, 4, 1] := PartManager.GetLayerResource(S + 'BeardLight');
 
-    hair[2, 1, 1] := PartManager.GetLayerResource(S + 'ShortHairBeardDark');
-    hair[2, 2, 1] := PartManager.GetLayerResource(S + 'LongHairBeardDark');
-    hair[2, 3, 1] := PartManager.GetLayerResource(S + 'PonyBeardDark');
-    hair[2, 4, 1] := PartManager.GetLayerResource(S + 'BeardDark');
+      hair[2, 1, 1] := PartManager.GetLayerResource(S + 'ShortHairBeardDark');
+      hair[2, 2, 1] := PartManager.GetLayerResource(S + 'LongHairBeardDark');
+      hair[2, 3, 1] := PartManager.GetLayerResource(S + 'PonyBeardDark');
+      hair[2, 4, 1] := PartManager.GetLayerResource(S + 'BeardDark');
 
-    hair[3, 1, 1] := PartManager.GetLayerResource(S + 'ShortHairBeardRed');
-    hair[3, 2, 1] := PartManager.GetLayerResource(S + 'LongHairBeardRed');
-    hair[3, 3, 1] := PartManager.GetLayerResource(S + 'PonyBeardRed');
-    hair[3, 4, 1] := PartManager.GetLayerResource(S + 'BeardRed');
+      hair[3, 1, 1] := PartManager.GetLayerResource(S + 'ShortHairBeardRed');
+      hair[3, 2, 1] := PartManager.GetLayerResource(S + 'LongHairBeardRed');
+      hair[3, 3, 1] := PartManager.GetLayerResource(S + 'PonyBeardRed');
+      hair[3, 4, 1] := PartManager.GetLayerResource(S + 'BeardRed');
 
-    hair[4, 1, 1] := PartManager.GetLayerResource(S + 'ShortHairBeardGrey');
-    hair[4, 2, 1] := PartManager.GetLayerResource(S + 'LongHairBeardGrey');
-    hair[4, 3, 1] := PartManager.GetLayerResource(S + 'PonyBeardGrey');
-    hair[4, 4, 1] := PartManager.GetLayerResource(S + 'BeardGrey');
+      hair[4, 1, 1] := PartManager.GetLayerResource(S + 'ShortHairBeardGrey');
+      hair[4, 2, 1] := PartManager.GetLayerResource(S + 'LongHairBeardGrey');
+      hair[4, 3, 1] := PartManager.GetLayerResource(S + 'PonyBeardGrey');
+      hair[4, 4, 1] := PartManager.GetLayerResource(S + 'BeardGrey');
 
-    hair[1, 1, 2] := PartManager.GetLayerResource(S + 'ShortHairLight');
-    hair[1, 2, 2] := PartManager.GetLayerResource(S + 'LongHairLight');
-    hair[1, 3, 2] := PartManager.GetLayerResource(S + 'PonyTailLight');
-    hair[1, 4, 2] := nil;
+      hair[1, 1, 2] := PartManager.GetLayerResource(S + 'ShortHairLight');
+      hair[1, 2, 2] := PartManager.GetLayerResource(S + 'LongHairLight');
+      hair[1, 3, 2] := PartManager.GetLayerResource(S + 'PonyTailLight');
+      hair[1, 4, 2] := nil;
 
-    hair[2, 1, 2] := PartManager.GetLayerResource(S + 'ShortHairDark');
-    hair[2, 2, 2] := PartManager.GetLayerResource(S + 'LongHairDark');
-    hair[2, 3, 2] := PartManager.GetLayerResource(S + 'PonyTailDark');
-    hair[2, 4, 2] := nil;
+      hair[2, 1, 2] := PartManager.GetLayerResource(S + 'ShortHairDark');
+      hair[2, 2, 2] := PartManager.GetLayerResource(S + 'LongHairDark');
+      hair[2, 3, 2] := PartManager.GetLayerResource(S + 'PonyTailDark');
+      hair[2, 4, 2] := nil;
 
-    hair[3, 1, 2] := PartManager.GetLayerResource(S + 'ShortHairRed');
-    hair[3, 2, 2] := PartManager.GetLayerResource(S + 'LongHairRed');
-    hair[3, 3, 2] := PartManager.GetLayerResource(S + 'PonyTailRed');
-    hair[3, 4, 2] := nil;
+      hair[3, 1, 2] := PartManager.GetLayerResource(S + 'ShortHairRed');
+      hair[3, 2, 2] := PartManager.GetLayerResource(S + 'LongHairRed');
+      hair[3, 3, 2] := PartManager.GetLayerResource(S + 'PonyTailRed');
+      hair[3, 4, 2] := nil;
 
-    hair[4, 1, 2] := PartManager.GetLayerResource(S + 'ShortHairGrey');
-    hair[4, 2, 2] := PartManager.GetLayerResource(S + 'LongHairGrey');
-    hair[4, 3, 2] := PartManager.GetLayerResource(S + 'PonyTailGrey');
-    hair[4, 4, 2] := nil;
+      hair[4, 1, 2] := PartManager.GetLayerResource(S + 'ShortHairGrey');
+      hair[4, 2, 2] := PartManager.GetLayerResource(S + 'LongHairGrey');
+      hair[4, 3, 2] := PartManager.GetLayerResource(S + 'PonyTailGrey');
+      hair[4, 4, 2] := nil;
     end
-    else   //female
+    else // female
     begin
-    hair[1, 1, 2] := PartManager.GetLayerResource(S + 'ShortHairLight');
-    hair[1, 2, 2] := PartManager.GetLayerResource(S + 'LongHairLight');
-    hair[1, 3, 2] := PartManager.GetLayerResource(S + 'FemHiPonytailLight');
-    hair[1, 4, 2] := PartManager.GetLayerResource(S + 'MediumHairLight');
+      hair[1, 1, 2] := PartManager.GetLayerResource(S + 'ShortHairLight');
+      hair[1, 2, 2] := PartManager.GetLayerResource(S + 'LongHairLight');
+      hair[1, 3, 2] := PartManager.GetLayerResource(S + 'FemHiPonytailLight');
+      hair[1, 4, 2] := PartManager.GetLayerResource(S + 'MediumHairLight');
 
-    hair[2, 1, 2] := PartManager.GetLayerResource(S + 'ShortHairDark');
-    hair[2, 2, 2] := PartManager.GetLayerResource(S + 'LongHairDark');
-    hair[2, 3, 2] := PartManager.GetLayerResource(S + 'FemHiPonytailDark');
-    hair[2, 4, 2] := PartManager.GetLayerResource(S + 'MediumHairDark');
+      hair[2, 1, 2] := PartManager.GetLayerResource(S + 'ShortHairDark');
+      hair[2, 2, 2] := PartManager.GetLayerResource(S + 'LongHairDark');
+      hair[2, 3, 2] := PartManager.GetLayerResource(S + 'FemHiPonytailDark');
+      hair[2, 4, 2] := PartManager.GetLayerResource(S + 'MediumHairDark');
 
-    hair[3, 1, 2] := PartManager.GetLayerResource(S + 'ShortHairRed');
-    hair[3, 2, 2] := PartManager.GetLayerResource(S + 'LongHairRed');
-    hair[3, 3, 2] := PartManager.GetLayerResource(S + 'FemHiPonytailRed');
-    hair[3, 4, 2] := PartManager.GetLayerResource(S + 'MediumHairRed');
+      hair[3, 1, 2] := PartManager.GetLayerResource(S + 'ShortHairRed');
+      hair[3, 2, 2] := PartManager.GetLayerResource(S + 'LongHairRed');
+      hair[3, 3, 2] := PartManager.GetLayerResource(S + 'FemHiPonytailRed');
+      hair[3, 4, 2] := PartManager.GetLayerResource(S + 'MediumHairRed');
 
-    hair[4, 1, 2] := PartManager.GetLayerResource(S + 'ShortHairGrey');
-    hair[4, 2, 2] := PartManager.GetLayerResource(S + 'LongHairGrey');
-    hair[4, 3, 2] := PartManager.GetLayerResource(S + 'FemHiPonytailGrey');
-    hair[4, 4, 2] := PartManager.GetLayerResource(S + 'MediumHairGrey');
-    //Long hair but a bun (braided)
-    hair[1, 2, 1] := PartManager.GetLayerResource(S + 'BunHairLight');
-    hair[2, 2, 1] := PartManager.GetLayerResource(S + 'BunHairDark');
-    hair[3, 2, 1] := PartManager.GetLayerResource(S + 'BunHairRed');
-    hair[4, 2, 1] := PartManager.GetLayerResource(S + 'BunHairGrey');
+      hair[4, 1, 2] := PartManager.GetLayerResource(S + 'ShortHairGrey');
+      hair[4, 2, 2] := PartManager.GetLayerResource(S + 'LongHairGrey');
+      hair[4, 3, 2] := PartManager.GetLayerResource(S + 'FemHiPonytailGrey');
+      hair[4, 4, 2] := PartManager.GetLayerResource(S + 'MediumHairGrey');
+      // Long hair but a bun (braided)
+      hair[1, 2, 1] := PartManager.GetLayerResource(S + 'BunHairLight');
+      hair[2, 2, 1] := PartManager.GetLayerResource(S + 'BunHairDark');
+      hair[3, 2, 1] := PartManager.GetLayerResource(S + 'BunHairRed');
+      hair[4, 2, 1] := PartManager.GetLayerResource(S + 'BunHairGrey');
 
-    //Ponytail but braided
-    hair[1, 3, 1] := PartManager.GetLayerResource(S + 'BraidedHairLight');
-    hair[2, 3, 1] := PartManager.GetLayerResource(S + 'BraidedHairDark');
-    hair[3, 3, 1] := PartManager.GetLayerResource(S + 'BraidedHairRed');
-    hair[4, 3, 1] := PartManager.GetLayerResource(S + 'BraidedHairGrey');
-    //No hair style left, but defined to bun (braided), because a female isn't bald
-    hair[1, 1, 1] := PartManager.GetLayerResource(S + 'BunHairLight');
-    hair[2, 1, 1] := PartManager.GetLayerResource(S + 'BunHairDark');
-    hair[3, 1, 1] := PartManager.GetLayerResource(S + 'BunHairRed');
-    hair[4, 1, 1] := PartManager.GetLayerResource(S + 'BunHairGrey');
+      // Ponytail but braided
+      hair[1, 3, 1] := PartManager.GetLayerResource(S + 'BraidedHairLight');
+      hair[2, 3, 1] := PartManager.GetLayerResource(S + 'BraidedHairDark');
+      hair[3, 3, 1] := PartManager.GetLayerResource(S + 'BraidedHairRed');
+      hair[4, 3, 1] := PartManager.GetLayerResource(S + 'BraidedHairGrey');
+      // No hair style left, but defined to bun (braided), because a female isn't bald
+      hair[1, 1, 1] := PartManager.GetLayerResource(S + 'BunHairLight');
+      hair[2, 1, 1] := PartManager.GetLayerResource(S + 'BunHairDark');
+      hair[3, 1, 1] := PartManager.GetLayerResource(S + 'BunHairRed');
+      hair[4, 1, 1] := PartManager.GetLayerResource(S + 'BunHairGrey');
 
-    hair[1, 4, 1] := PartManager.GetLayerResource(S + 'BunHairLight');
-    hair[2, 4, 1] := PartManager.GetLayerResource(S + 'BunHairDark');
-    hair[3, 4, 1] := PartManager.GetLayerResource(S + 'BunHairRed');
-    hair[4, 4, 1] := PartManager.GetLayerResource(S + 'BunHairGrey');
+      hair[1, 4, 1] := PartManager.GetLayerResource(S + 'BunHairLight');
+      hair[2, 4, 1] := PartManager.GetLayerResource(S + 'BunHairDark');
+      hair[3, 4, 1] := PartManager.GetLayerResource(S + 'BunHairRed');
+      hair[4, 4, 1] := PartManager.GetLayerResource(S + 'BunHairGrey');
     end;
   end; // Ende nicht DoA
 end;
@@ -1854,121 +1732,118 @@ const
 begin
   Log.DebugLog(FailName);
   try
-   if not genderboxopen and not tutorialboxopen then
-   begin
-    // DebugPlot(Key);
-    pr := Rect(300, 92, 448, 120);
-    lpDDSBack.BltFast(300 + Offset.X, 92 + Offset.Y, DXBack, @pr,
-      DDBLTFAST_WAIT);
-    if key = 39 then
-      key := 999; // keep the right arrow form printing Apostrophes
-    if key = 222 then
-      key := 39; // apostrophe
-    if key = 189 then
-      key := 45; // dash
-    if ((key > 64) and (key < 91)) or ((key > 47) and (key < 58)) or (key = 32)
-      or (key = 189) or (key = 39) or (key = 45) then
+    if not Genderboxopen and not Tutorialboxopen then
     begin
-      if ((key > 64) and (key < 91)) and (Shift <> [ssShift]) then
-      // make the char lowercase
-        key := key + 32;
-      // if (Length(CharacterName) < 13) and (pText.TextLength(CharacterName)< 130) then begin
-      if pText.TextLength(CharacterName) < 120 then
+      // DebugPlot(Key);
+      pr := Rect(300, 92, 448, 120);
+      lpDDSBack.BltFast(300 + Offset.X, 92 + Offset.y, DXBack, @pr, DDBLTFAST_WAIT);
+      if key = 39 then
+        key := 999; // keep the right arrow form printing Apostrophes
+      if key = 222 then
+        key := 39; // apostrophe
+      if key = 189 then
+        key := 45; // dash
+      if ((key > 64) and (key < 91)) or ((key > 47) and (key < 58)) or (key = 32) or (key = 189) or (key = 39) or (key = 45) then
       begin
-        if CaratCharPosition = Length(CharacterName) then
-        begin // adding a char to end of string
-          CharacterName := CharacterName + char(key);
-          CaratPosition := pText.TextLength(CharacterName);
-          CaratCharPosition := CaratCharPosition + 1;
-        end
-        else
-        begin // inserting a char
-          CaratCharPosition := CaratCharPosition + 1;
-          CharacterName := CharacterName + 'z';
-          // increase the size of the string by a char
-          for i := Length(CharacterName) downto CaratCharPosition do
-          begin
-            CharacterName[i] := CharacterName[i - 1];
-          end; // end for
-          CharacterName[CaratCharPosition] := char(key);
-          a := CharacterName;
-          SetLength(a, CaratCharPosition);
-          CaratPosition := pText.TextLength(a);
-        end;
-      end; // endif if length< 21
-    end
-    else if (key = 8) then
-    begin // backspace
-      if CharacterName <> '' then
-      begin
-        if CaratCharPosition = Length(CharacterName) then
-        begin // if at the end of the name
-          CaratCharPosition := CaratCharPosition - 1;
-          if CaratCharPosition = 0 then
+        if ((key > 64) and (key < 91)) and (Shift <> [ssShift]) then
+          // make the char lowercase
+          key := key + 32;
+        // if (Length(CharacterName) < 13) and (pText.TextLength(CharacterName)< 130) then begin
+        if pText.TextLength(CharacterName) < 120 then
+        begin
+          if CaratCharPosition = Length(CharacterName) then
+          begin // adding a char to end of string
+            CharacterName := CharacterName + char(key);
+            CaratPosition := pText.TextLength(CharacterName);
+            CaratCharPosition := CaratCharPosition + 1;
+          end
+          else
+          begin // inserting a char
+            CaratCharPosition := CaratCharPosition + 1;
+            CharacterName := CharacterName + 'z';
+            // increase the size of the string by a char
+            for i := Length(CharacterName) downto CaratCharPosition do
+            begin
+              CharacterName[i] := CharacterName[i - 1];
+            end; // end for
+            CharacterName[CaratCharPosition] := char(key);
+            a := CharacterName;
+            SetLength(a, CaratCharPosition);
+            CaratPosition := pText.TextLength(a);
+          end;
+        end; // endif if length< 21
+      end
+      else if (key = 8) then
+      begin // backspace
+        if CharacterName <> '' then
+        begin
+          if CaratCharPosition = Length(CharacterName) then
+          begin // if at the end of the name
+            CaratCharPosition := CaratCharPosition - 1;
+            if CaratCharPosition = 0 then
+              CharacterName := ''
+            else
+              SetLength(CharacterName, CaratCharPosition);
+            CaratPosition := pText.TextLength(CharacterName);
+          end
+          else if CaratCharPosition > 0 then
+          begin // in middle of name somewhere
+            CaratCharPosition := CaratCharPosition - 1;
+            for i := CaratCharPosition + 2 to Length(CharacterName) do
+            begin // chop out the middle char
+              CharacterName[i - 1] := CharacterName[i];
+            end; // end for
+            SetLength(CharacterName, Length(CharacterName) - 1);
+            a := CharacterName;
+            SetLength(a, CaratCharPosition);
+            CaratPosition := pText.TextLength(a);
+          end;
+
+        end; // endif length
+      end
+      else if (key = 46) then
+      begin // Delete
+        if (CharacterName <> '') and (CaratCharPosition <> Length(CharacterName)) then
+        begin
+          if (CaratCharPosition = 0) and (Length(CharacterName) = 1) then
             CharacterName := ''
           else
-            SetLength(CharacterName, CaratCharPosition);
-          CaratPosition := pText.TextLength(CharacterName);
-        end
-        else if CaratCharPosition > 0 then
-        begin // in middle of name somewhere
+          begin
+            for i := CaratCharPosition + 1 to Length(CharacterName) do
+            begin
+              CharacterName[i] := CharacterName[i + 1];
+            end;
+            SetLength(CharacterName, Length(CharacterName) - 1);
+          end;
+        end;
+      end
+      else if key = 37 then
+      begin // left arrow
+        if CaratCharPosition > 0 then
+        begin
           CaratCharPosition := CaratCharPosition - 1;
-          for i := CaratCharPosition + 2 to Length(CharacterName) do
-          begin // chop out the middle char
-            CharacterName[i - 1] := CharacterName[i];
-          end; // end for
-          SetLength(CharacterName, Length(CharacterName) - 1);
           a := CharacterName;
           SetLength(a, CaratCharPosition);
           CaratPosition := pText.TextLength(a);
-        end;
-
-      end; // endif length
-    end
-    else if (key = 46) then
-    begin // Delete
-      if (CharacterName <> '') and (CaratCharPosition <> Length(CharacterName))
-      then
-      begin
-        if (CaratCharPosition = 0) and (Length(CharacterName) = 1) then
-          CharacterName := ''
-        else
+        end; // endif
+      end
+      else if key = 999 then
+      begin // right arrow
+        if CaratCharPosition < Length(CharacterName) then
         begin
-          for i := CaratCharPosition + 1 to Length(CharacterName) do
-          begin
-            CharacterName[i] := CharacterName[i + 1];
-          end;
-          SetLength(CharacterName, Length(CharacterName) - 1);
-        end;
+          CaratCharPosition := CaratCharPosition + 1;
+          a := CharacterName;
+          SetLength(a, CaratCharPosition);
+          CaratPosition := pText.TextLength(a);
+        end; // endif
       end;
-    end
-    else if key = 37 then
-    begin // left arrow
-      if CaratCharPosition > 0 then
-      begin
-        CaratCharPosition := CaratCharPosition - 1;
-        a := CharacterName;
-        SetLength(a, CaratCharPosition);
-        CaratPosition := pText.TextLength(a);
-      end; // endif
-    end
-    else if key = 999 then
-    begin // right arrow
-      if CaratCharPosition < Length(CharacterName) then
-      begin
-        CaratCharPosition := CaratCharPosition + 1;
-        a := CharacterName;
-        SetLength(a, CaratCharPosition);
-        CaratPosition := pText.TextLength(a);
-      end; // endif
-    end;
 
-    // Character.Name:=CharacterName;
-    pText.PlotText(CharacterName, 310 + Offset.X, 95 + Offset.Y);
-    // plot the Carat
-    pText.PlotText('|', CaratPosition + 310 + Offset.X, 95 + Offset.Y);
-    SoAOS_DX_BltFront;
-   end;
+      // Character.Name:=CharacterName;
+      pText.PlotText(CharacterName, 310 + Offset.X, 95 + Offset.y);
+      // plot the Carat
+      pText.PlotText('|', CaratPosition + 310 + Offset.X, 95 + Offset.y);
+      SoAOS_DX_BltFront;
+    end;
   except
     on E: Exception do
       Log.Log(FailName + E.Message);
@@ -2059,8 +1934,7 @@ begin
   Log.DebugLog(FailName);
   try
     pr := Rect(300, 92, 448, 120);
-    lpDDSBack.BltFast(300 + Offset.X, 92 + Offset.Y, DXBack, @pr,
-      DDBLTFAST_WAIT);
+    lpDDSBack.BltFast(300 + Offset.X, 92 + Offset.y, DXBack, @pr, DDBLTFAST_WAIT);
     Inc(LoopCounter);
     if LoopCounter >= 5 then
     begin
@@ -2069,12 +1943,10 @@ begin
     end;
     if CaratVisible then
     begin
-      pText.PlotText('|', CaratPosition + 310 + Offset.X, 95 + Offset.Y);
+      pText.PlotText('|', CaratPosition + 310 + Offset.X, 95 + Offset.y);
     end;
-    pText.PlotText(CharacterName, 310 + Offset.X, 95 + Offset.Y);
+    pText.PlotText(CharacterName, 310 + Offset.X, 95 + Offset.y);
     DrawNewPlayer;
-    // lpDDSFront_Flip(nil, DDFLIP_WAIT);
-    // lpDDSBack.BltFast(0, 0, lpDDSFront, Rect(0, 0, 800, 600), DDBLTFAST_WAIT);
   except
     on E: Exception do
       Log.Log(FailName + E.Message);
@@ -2086,25 +1958,24 @@ procedure TCreation.OpenBox(box: TBoxEnum);
 var
   i: Integer;
   pr: TRect;
+  oybox: Integer;
 const
   FailName: string = 'TCreation.OpenBox';
 begin
   Log.DebugLog(FailName);
   try
-
+    // local "constants"
+    oybox := oy + (ord(box) - 12) * 42;
     // clean up any dimmed text
     pr := Rect(114, 237, 261, 439);
-    lpDDSBack.BltFast(pr.Left + Offset.X, pr.Top + Offset.Y, DXBack, @pr,
-      DDBLTFAST_WAIT);
+    lpDDSBack.BltFast(pr.Left + Offset.X, pr.Top + Offset.y, DXBack, @pr, DDBLTFAST_WAIT);
     // clean up after old boxes
-    pr := Rect(279, 239, 402, 588);
-    lpDDSBack.BltFast(pr.Left + Offset.X, pr.Top + Offset.Y, DXBack, @pr,
-      DDBLTFAST_WAIT);
+    pr := Rect(x1, y, x2, 588);
+    lpDDSBack.BltFast(pr.Left + Offset.X, pr.Top + Offset.y, DXBack, @pr, DDBLTFAST_WAIT);
     if BoxOpen = bxTraining then
     begin
       pr := Rect(465, 59, 465 + 123, 59 + 180);
-      lpDDSBack.BltFast(pr.Left + Offset.X, pr.Top + Offset.Y, DXBack, @pr,
-        DDBLTFAST_WAIT);
+      lpDDSBack.BltFast(pr.Left + Offset.X, pr.Top + Offset.y, DXBack, @pr, DDBLTFAST_WAIT);
     end;
     // clear the selectable rects
     for i := 0 to 20 do
@@ -2113,26 +1984,22 @@ begin
     if box = bxTraining then // Training
     begin
       pr := Rect(490, 160, 720, 500);
-      lpDDSBack.BltFast(pr.Left + Offset.X, pr.Top + Offset.Y, DXBack, @pr,
-        DDBLTFAST_WAIT);
+      lpDDSBack.BltFast(pr.Left + Offset.X, pr.Top + Offset.y, DXBack, @pr, DDBLTFAST_WAIT);
       pr := Rect(0, 0, 123, 180);
-      lpDDSBack.BltFast(465 + Offset.X, 59 + Offset.Y, DXBox, @pr,
-        DDBLTFAST_WAIT);
+      lpDDSBack.BltFast(465 + Offset.X, 59 + Offset.y, DXBox, @pr, DDBLTFAST_WAIT);
       pr := Rect(0, 0, 96, 21);
-      lpDDSBack.BltFast(465 + 13 + Offset.X, 69 + 38 + 24 * (SelectedTraining) +
-        Offset.Y, DXCircle, @pr, DDBLTFAST_SRCCOLORKEY or DDBLTFAST_WAIT);
+      lpDDSBack.BltFast(465 + 13 + Offset.X, 69 + 38 + 24 * (SelectedTraining) + Offset.y, DXCircle, @pr,
+        DDBLTFAST_SRCCOLORKEY or DDBLTFAST_WAIT);
       if modselection = TModSelection.RoD then // RoD - Kämpfer
       begin
-        pText.PlotTextCentered(txtMessage[5], 465 + Offset.X, 465 + 123 + Offset.X, 69 + 38 + Offset.Y, 240, UseSmallFont);
-        // SelectRect[ 18 ].rect := rect( 465, 69 + 38 , 465 + 123, 69 + 38 + 24 );
+        PlotTextCentered(txtMessage[5], 465 + Offset.X, 465 + 123 + Offset.X, 69 + 38 + Offset.y, UseSmallFont);
         SelectRect[18].enabled := True;
         SelectRect[19].enabled := false;
         SelectRect[20].enabled := false;
       end
       else if modselection = TModSelection.Caves then // Caves = Magier
       begin
-        pText.PlotTextCentered(txtMessage[7], 465 + Offset.X, 465 + 123 + Offset.X, 69 + 86 + Offset.Y, 240, UseSmallFont);
-        // SelectRect[ 20 ].rect := rect( 465, 69 + 38 + 24 * 2, 465 + 123, 69 + 38 + 24 + 24 * 2 );
+        PlotTextCentered(txtMessage[7], 465 + Offset.X, 465 + 123 + Offset.X, 69 + 86 + Offset.y, UseSmallFont);
         SelectRect[18].enabled := false;
         SelectRect[19].enabled := false;
         SelectRect[20].enabled := True;
@@ -2140,37 +2007,32 @@ begin
       else if modselection = TModSelection.DoA then // DoA
         if AhoulRace = 2 then // Ahoul, no Shaman or Halfbreed
         begin
-          pText.PlotTextCentered(txtMessage[5], 465 + Offset.X, 465 + 123 + Offset.X, 69 + 38 + Offset.Y, 240, UseSmallFont);
-          pText.PlotTextCentered(txtMessage[6], 465 + Offset.X, 465 + 123 + Offset.X, 69 + 62 + Offset.Y, 240, UseSmallFont);
-          // for i := 0 to 1 do
-          // SelectRect[ 18 + i ].rect := rect( 465, 69 + 38 + 24 * i, 465 + 123, 69 + 38 + 24 + 24 * i );
+          PlotTextCentered(txtMessage[5], 465 + Offset.X, 465 + 123 + Offset.X, 69 + 38 + Offset.y, UseSmallFont);
+          PlotTextCentered(txtMessage[6], 465 + Offset.X, 465 + 123 + Offset.X, 69 + 62 + Offset.y, UseSmallFont);
           SelectRect[18].enabled := True;
           SelectRect[19].enabled := True;
           SelectRect[20].enabled := false;
         end
         else if AhoulRace = 1 then // Shaman, no Ahoul or Halfbreed
         begin
-          pText.PlotTextCentered(txtMessage[7], 465 + Offset.X, 465 + 123 + Offset.X, 69 + 86 + Offset.Y, 240, UseSmallFont);
-          // for i := 2 to 2 do
-          // SelectRect[ 18 + i ].rect := rect( 465, 69 + 38 + 24 * i, 465 + 123, 69 + 38 + 24 + 24 * i );
+          PlotTextCentered(txtMessage[7], 465 + Offset.X, 465 + 123 + Offset.X, 69 + 86 + Offset.y, UseSmallFont);
           SelectRect[18].enabled := false;
           SelectRect[19].enabled := false;
           SelectRect[20].enabled := True;
         end
         else // halfbreed
         begin
-          pText.PlotTextCentered(txtMessage[5], 465 + Offset.X, 465 + 123 + Offset.X, 69 + 38 + Offset.Y, 240, UseSmallFont);
-          pText.PlotTextCentered(txtMessage[6], 465 + Offset.X, 465 + 123 + Offset.X, 69 + 62 + Offset.Y, 240, UseSmallFont);
-          pText.PlotTextCentered(txtMessage[7], 465 + Offset.X, 465 + 123 + Offset.X, 69 + 86 + Offset.Y, 240, UseSmallFont);
+          PlotTextCentered(txtMessage[5], 465 + Offset.X, 465 + 123 + Offset.X, 69 + 38 + Offset.y, UseSmallFont);
+          PlotTextCentered(txtMessage[6], 465 + Offset.X, 465 + 123 + Offset.X, 69 + 62 + Offset.y, UseSmallFont);
+          PlotTextCentered(txtMessage[7], 465 + Offset.X, 465 + 123 + Offset.X, 69 + 86 + Offset.y, UseSmallFont);
           for i := 0 to 2 do
-            // SelectRect[ 18 + i ].rect := rect( 465, 69 + 38 + 24 * i, 465 + 123, 69 + 38 + 24 + 24 * i )
             SelectRect[18 + i].enabled := True;
         end
       else // SoA, PoA, AoA, TsK
       begin
-        pText.PlotTextCentered(txtMessage[5], 465 + Offset.X, 465 + 123 + Offset.X, 69 + 38 + Offset.Y, 240, UseSmallFont);
-        pText.PlotTextCentered(txtMessage[6], 465 + Offset.X, 465 + 123 + Offset.X, 69 + 62 + Offset.Y, 240, UseSmallFont);
-        pText.PlotTextCentered(txtMessage[7], 465 + Offset.X, 465 + 123 + Offset.X, 69 + 86 + Offset.Y, 240, UseSmallFont);
+        PlotTextCentered(txtMessage[5], 465 + Offset.X, 465 + 123 + Offset.X, 69 + 38 + Offset.y, UseSmallFont);
+        PlotTextCentered(txtMessage[6], 465 + Offset.X, 465 + 123 + Offset.X, 69 + 62 + Offset.y, UseSmallFont);
+        PlotTextCentered(txtMessage[7], 465 + Offset.X, 465 + 123 + Offset.X, 69 + 86 + Offset.y, UseSmallFont);
         for i := 0 to 2 do
           SelectRect[18 + i].enabled := True;
       end;
@@ -2180,49 +2042,39 @@ begin
       for i := 12 to 16 do
       begin
         if i <> ord(box) then
-          DrawAlpha(lpDDSBack, Rect(InfoRect[i].Left, InfoRect[i].Top,
-            InfoRect[i].right - 20, InfoRect[i].bottom), Rect(0, 0, 25, 25),
+          DrawAlpha(lpDDSBack, Rect(InfoRect[i].Left, InfoRect[i].Top, InfoRect[i].right - 20, InfoRect[i].bottom), Rect(0, 0, 25, 25),
             DXBlack, false, 200);
       end;
       // plot box
       pr := Rect(0, 0, 123, 180);
-      lpDDSBack.BltFast(279 + Offset.X, 239 + (ord(box) - 12) * 42 + Offset.Y,
-        DXBox, @pr, DDBLTFAST_WAIT);
+      lpDDSBack.BltFast(ox1, oybox, DXBox, @pr, DDBLTFAST_WAIT);
       if (box = bxShirt) or (box = bxPants) then
       begin
         // now showselected shirt or pants
         pr := Rect(0, 0, 96, 21);
         if box = bxShirt then
           if modselection <> TModSelection.DoA then
-            lpDDSBack.BltFast(279 + 13 + Offset.X, 239 + (ord(box) - 12) * 42 +
-              34 + 24 * ixSelectedShirt + Offset.Y, DXCircle, @pr,
-              DDBLTFAST_SRCCOLORKEY or DDBLTFAST_WAIT)
+            lpDDSBack.BltFast(ox1 + 13, oybox + 34 + 24 * ixSelectedShirt, DXCircle, @pr, DDBLTFAST_SRCCOLORKEY or DDBLTFAST_WAIT)
           else // Unterschied: ixselectedbase statt ixselectedshirt
-            lpDDSBack.BltFast(279 + 13 + Offset.X, 239 + (ord(box) - 12) * 42 +
-              34 + 24 * ixSelectedBase + Offset.Y, DXCircle, @pr,
-              DDBLTFAST_SRCCOLORKEY or DDBLTFAST_WAIT)
+            lpDDSBack.BltFast(ox1 + 13, oybox + 34 + 24 * ixSelectedBase, DXCircle, @pr, DDBLTFAST_SRCCOLORKEY or DDBLTFAST_WAIT)
         else // Box = bxpants
-          lpDDSBack.BltFast(279 + 13 + Offset.X, 239 + (ord(box) - 12) * 42 + 34
-            + 24 * (ixSelectedPants) + Offset.Y, DXCircle, @pr,
-            DDBLTFAST_SRCCOLORKEY or DDBLTFAST_WAIT);
+          lpDDSBack.BltFast(ox1 + 13, oybox + 34 + 24 * (ixSelectedPants), DXCircle, @pr, DDBLTFAST_SRCCOLORKEY or DDBLTFAST_WAIT);
 
         if modselection = TModSelection.RoD then // Rise of Dwarf
         begin
           if box = bxShirt then
           begin
-            pText.PlotTextCentered(txtMessage[12], 279 + Offset.X, 279 + 123 + Offset.X, 239 + (ord(box) - 12) * 42 + 34 + Offset.Y, 240);
-            pText.PlotTextCentered(txtMessage[15], 279 + Offset.X, 279 + 123 + Offset.X, 239 + (ord(box) - 12) * 42 + 58 + Offset.Y, 240);
+            PlotTextCentered(txtMessage[12], ox1, ox2, oybox + 34);
+            PlotTextCentered(txtMessage[15], ox1, ox2, oybox + 58);
             for i := 0 to 1 do
-              // SelectRect[ ( Box - 12 ) * 4 + i ].rect := rect( 279, 239 + ( box - 12 ) * 42 + 34 + 24 * i, 279 + 123, 239 + ( box - 12 ) * 42 + 34 + 24 + 24 * i )
               SelectRect[(ord(box) - 12) * 4 + i].enabled := True;
           end
           else if box = bxPants then
           begin
-            pText.PlotTextCentered('Schwarz', 279 + Offset.X, 279 + 123 + Offset.X, 239 + (ord(box) - 12) * 42 + 34 + Offset.Y, 240);
-            pText.PlotTextCentered(txtMessage[13], 279 + Offset.X, 279 + 123 + Offset.X, 239 + (ord(box) - 12) * 42 + 58 + Offset.X, 240);
-            pText.PlotTextCentered(txtMessage[14], 279 + Offset.X, 279 + 123 + Offset.X, 239 + (ord(box) - 12) * 42 + 82 + Offset.X, 240);
+            PlotTextCentered('Schwarz', ox1, ox2, oybox + 34);
+            PlotTextCentered(txtMessage[13], ox1, ox2, oybox + 58);
+            PlotTextCentered(txtMessage[14], ox1, ox2, oybox + 82);
             for i := 0 to 2 do
-              // SelectRect[ ( Box - 12 ) * 4 + i ].rect := rect( 279, 239 + ( box - 12 ) * 42 + 34 + 24 * i, 279 + 123, 239 + ( box - 12 ) * 42 + 34 + 24 + 24 * i );
               SelectRect[(ord(box) - 12) * 4 + i].enabled := True;
           end;
         end // End Rise of Dwarf
@@ -2231,28 +2083,26 @@ begin
         begin
           if box = bxShirt then
           begin
-            pText.PlotTextCentered('Shaman', 279 + Offset.X, 279 + 123 + Offset.X, 239 + (ord(box) - 12) * 42 + 34 + Offset.Y, 240);
-            pText.PlotTextCentered('Ahoul', 279 + Offset.X, 279 + 123 + Offset.X, 239 + (ord(box) - 12) * 42 + 58 + Offset.Y, 240);
-            pText.PlotTextCentered('Mischling', 279 + Offset.X, 279 + 123 + Offset.X, 239 + (ord(box) - 12) * 42 + 82 + Offset.Y, 240);
+            PlotTextCentered('Shaman', ox1, ox2, oybox + 34);
+            PlotTextCentered('Ahoul', ox1, ox2, oybox + 58);
+            PlotTextCentered('Mischling', ox1, ox2, oybox + 82);
             for i := 0 to 2 do
               SelectRect[(ord(box) - 12) * 4 + i].enabled := True;
-            // SelectRect[ ( Box - 12 ) * 4 + i ].rect := rect( 279, 239 + ( box - 12 ) * 42 + 34 + 24 * i, 279 + 123, 239 + ( box - 12 ) * 42 + 34 + 24 + 24 * i )
           end
           else if box = bxPants then
           begin
-            pText.PlotTextCentered(txtMessage[12], 279 + Offset.X, 279 + 123 + Offset.X, 239 + (ord(box) - 12) * 42 + 34 + Offset.Y, 240);
-            pText.PlotTextCentered(txtMessage[13], 279 + Offset.X, 279 + 123 + Offset.X, 239 + (ord(box) - 12) * 42 + 58 + Offset.Y, 240);
+            PlotTextCentered(txtMessage[12], ox1, ox2, oybox + 34);
+            PlotTextCentered(txtMessage[13], ox1, ox2, oybox + 58);
             for i := 0 to 1 do
               SelectRect[(ord(box) - 12) * 4 + i].enabled := True;
-            // SelectRect[ ( Box - 12 ) * 4 + i ].rect := rect( 279, 239 + ( box - 12 ) * 42 + 34 + 24 * i, 279 + 123, 239 + ( box - 12 ) * 42 + 34 + 24 + 24 * i );
           end;
         end // End Days of Ahoul
         else
         begin
-          pText.PlotTextCentered(txtMessage[12], 279 + Offset.X, 279 + 123 + Offset.X, 239 + (ord(box) - 12) * 42 + 34 + Offset.Y, 240);
-          pText.PlotTextCentered(txtMessage[13], 279 + Offset.X, 279 + 123 + Offset.X, 239 + (ord(box) - 12) * 42 + 58 + Offset.Y, 240);
-          pText.PlotTextCentered(txtMessage[14], 279 + Offset.X, 279 + 123 + Offset.X, 239 + (ord(box) - 12) * 42 + 82 + Offset.Y, 240);
-          pText.PlotTextCentered(txtMessage[15], 279 + Offset.X, 279 + 123 + Offset.X, 239 + (ord(box) - 12) * 42 + 106 + Offset.Y, 240);
+          PlotTextCentered(txtMessage[12], ox1, ox2, oybox + 34);
+          PlotTextCentered(txtMessage[13], ox1, ox2, oybox + 58);
+          PlotTextCentered(txtMessage[14], ox1, ox2, oybox + 82);
+          PlotTextCentered(txtMessage[15], ox1, ox2, oybox + 106);
           for i := 0 to 3 do
             SelectRect[(ord(box) - 12) * 4 + i].enabled := True;
         end;
@@ -2262,40 +2112,34 @@ begin
         pr := Rect(0, 0, 96, 21);
         if modselection = TModSelection.RoD then // Rise of Dwarf
         begin
-          lpDDSBack.BltFast(279 + 13 + Offset.X, 239 + (ord(box) - 12) * 42 + 34
-            + 24 * (ixSelectedHair) + Offset.Y, DXCircle, @pr,
-            DDBLTFAST_SRCCOLORKEY or DDBLTFAST_WAIT);
-          pText.PlotTextCentered(txtMessage[16], 279 + Offset.X, 279 + 123 + Offset.X, 239 + (ord(box) - 12) * 42 + 34 + Offset.Y, 240);
-          pText.PlotTextCentered(txtMessage[17], 279 + Offset.X, 279 + 123 + Offset.X, 239 + (ord(box) - 12) * 42 + 58 + Offset.Y, 240);
-          pText.PlotTextCentered(txtMessage[18], 279 + Offset.X, 279 + 123 + Offset.X, 239 + (ord(box) - 12) * 42 + 82 + Offset.Y, 240);
+          lpDDSBack.BltFast(ox1 + 13, oybox + 34 + 24 * (ixSelectedHair), DXCircle, @pr, DDBLTFAST_SRCCOLORKEY or DDBLTFAST_WAIT);
+          PlotTextCentered(txtMessage[16], ox1, ox2, oybox + 34);
+          PlotTextCentered(txtMessage[17], ox1, ox2, oybox + 58);
+          PlotTextCentered(txtMessage[18], ox1, ox2, oybox + 82);
           for i := 0 to 2 do
             SelectRect[(ord(box) - 12) * 4 + i].enabled := True;
-          // SelectRect[ ( Box - 12 ) * 4 + i ].rect := rect( 279, 239 + ( box - 12 ) * 42 + 34 + 24 * i, 279 + 123, 239 + ( box - 12 ) * 42 + 34 + 24 + 24 * i );
         end // End Rise of Dwarf
         else if modselection = TModSelection.DoA then // Days of Ahoul
         begin
-          lpDDSBack.BltFast(279 + 13 + Offset.X, 239 + (ord(box) - 12) * 42 + 34
-            + 24 * (ixSelectedTattoo) + Offset.Y, DXCircle, @pr,
-            DDBLTFAST_SRCCOLORKEY or DDBLTFAST_WAIT);
-          pText.PlotTextCentered(txtMessage[15], 279 + Offset.X, 279 + 123 + Offset.X, 239 + (ord(box) - 12) * 42 + 34 + Offset.Y, 240); // blau
-          pText.PlotTextCentered(txtMessage[14], 279 + Offset.X, 279 + 123 + Offset.X, 239 + (ord(box) - 12) * 42 + 58 + Offset.Y, 240); // gelb
+          lpDDSBack.BltFast(ox1 + 13, oybox + 34 + 24 * (ixSelectedTattoo), DXCircle, @pr, DDBLTFAST_SRCCOLORKEY or DDBLTFAST_WAIT);
+          PlotTextCentered(txtMessage[15], ox1, ox2, oybox + 34);
+          // blau
+          PlotTextCentered(txtMessage[14], ox1, ox2, oybox + 58);
+          // gelb
           if language = 'german' then
-            pText.PlotTextCentered('Keins', 279 + Offset.X, 279 + 123 + Offset.X, 239 + (ord(box) - 12) * 42 + 82 + Offset.Y, 240)
+            PlotTextCentered('Keins', ox1, ox2, oybox + 82)
           else
-            pText.PlotTextCentered('no', 279 + Offset.X, 279 + 123 + Offset.X, 239 + (ord(box) - 12) * 42 + 82 + Offset.Y, 240);
+            PlotTextCentered('no', ox1, ox2, oybox + 82);
           for i := 0 to 2 do
-            // SelectRect[ ( Box - 12 ) * 4 + i ].rect := rect( 279, 239 + ( box - 12 ) * 42 + 34 + 24 * i, 279 + 123, 239 + ( box - 12 ) * 42 + 34 + 24 + 24 * i );
             SelectRect[(ord(box) - 12) * 4 + i].enabled := True;
         end
         else
         begin
-          lpDDSBack.BltFast(279 + 13 + Offset.X, 239 + (ord(box) - 12) * 42 + 34
-            + 24 * (ixSelectedHair) + Offset.Y, DXCircle, @pr,
-            DDBLTFAST_SRCCOLORKEY or DDBLTFAST_WAIT);
-          pText.PlotTextCentered(txtMessage[16], 279 + Offset.X, 279 + 123 + Offset.X, 239 + (ord(box) - 12) * 42 + 34 + Offset.Y, 240);
-          pText.PlotTextCentered(txtMessage[17], 279 + Offset.X, 279 + 123 + Offset.X, 239 + (ord(box) - 12) * 42 + 58 + Offset.Y, 240);
-          pText.PlotTextCentered(txtMessage[18], 279 + Offset.X, 279 + 123 + Offset.X, 239 + (ord(box) - 12) * 42 + 82 + Offset.Y, 240);
-          pText.PlotTextCentered(txtMessage[19], 279 + Offset.X, 279 + 123 + Offset.X, 239 + (ord(box) - 12) * 42 + 106 + Offset.Y, 240);
+          lpDDSBack.BltFast(ox1 + 13, oybox + 34 + 24 * (ixSelectedHair), DXCircle, @pr, DDBLTFAST_SRCCOLORKEY or DDBLTFAST_WAIT);
+          PlotTextCentered(txtMessage[16], ox1, ox2, oybox + 34);
+          PlotTextCentered(txtMessage[17], ox1, ox2, oybox + 58);
+          PlotTextCentered(txtMessage[18], ox1, ox2, oybox + 82);
+          PlotTextCentered(txtMessage[19], ox1, ox2, oybox + 106);
           for i := 0 to 3 do
             SelectRect[(ord(box) - 12) * 4 + i].enabled := True;
         end;
@@ -2305,42 +2149,34 @@ begin
         pr := Rect(0, 0, 96, 21);
         if modselection = TModSelection.RoD then // Rise of Dwarf
         begin
-          lpDDSBack.BltFast(279 + 13 + Offset.X, 239 + (ord(box) - 12) * 42 + 34
-            + 24 * (ixSelectedHairStyle) + Offset.Y, DXCircle, @pr,
-            DDBLTFAST_SRCCOLORKEY or DDBLTFAST_WAIT);
-          pText.PlotTextCentered(txtMessage[20], 279 + Offset.X, 279 + 123 + Offset.X, 239 + (ord(box) - 12) * 42 + 34 + Offset.X, 240);
+          lpDDSBack.BltFast(ox1 + 13, oybox + 34 + 24 * (ixSelectedHairStyle), DXCircle, @pr, DDBLTFAST_SRCCOLORKEY or DDBLTFAST_WAIT);
+          PlotTextCentered(txtMessage[20], ox1, ox2, oybox + 34);
           for i := 0 to 0 do
-            // SelectRect[ ( Box - 12 ) * 4 + i ].rect := rect( 279, 239 + ( box - 12 ) * 42 + 34 + 24 * i, 279 + 123, 239 + ( box - 12 ) * 42 + 34 + 24 + 24 * i );
             SelectRect[(ord(box) - 12) * 4 + i].enabled := True;
         end // End Rise of Dwarf
         else if modselection = TModSelection.DoA then // Days of Ahoul
         begin
-          lpDDSBack.BltFast(279 + 13 + Offset.X, 239 + (ord(box) - 12) * 42 + 34
-            + 24 * (ixselectedDoAHair) + Offset.Y, DXCircle, @pr,
-            DDBLTFAST_SRCCOLORKEY or DDBLTFAST_WAIT);
+          lpDDSBack.BltFast(ox1 + 13, oybox + 34 + 24 * (ixselectedDoAHair), DXCircle, @pr, DDBLTFAST_SRCCOLORKEY or DDBLTFAST_WAIT);
           if AhoulRace > 1 then
-            pText.PlotTextCentered(txtMessage[24], 279 + Offset.X, 279 + 123 + Offset.X, 239 + (ord(box) - 12) * 42 + 34 + Offset.Y, 240)
+            PlotTextCentered(txtMessage[24], ox1, ox2, oybox + 34)
           else
-            pText.PlotTextCentered(txtMessage[20], 279 + Offset.X, 279 + 123 + Offset.X, 239 + (ord(box) - 12) * 42 + 34 + Offset.Y, 240);
-          pText.PlotTextCentered(txtMessage[21] + txtMessage[3], 279 + Offset.X, 279 + 123 + Offset.X, 239 + (ord(box) - 12) * 42 + 58 + Offset.Y, 240);
-          pText.PlotTextCentered(txtMessage[22], 279 + Offset.X, 279 + 123 + Offset.X, 239 + (ord(box) - 12) * 42 + 82 + Offset.Y, 240);
-          pText.PlotTextCentered(txtMessage[23], 279 + Offset.X, 279 + 123 + Offset.X, 239 + (ord(box) - 12) * 42 + 106 + Offset.Y, 240);
+            PlotTextCentered(txtMessage[20], ox1, ox2, oybox + 34);
+          PlotTextCentered(txtMessage[21] + txtMessage[3], ox1, ox2, oybox + 58);
+          PlotTextCentered(txtMessage[22], ox1, ox2, oybox + 82);
+          PlotTextCentered(txtMessage[23], ox1, ox2, oybox + 106);
           for i := 0 to 3 do
-            // SelectRect[ ( Box - 12 ) * 4 + i ].rect := rect( 279, 239 + ( box - 12 ) * 42 + 34 + 24 * i, 279 + 123, 239 + ( box - 12 ) * 42 + 34 + 24 + 24 * i );
             SelectRect[(ord(box) - 12) * 4 + i].enabled := True;
         end
         else
         begin
-          lpDDSBack.BltFast(279 + 13 + Offset.X, 239 + (ord(box) - 12) * 42 + 34
-            + 24 * (ixSelectedHairStyle) + Offset.Y, DXCircle, @pr,
-            DDBLTFAST_SRCCOLORKEY or DDBLTFAST_WAIT);
-          pText.PlotTextCentered(txtMessage[20], 279 + Offset.X, 279 + 123 + Offset.X, 239 + (ord(box) - 12) * 42 + 34 + Offset.Y, 240);
-          pText.PlotTextCentered(txtMessage[21], 279 + Offset.X, 279 + 123 + Offset.X, 239 + (ord(box) - 12) * 42 + 58 + Offset.Y, 240);
-          pText.PlotTextCentered(txtMessage[22], 279 + Offset.X, 279 + 123 + Offset.X, 239 + (ord(box) - 12) * 42 + 82 + Offset.Y, 240);
-          if not female then
-            pText.PlotTextCentered(txtMessage[23], 279 + Offset.X, 279 + 123 + Offset.X, 239 + (ord(box) - 12) * 42 + 106 + Offset.X, 240)
-          else //Medium hair
-            pText.PlotTextCentered(txtMessage[106], 279 + Offset.X, 279 + 123 + Offset.X, 239 + (ord(box) - 12) * 42 + 106 + Offset.X, 240);
+          lpDDSBack.BltFast(ox1 + 13, oybox + 34 + 24 * (ixSelectedHairStyle), DXCircle, @pr, DDBLTFAST_SRCCOLORKEY or DDBLTFAST_WAIT);
+          PlotTextCentered(txtMessage[20], ox1, ox2, oybox + 34);
+          PlotTextCentered(txtMessage[21], ox1, ox2, oybox + 58);
+          PlotTextCentered(txtMessage[22], ox1, ox2, oybox + 82);
+          if not Female then
+            PlotTextCentered(txtMessage[23], ox1, ox2, oybox + 106)
+          else // Medium hair
+            PlotTextCentered(txtMessage[106], ox1, ox2, oybox + 106);
           for i := 0 to 3 do
             SelectRect[(ord(box) - 12) * 4 + i].enabled := True;
         end;
@@ -2349,18 +2185,20 @@ begin
         if modselection <> TModSelection.DoA then
         begin
           pr := Rect(0, 0, 96, 21);
-          lpDDSBack.BltFast(279 + 13 + Offset.X, 239 + (ord(box) - 12) * 42 + 34
-            + 24 * (ixSelectedBeard) + 24 + Offset.Y, DXCircle, @pr,
-            DDBLTFAST_SRCCOLORKEY or DDBLTFAST_WAIT);
-          if not female then
+          lpDDSBack.BltFast(ox1 + 13, oybox + 34 + 24 * (ixSelectedBeard) + 24, DXCircle, @pr, DDBLTFAST_SRCCOLORKEY or DDBLTFAST_WAIT);
+          if not Female then
           begin
-            pText.PlotTextCentered(txtMessage[24], 279 + Offset.X, 279 + 123 + Offset.X, 239 + (ord(box) - 12) * 42 + 58 + Offset.Y, 240); //Beard
-            pText.PlotTextCentered(txtMessage[25], 279 + Offset.X, 279 + 123 + Offset.X, 239 + (ord(box) - 12) * 42 + 82 + Offset.Y, 240); //No beard
+            PlotTextCentered(txtMessage[24], ox1, ox2, oybox + 58);
+            // Beard
+            PlotTextCentered(txtMessage[25], ox1, ox2, oybox + 82);
+            // No beard
           end
           else
           begin
-            pText.PlotTextCentered(txtMessage[107], 279 + Offset.X, 279 + 123 + Offset.X, 239 + (ord(box) - 12) * 42 + 58 + Offset.Y, 240); //Braided
-            pText.PlotTextCentered(txtMessage[108], 279 + Offset.X, 279 + 123 + Offset.X, 239 + (ord(box) - 12) * 42 + 82 + Offset.Y, 240); //Normal
+            PlotTextCentered(txtMessage[107], ox1, ox2, oybox + 58);
+            // Braided
+            PlotTextCentered(txtMessage[108], ox1, ox2, oybox + 82);
+            // Normal
           end;
           for i := 0 to 1 do
             SelectRect[(ord(box) - 12) * 4 + i].enabled := True;
@@ -2383,14 +2221,11 @@ begin
   Log.DebugLog(FailName);
   try
     pr := Rect(110, 93, 264, 227);
-    lpDDSBack.BltFast(pr.Left + Offset.X, pr.Top + Offset.Y, DXBack, @pr,
-      DDBLTFAST_WAIT);
+    lpDDSBack.BltFast(pr.Left + Offset.X, pr.Top + Offset.y, DXBack, @pr, DDBLTFAST_WAIT);
     SelectedShirt := shirt[ixSelectedShirt + 1];
     SelectedPants := pants[(ixSelectedPants) + 1];
     if modselection <> TModSelection.DoA then // Nicht Days of Ahoul
-      SelectedHair := hair[(ixSelectedHair) + 1, (ixSelectedHairStyle) + 1,
-        (ixSelectedBeard) + 1]
-      // SelectedHair := hair[ ( ixSelectedHair - 8 ) + 1, ( ixSelectedHairStyle - 12 ) + 1, ( ixSelectedBeard - 16 ) + 1 ]
+      SelectedHair := hair[(ixSelectedHair) + 1, (ixSelectedHairStyle) + 1, (ixSelectedBeard) + 1]
     else
     begin
       if (ixselectedDoAHair = 0) and (AhoulRace = 2) then
@@ -2414,8 +2249,7 @@ end;
 
 // DrawTheGuy
 
-procedure TCreation.FormMouseDown(Sender: TObject; Button: TMouseButton;
-  Shift: TShiftState; X, Y: Integer);
+procedure TCreation.FormMouseDown(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X, y: Integer);
 const
   FailName: string = 'TCreation.FromMouseDown';
 var
@@ -2425,19 +2259,16 @@ begin
   try
     r1 := ApplyOffset(Rect(318, 553, 359, 577));
     r2 := ApplyOffset(Rect(318, 510, 359, 537));
-    if r1.Contains(point(X, Y)) or r2.Contains(point(X, Y)) then
+    if r1.Contains(point(X, y)) or r2.Contains(point(X, y)) then
     begin
       // clean up any dimmed text
       pr := Rect(114, 237, 261, 439);
-      lpDDSBack.BltFast(pr.Left + Offset.X, pr.Top + Offset.Y, DXBack, @pr,
-        DDBLTFAST_WAIT);
+      lpDDSBack.BltFast(pr.Left + Offset.X, pr.Top + Offset.y, DXBack, @pr, DDBLTFAST_WAIT);
       // clean up after old boxes
-      pr := Rect(279, 239, 402, 588);
-      lpDDSBack.BltFast(pr.Left + Offset.X, pr.Top + Offset.Y, DXBack, @pr,
-        DDBLTFAST_WAIT);
+      pr := Rect(x1, y, x2, 588);
+      lpDDSBack.BltFast(pr.Left + Offset.X, pr.Top + Offset.y, DXBack, @pr, DDBLTFAST_WAIT);
       pr := Rect(465, 59, 465 + 123, 59 + 181);
-      lpDDSBack.BltFast(pr.Left + Offset.X, pr.Top + Offset.Y, DXBack, @pr,
-        DDBLTFAST_WAIT);
+      lpDDSBack.BltFast(pr.Left + Offset.X, pr.Top + Offset.y, DXBack, @pr, DDBLTFAST_WAIT);
       BoxOpen := bxNone;
     end;
 
@@ -2448,8 +2279,7 @@ begin
 
 end; // FormMouseDown
 
-procedure TCreation.FormMouseMove(Sender: TObject; Shift: TShiftState;
-  X, Y: Integer);
+procedure TCreation.FormMouseMove(Sender: TObject; Shift: TShiftState; X, y: Integer);
 const
   FailName: string = 'TCreation.FormMouseMove';
 var
@@ -2459,16 +2289,14 @@ begin
   try
     // Clean up continue and cancel
     pr := DlgRect.dlgNewContinueRect;
-    lpDDSBack.BltFast(ContinueRect.Left, ContinueRect.Top, DXBack, @pr,
-      DDBLTFAST_WAIT);
+    lpDDSBack.BltFast(ContinueRect.Left, ContinueRect.Top, DXBack, @pr, DDBLTFAST_WAIT);
     if BoxOpen = bxNone then
     begin
       pr := DlgRect.dlgNewCancelRect;
-      lpDDSBack.BltFast(CancelRect.Left, CancelRect.Top, DXBack, @pr,
-        DDBLTFAST_WAIT);
+      lpDDSBack.BltFast(CancelRect.Left, CancelRect.Top, DXBack, @pr, DDBLTFAST_WAIT);
     end;
     // clear text
-    if ContinueRect.Contains(point(X, Y)) then
+    if ContinueRect.Contains(point(X, y)) then
     begin // over continue
       // dont clear if over continue, we might have the you must enter name text up -kludgy
     end
@@ -2476,15 +2304,13 @@ begin
     begin
       if BoxOpen = bxTraining then
       begin
-        pr := Rect(490, 239, 720, 500);
-        lpDDSBack.BltFast(pr.Left + Offset.X, pr.Top + Offset.Y, DXBack, @pr,
-          DDBLTFAST_SRCCOLORKEY or DDBLTFAST_WAIT);
+        pr := Rect(490, y, 720, 500);
+        lpDDSBack.BltFast(pr.Left + Offset.X, pr.Top + Offset.y, DXBack, @pr, DDBLTFAST_SRCCOLORKEY or DDBLTFAST_WAIT);
       end
       else
       begin
         pr := Rect(490, 160, 720, 500);
-        lpDDSBack.BltFast(pr.Left + Offset.X, pr.Top + Offset.Y, DXBack, @pr,
-          DDBLTFAST_SRCCOLORKEY or DDBLTFAST_WAIT);
+        lpDDSBack.BltFast(pr.Left + Offset.X, pr.Top + Offset.y, DXBack, @pr, DDBLTFAST_SRCCOLORKEY or DDBLTFAST_WAIT);
       end;
     end;
   except
@@ -2505,8 +2331,7 @@ end;
 
 function TCreation.GetPlayerININame: string;
 begin
-  Result := ChangeFileExt(ExtractFileName(TCharacterResource(Character.Resource)
-    .Filename), '');
+  Result := ChangeFileExt(ExtractFileName(TCharacterResource(Character.Resource).Filename), '');
 end;
 
 end.
