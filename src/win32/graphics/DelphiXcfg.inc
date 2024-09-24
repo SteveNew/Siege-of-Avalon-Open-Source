@@ -357,6 +357,34 @@
   {$DEFINE VER28UP} //Delphi 11 Alexandria
 {$ENDIF}
 
+{$IFDEF VER360}
+  {$DEFINE VER3UP}
+  {$DEFINE VER4UP}
+  {$DEFINE VER5UP}
+  {$DEFINE VER6UP}
+  {$DEFINE VER7UP}
+  {$DEFINE VER9UP}
+  {$DEFINE VER10UP}
+  {$DEFINE VER11UP}
+  {$DEFINE VER12UP}
+  {$DEFINE VER14UP}
+  {$DEFINE VER15UP}
+  {$DEFINE VER16UP}
+  {$DEFINE VER17UP}
+  {$DEFINE VER18UP}
+  {$DEFINE VER19UP}
+  {$DEFINE VER20UP}
+  {$DEFINE VER21UP}
+  {$DEFINE VER22UP}
+  {$DEFINE VER23UP}
+  {$DEFINE VER24UP}
+  {$DEFINE VER25UP}
+  {$DEFINE VER26UP}
+  {$DEFINE VER27UP}
+  {$DEFINE VER28UP}
+  {$DEFINE VER29UP} //Delphi 12 Athens
+{$ENDIF}
+
 {$IFDEF VER100}
   // Delphi 3
   {$Define D3UP}
@@ -769,6 +797,37 @@
   {$Define D26UP}
   {$Define D27UP}
   {$Define D28UP}
+  //cannot be made, Berlin version lost older interfaces
+  //{.$Define D_EE_UP}
+{$ENDIF}
+
+{$IFDEF VER360}
+  // Delphi 29 - 12 Athens
+  {$Define D3UP}
+  {$Define D4UP}
+  {$Define D5UP}
+  {$Define D6UP}
+  {$Define D7UP}
+  {$Define D9UP}
+  {$Define D10UP}
+  {$Define D11UP}
+  {$Define D12UP}
+  {$Define D14UP}
+  {$Define D15UP}
+  {$Define D16UP}
+  {$Define D17UP}
+  {$Define D18UP}
+  {$Define D19UP}
+  {$Define D20UP}
+  {$Define D21UP}
+  {$Define D22UP}
+  {$Define D23UP}
+  {$Define D24UP}
+  {$Define D25UP}
+  {$Define D26UP}
+  {$Define D27UP}
+  {$Define D28UP}
+  {$Define D29UP}
   //cannot be made, Berlin version lost older interfaces
   //{.$Define D_EE_UP}
 {$ENDIF}
