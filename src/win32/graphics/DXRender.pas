@@ -2,8 +2,6 @@ unit DXRender;
 
 interface
 
-{$INCLUDE DelphiXcfg.inc}
-
 uses
   Winapi.Windows,
   Winapi.Direct3D,
@@ -214,10 +212,10 @@ procedure dxrMakeRGBSurface(var Surface: TDXR_Surface; Width, Height, BitCount: 
 function dxrScanLine(const Surface: TDXR_Surface; y: DWORD): Pointer;
 procedure dxrZBufferClear(const Surface: TDXR_Surface);
 
-function dxrDDSurfaceLock(DDSurface: {$IFDEF D3D_deprecated}IDirectDrawSurface{$ELSE}IDirectDrawSurface7{$ENDIF}; var Surface: TDXR_Surface): Boolean; {$IFDEF VER9UP}inline;{$ENDIF}
-function dxrDDSurfaceLock2(DDSurface: {$IFDEF D3D_deprecated}IDirectDrawSurface{$ELSE}IDirectDrawSurface7{$ENDIF}; var ddsd: {$IFDEF D3D_deprecated}TDDSurfaceDesc{$ELSE}TDDSurfaceDesc2{$ENDIF};
-  var Surface: TDXR_Surface): Boolean; {$IFDEF VER9UP}inline;{$ENDIF}
-procedure dxrDDSurfaceUnLock(DDSurface: {$IFDEF D3D_deprecated}IDirectDrawSurface{$ELSE}IDirectDrawSurface7{$ENDIF}; const Surface: TDXR_Surface); {$IFDEF VER9UP}inline;{$ENDIF}
+function dxrDDSurfaceLock(DDSurface: IDirectDrawSurface; var Surface: TDXR_Surface): Boolean; inline;
+function dxrDDSurfaceLock2(DDSurface: IDirectDrawSurface; var ddsd: TDDSurfaceDesc;
+  var Surface: TDXR_Surface): Boolean; inline;
+procedure dxrDDSurfaceUnLock(DDSurface: IDirectDrawSurface; const Surface: TDXR_Surface); inline;
 
 procedure dxrDefRenderStates(var States: TDXR_RenderStates);
 
@@ -396,14 +394,14 @@ type
     RHW: TDXRMachine_Reg_RHW;
     constructor Create;
     destructor Destroy; override;
-    function CreateTree: PDXRMachine_Tree; {$IFDEF VER9UP}inline;{$ENDIF}
-    function CreateTree2(Typ: TDXRMachine_TreeType): PDXRMachine_Tree; {$IFDEF VER9UP}inline;{$ENDIF}
-    function CreateTree_LoadColor(Color: DWORD): PDXRMachine_Tree; {$IFDEF VER9UP}inline;{$ENDIF}
-    function CreateTree_LoadConstColor(R, G, B, A: Byte): PDXRMachine_Tree; {$IFDEF VER9UP}inline;{$ENDIF}
-    function CreateTree_LoadTexture(Texture: DWORD): PDXRMachine_Tree; {$IFDEF VER9UP}inline;{$ENDIF}
-    function CreateTree_LoadBumpTexture(Texture, BumpTexture: DWORD): PDXRMachine_Tree; {$IFDEF VER9UP}inline;{$ENDIF}
-    function CreateTree_Blend(Blend: TDXR_Blend; BlendTree1, BlendTree2: PDXRMachine_Tree): PDXRMachine_Tree; {$IFDEF VER9UP}inline;{$ENDIF}
-    procedure Initialize; {$IFDEF VER9UP}inline;{$ENDIF}
+    function CreateTree: PDXRMachine_Tree; inline;
+    function CreateTree2(Typ: TDXRMachine_TreeType): PDXRMachine_Tree; inline;
+    function CreateTree_LoadColor(Color: DWORD): PDXRMachine_Tree; inline;
+    function CreateTree_LoadConstColor(R, G, B, A: Byte): PDXRMachine_Tree; inline;
+    function CreateTree_LoadTexture(Texture: DWORD): PDXRMachine_Tree; inline;
+    function CreateTree_LoadBumpTexture(Texture, BumpTexture: DWORD): PDXRMachine_Tree; inline;
+    function CreateTree_Blend(Blend: TDXR_Blend; BlendTree1, BlendTree2: PDXRMachine_Tree): PDXRMachine_Tree; inline;
+    procedure Initialize; inline;
     procedure Compile(Tree: PDXRMachine_Tree);
     procedure Run(Count: Integer);
     property Compiled: Boolean read FCompiled write FCompiled;
@@ -622,14 +620,14 @@ begin
     Result := False;
 end;
 
-function dxrDDSurfaceLock(DDSurface: {$IFDEF D3D_deprecated}IDirectDrawSurface{$ELSE}IDirectDrawSurface7{$ENDIF}; var Surface: TDXR_Surface): Boolean;
+function dxrDDSurfaceLock(DDSurface: IDirectDrawSurface; var Surface: TDXR_Surface): Boolean;
 var
-  ddsd: {$IFDEF D3D_deprecated}TDDSurfaceDesc{$ELSE}TDDSurfaceDesc2{$ENDIF};
+  ddsd: TDDSurfaceDesc;
 begin
   Result := dxrDDSurfaceLock2(DDSurface, ddsd, Surface);
 end;
-                                                                                    
-function dxrDDSurfaceLock2(DDSurface: {$IFDEF D3D_deprecated}IDirectDrawSurface{$ELSE}IDirectDrawSurface7{$ENDIF}; var ddsd: {$IFDEF D3D_deprecated}TDDSurfaceDesc{$ELSE}TDDSurfaceDesc2{$ENDIF};
+
+function dxrDDSurfaceLock2(DDSurface: IDirectDrawSurface; var ddsd: TDDSurfaceDesc;
   var Surface: TDXR_Surface): Boolean;
 const
   DDPF_PALETTEINDEXED = DDPF_PALETTEINDEXED1 or DDPF_PALETTEINDEXED2 or
@@ -661,7 +659,7 @@ begin
   end;
 end;
 
-procedure dxrDDSurfaceUnLock(DDSurface: {$IFDEF D3D_deprecated}IDirectDrawSurface{$ELSE}IDirectDrawSurface7{$ENDIF}; const Surface: TDXR_Surface);
+procedure dxrDDSurfaceUnLock(DDSurface: IDirectDrawSurface; const Surface: TDXR_Surface);
 begin
   DDSurface.Unlock(Surface.Bits);
 end;
@@ -8721,18 +8719,18 @@ asm
   idiv c
 end;
 
-function Max(B1, B2: Integer): Integer; {$IFDEF VER9UP}inline;{$ENDIF}
+function Max(B1, B2: Integer): Integer; inline;
 begin
   if B1>=B2 then Result := B1 else Result := B2;
 end;
 
-function Min(B1, B2: Integer): Integer; {$IFDEF VER9UP}inline;{$ENDIF}
+function Min(B1, B2: Integer): Integer; inline;
 begin
   if B1<=B2 then Result := B1 else Result := B2;
 end;
 
 function BltClipX(const Dest, Src: TDXR_Surface;
-  var StartX, EndX, StartSrcX: Integer): Boolean; {$IFDEF VER9UP}inline;{$ENDIF}
+  var StartX, EndX, StartSrcX: Integer): Boolean; inline;
 begin
   if StartX<0 then
   begin
@@ -8746,7 +8744,7 @@ begin
 end;
 
 function BltClipY(const Dest, Src: TDXR_Surface;
-  var StartY, EndY, StartSrcY: Integer): Boolean; {$IFDEF VER9UP}inline;{$ENDIF}
+  var StartY, EndY, StartSrcY: Integer): Boolean; inline;
 begin
   if StartY<0 then
   begin
@@ -8760,14 +8758,14 @@ begin
 end;
 
 function BltClip(const Dest, Src: TDXR_Surface;
-  var StartX, StartY, EndX, EndY, StartSrcX, StartSrcY: Integer): Boolean; {$IFDEF VER9UP}inline;{$ENDIF}
+  var StartX, StartY, EndX, EndY, StartSrcX, StartSrcY: Integer): Boolean; inline;
 begin
   Result := BltClipX(Dest, Src, StartX, EndX, StartSrcX) and
     BltClipY(Dest, Src, StartY, EndY, StartSrcY);
 end;
 
 function FillClip(const Dest: TDXR_Surface;
-  var StartX, StartY, EndX, EndY: Integer): Boolean; {$IFDEF VER9UP}inline;{$ENDIF}
+  var StartX, StartY, EndX, EndY: Integer): Boolean; inline;
 begin
   StartX := Max(StartX, 0);
   StartY := Max(StartY, 0);
@@ -8780,7 +8778,7 @@ end;
 var
   CosinTable: array[0..255] of Double;
 
-procedure InitCosinTable; {$IFDEF VER9UP}inline;{$ENDIF}
+procedure InitCosinTable; inline;
 var
   i: Integer;
 begin
@@ -8788,12 +8786,12 @@ begin
     CosinTable[i] := Cos((i/256)*2*PI);
 end;
 
-function Cos256(i: Integer): Double; {$IFDEF VER9UP}inline;{$ENDIF}
+function Cos256(i: Integer): Double; inline;
 begin
   Result := CosinTable[i and 255];
 end;
 
-function Sin256(i: Integer): Double; {$IFDEF VER9UP}inline;{$ENDIF}
+function Sin256(i: Integer): Double; inline;
 begin
   Result := CosinTable[(i+192) and 255];
 end;
