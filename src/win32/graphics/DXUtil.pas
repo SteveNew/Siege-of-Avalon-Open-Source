@@ -45,14 +45,13 @@ interface
 uses
   Winapi.Windows,
   System.Classes,
-//  Winapi.DirectDraw,
-  DirectX,
+  Winapi.DirectDraw,
+//  DirectX,
   Vcl.Graphics, // replace by System.UITypes,
   System.Sysutils,
   LogFile,
   SoAOS.Graphics.Draw,
-  SoAOS.Animation
-  ;
+  SoAOS.Animation;
 
 procedure GetSurfaceDims( var W, H : Integer; Surface : IDirectDrawSurface );
 function DDGetSurface( lpDD : IDirectDraw; W, H : integer; Color : TColor; Video : Boolean; var ColorMatch : integer ) : IDirectDrawSurface; overload;

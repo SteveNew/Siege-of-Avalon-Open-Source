@@ -33,9 +33,9 @@
 interface
 
 uses
-//  Winapi.DirectDraw,
+  Winapi.DirectDraw,
   SoAOS.Graphics.BMPFonts,
-  DirectX,
+//  DirectX,
   DXEffects,
   System.Types,
   System.Classes,

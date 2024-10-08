@@ -47,8 +47,8 @@ uses
   System.Generics.Collections,
   Vcl.Controls,
   Vcl.Forms,
-//  Winapi.DirectDraw,
-  DirectX,
+  Winapi.DirectDraw,
+//  DirectX,
   SoAOS.Intrface.Dialogs,
   SoAOS.Animation,
   character, //for VillagePoA, title ifquery

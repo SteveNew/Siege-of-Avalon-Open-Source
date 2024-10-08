@@ -42,8 +42,8 @@ unit SoAOS.Intrface.Dialogs.Journal;
 interface
 
 uses
-//  Winapi.DirectDraw,
-  DirectX,
+  Winapi.DirectDraw,
+//  DirectX,
   DXEffects, //für DrawAlpha (Journalskalierung)
   System.SysUtils,
   System.IOUtils,

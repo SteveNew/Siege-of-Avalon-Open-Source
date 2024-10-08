@@ -42,8 +42,8 @@ unit LoaderBox;
 interface
 
 uses
-//  Winapi.DirectDraw,
-  DirectX,
+  Winapi.DirectDraw,
+//  DirectX,
   DXEffects,
   System.Classes,
   System.Types,

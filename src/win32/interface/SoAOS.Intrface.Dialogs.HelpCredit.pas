@@ -42,8 +42,8 @@ unit SoAOS.Intrface.Dialogs.HelpCredit;
 interface
 
 uses
-//  Winapi.DirectDraw,
-  DirectX,
+  Winapi.DirectDraw,
+//  DirectX,
   System.SysUtils,
   System.IOUtils,
   System.Classes,

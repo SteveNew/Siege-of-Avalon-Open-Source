@@ -34,8 +34,8 @@ interface
 
 uses
   System.Types,
-//  Winapi.DirectDraw,
-  DirectX,
+  Winapi.DirectDraw,
+//  DirectX,
   Display;
 
 type

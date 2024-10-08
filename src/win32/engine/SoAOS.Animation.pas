@@ -49,8 +49,8 @@ uses
   Vcl.Graphics,
   Vcl.Controls,
   AStar,
-  // Winapi.DirectDraw,
-  DirectX,
+  Winapi.DirectDraw,
+  // DirectX,
   D3DRenderer,
   MMTimer,
 

@@ -42,8 +42,8 @@ unit AddKickNPC;
 interface
 
 uses
-//  Winapi.DirectDraw,
-  DirectX,
+  Winapi.DirectDraw,
+//  DirectX,
   System.Types,
   System.Classes,
   Vcl.Controls,

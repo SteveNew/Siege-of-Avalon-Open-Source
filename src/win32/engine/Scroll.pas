@@ -42,8 +42,8 @@ unit Scroll;
 interface
 
 uses
-//  Winapi.DirectDraw,
-  DirectX,
+  Winapi.DirectDraw,
+//  DirectX,
   Vcl.Forms,
   System.Classes,
   System.Types,

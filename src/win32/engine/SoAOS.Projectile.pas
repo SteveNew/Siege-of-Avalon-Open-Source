@@ -182,7 +182,8 @@ implementation
 uses
   SoAOS.Map,
   SoAOS.Graphics.Types,
-  DirectX;
+  Winapi.DirectDraw;
+//  DirectX;
 
 { TProjectile }
 

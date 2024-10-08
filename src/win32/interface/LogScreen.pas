@@ -42,8 +42,8 @@ unit LogScreen;
 interface
 
 uses
-//  Winapi.DirectDraw,
-  DirectX,
+  Winapi.DirectDraw,
+//  DirectX,
   DXEffects,
   System.SysUtils,
   System.IOUtils,

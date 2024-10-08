@@ -42,8 +42,8 @@ unit SoAOS.Intrface.Dialogs.MainMenu;
 interface
 
 uses
-  // Winapi.DirectDraw,
-  DirectX,
+Winapi.DirectDraw,
+  // DirectX,
   DXUtil,
   DXEffects, //Dim Modbox
   Winapi.Windows,

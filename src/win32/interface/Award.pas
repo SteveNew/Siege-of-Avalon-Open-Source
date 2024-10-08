@@ -42,8 +42,8 @@ unit Award;
 interface
 
 uses
-//  Winapi.DirectDraw,
-  DirectX,
+  Winapi.DirectDraw,
+//  DirectX,
   DXEffects,
   System.SysUtils,
   System.Classes,

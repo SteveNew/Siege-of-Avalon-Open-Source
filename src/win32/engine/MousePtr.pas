@@ -42,8 +42,8 @@ unit MousePtr;
 interface
 
 uses
-//  Winapi.DirectDraw,
-  DirectX,
+  Winapi.DirectDraw,
+//  DirectX,
   DXUtil,
   System.Types,
   System.SysUtils,

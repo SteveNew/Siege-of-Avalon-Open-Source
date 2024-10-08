@@ -42,8 +42,8 @@ unit SoAOS.Intrface.Dialogs.LoadSaveGame;
 interface
 
 uses
-//  Winapi.DirectDraw,
-  DirectX,
+  Winapi.DirectDraw,
+//  DirectX,
   DXEffects,
   System.SysUtils,
   System.Types,

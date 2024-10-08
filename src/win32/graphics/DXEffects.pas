@@ -44,8 +44,8 @@ interface
 
 uses
   System.Types,
-//  Winapi.DirectDraw,
-  DirectX,
+  Winapi.DirectDraw,
+//  DirectX,
   Vcl.Graphics;
 
 //procedure DrawAdd( Dest : IDirectDrawSurface; const DestRect, SrcRect : TRect; Source : IDirectDrawSurface;

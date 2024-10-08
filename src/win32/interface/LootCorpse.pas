@@ -42,8 +42,8 @@ unit LootCorpse;
 interface
 
 uses
-//  Winapi.DirectDraw,
-  DirectX,
+  Winapi.DirectDraw,
+//  DirectX,
   DXUtil,
   DXEffects,
   Winapi.Windows,

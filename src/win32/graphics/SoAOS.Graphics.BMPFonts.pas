@@ -33,7 +33,8 @@
 interface
 
 uses
-  DirectX,
+  // DirectX,
+  Winapi.DirectDraw,
   System.SysUtils,
   System.IOUtils;
 

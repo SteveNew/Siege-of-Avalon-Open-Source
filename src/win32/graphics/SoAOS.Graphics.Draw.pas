@@ -39,8 +39,8 @@ uses
   System.UITypes,
   Vcl.Graphics,
 
-//  Winapi.DirectDraw,
-  DirectX;
+  Winapi.DirectDraw;
+//  DirectX;
 
 /// <summary>
 /// FastBlt whole backsurface to frontsurface - use when done with drawing on backsurface

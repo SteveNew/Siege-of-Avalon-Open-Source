@@ -47,7 +47,8 @@ uses
   System.Classes,
   System.Generics.Collections,
   Vcl.Graphics,
-  DirectX,
+  Winapi.DirectDraw,
+//  DirectX,
   LogFile;
 
 const

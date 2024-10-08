@@ -52,7 +52,8 @@ unit Trophies;
 interface
 
 uses
-  DirectX,
+//  DirectX,
+  Winapi.DirectDraw,
   DXUtil,
   DXEffects,
   System.SysUtils,
