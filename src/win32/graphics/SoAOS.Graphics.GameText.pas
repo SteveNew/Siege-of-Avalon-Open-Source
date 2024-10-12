@@ -96,16 +96,16 @@ var
   LastSpace : integer;
   LineBreak : array[ 0..50 ] of integer;
   daString : RawByteString;
-  bytes: RawByteString;
+  bytes: TBytes;
 begin
-  i := 1;
+  i := 0;
   k := 0;
   TheLength := 0;
   LastSpace := 0;
   LineBreak[ 0 ] := 9999; //in case there are no line breaks, we initalize to an absurdly high number
-  //Otherwise loss of the first letter of the item description
-  bytes := sentence;
-  while i <= Length( bytes ) do
+  bytes := TEncoding.ANSI.GetBytes(Sentence);
+
+  while i <= Length( bytes )-1 do
   begin
     j := ord( bytes[ i ] );
 
@@ -143,7 +143,7 @@ begin
   daString := '';
   XStart := 0;
   k := 0;
-  for i := 1 to Length( bytes ) do
+  for i := 0 to Length( bytes )-1 do
   begin
     j := ord( bytes[ i ] );
     if j = 13 then
