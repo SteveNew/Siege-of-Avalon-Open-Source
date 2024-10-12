@@ -357,7 +357,7 @@ begin
     ox1 := x1 + Offset.X;
     ox2 := x2 + Offset.X;
     y := 239;
-    oy := Offset.y;
+    oy := y + Offset.y;
 
     ShowStats;
 
