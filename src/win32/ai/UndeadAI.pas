@@ -506,8 +506,7 @@ end;
 
 procedure TUndeadIdle.FindTarget;
 var
-  iStealth : single;
-
+  iStealth : double;
 const
   FailName : string = 'TUndeadIdle.FindTarget';
 begin
@@ -1924,18 +1923,23 @@ begin
           end;
           if player.TitleExists( 'Hunter' ) then
           begin
-            if player.Stealth > 70 then //limit set to 70
-            character.Mysticism := 70 + i
+            if player.Stealth > 70 then //Limit set to 70
+              character.Mysticism := 70 + i
+            else if (player.Stealth > 50) and (character.titleexists('nerfmystic')) then
+              character.Mysticism := 50 + i
             else
-            character.Mysticism := player.Stealth + i;
+              character.Mysticism := player.Stealth + i;
+			  
             if character.hitpoints < ( ( player.strength * 2 ) + player.combat ) then
               character.HitPoints := ( ( player.strength * 2 ) + player.combat );
 
           end;
           if player.TitleExists( 'Squire' ) then
           begin
-            if player.Combat > 70 then //limit set to 70
-            character.Mysticism := 70 + i
+            if player.Combat > 70 then //Limit set to 70
+              character.Mysticism := 70 + i
+            else if (player.Combat > 50) and (character.titleexists('nerfmystic')) then
+              character.Mysticism := 50 + i
             else
             character.Mysticism := player.Combat + i;
             if character.hitpoints < ( ( player.Coordination * 2 ) + player.stealth ) then

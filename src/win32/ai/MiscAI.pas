@@ -1896,7 +1896,7 @@ begin
             fighting := false;
             exit;
           end;
-          if FMeleeDefensive and ( character.RangeTo( Player.x, Player.y ) < 300 ) then
+          if FMeleeDefensive and ( character.RangeTo( Player.x, Player.y ) < ScreenMetrics.CompanionRange ) then
           begin //dont get to far away;
             Character.Track := nil;
             fighting := false;
@@ -2287,7 +2287,7 @@ begin
     begin
       Character.Track := nil;
       fighting := false;
-      Character.RunTo( Player.x, Player.y, 4 );
+      Character.RunTo( Player.x, Player.y, 24 );
       ShotCounter := 0;
       walking := true;
     end
@@ -2348,7 +2348,7 @@ var
   T : single;
   X, Y : Integer;
 const
-  FailName : string = 'THumanoidArcherCombat.BattleTactic';
+  FailName : string = 'TCompanion.BattleTactic';
 begin
   Log.DebugLog( FailName );
 
@@ -2360,7 +2360,10 @@ begin
     begin
       Walking := True;
       inc( CirclePoint, 45 );
-      r := iDistance;
+      if frmmain.CloseCombat then
+        r := random(idistance div 4) + idistance div 4
+      else
+        r := random(idistance div 2) + idistance div 2;
       T := c2PI * CirclePoint / 360;
       X := round( r * cos( T ) ) + TCharacter( Character.Track ).X;
       Y := round( r * sin( T ) / 2 ) + TCharacter( Character.Track ).Y;
@@ -3094,7 +3097,7 @@ end;
 procedure TGuardDog.WasAttacked( Source : TAniFigure; Damage : Single );
 var
   FriendList : TStringList;
-  istealth : single;
+  istealth : double;
   J : integer;
 
 const
@@ -3181,7 +3184,7 @@ var
   FriendList : TStringList;
   t : Single;
   NewX, NewY : Integer;
-  iStealth : single;
+  iStealth : double;
   j : integer;
 const
   FailName : string = 'MiscAI.TGuardDog.GuardFMaster';
@@ -5713,7 +5716,7 @@ end;
 
 procedure TWorms.FindTarget;
 var
-  iStealth : single;
+  iStealth : double;
 const
   FailName : string = 'MiscAI.TWorms.FindTarget';
 begin
@@ -6244,7 +6247,7 @@ begin
       Walking := True;
       NukeCounter := 0;
       Inc( CirclePoint, 45 );
-      r := 300;
+      r := random(idistance div 2) + idistance div 2; //300;
       T := c2PI * CirclePoint / 360;
       X := round( r * cos( T ) ) + Character.Track.X;
       Y := round( r * sin( T ) / 2 ) + Character.Track.Y;
@@ -6474,7 +6477,8 @@ begin
       if Delay > 0 then
       begin
         Delay := Delay - 1;
-        character.say( strSpell, cTalkRedColor );
+        RunScript( Character, 'say(#say.' + StrSpell + '#)');
+        //character.say( strSpell, cTalkRedColor ); //Translate by symbols.ini
         exit;
       end;
 
@@ -6486,20 +6490,20 @@ begin
       end;
 
       case iSpellCount of
-        0 : StrSpell := 'Shabakaar al necrohilisu ma khapek!';
-        1 : StrSpell := 'By the energies of light,';
-        2 : StrSpell := 'I lose the bindings that hold this soul.';
-        3 : StrSpell := 'Erukaahil restes abaka ne shahala-zes!';
-        4 : StrSpell := 'Too long it has resisted its fate,';
-        5 : StrSpell := 'unholy energies giving life beyond life.';
-        6 : StrSpell := 'Tevawadak inestium garanajiik useeliopen!';
-        7 : StrSpell := 'With my life I displace the unlife within,';
-        8 : StrSpell := 'my spirit shall shepherd this soul to its end.';
-        9 : StrSpell := 'Aaarallesso mekanesta derimevelious Nu!';
+        0 : StrSpell := 'ritual1';//'Shabakaar al necrohilisu ma khapek!';
+        1 : StrSpell := 'ritual2';//'By the energies of light,';
+        2 : StrSpell := 'ritual3';//'I lose the bindings that hold this soul.';
+        3 : StrSpell := 'ritual4';//'Erukaahil restes abaka ne shahala-zes!';
+        4 : StrSpell := 'ritual5';//'Too long it has resisted its fate,';
+        5 : StrSpell := 'ritual6';//'unholy energies giving life beyond life.';
+        6 : StrSpell := 'ritual7';//'Tevawadak inestium garanajiik useeliopen!';
+        7 : StrSpell := 'ritual8';//'With my life I displace the unlife within,';
+        8 : StrSpell := 'ritual9';//'my spirit shall shepherd this soul to its end.';
+        9 : StrSpell := 'ritual10';//'Aaarallesso mekanesta derimevelious Nu!';
       end;
 
       Inc( iSPellCount );
-      delay := random( 64 );
+      delay := 40 + random( 32 );
 
     except
       on E : Exception do
@@ -6915,7 +6919,7 @@ end;
 procedure TMeleePratice.WasAttacked( Source : TAniFigure; Damage : Single );
 var
   FriendList : TStringList;
-  istealth : single;
+  istealth : double;
   J : integer;
   x : longint;
   y : longint;
@@ -7001,7 +7005,7 @@ end;
 procedure TMeleePratice.WasKilled( Source : TAniFigure );
 var
   FriendList : TStringList;
-  iStealth : single;
+  iStealth : double;
   J : integer;
 
 begin
@@ -7246,8 +7250,10 @@ begin
         if Character.IsEnemy( TCharacter( Source ) ) then
           if ( Character.Wounds / Character.HitPoints ) * 100 >= iTimeToRun then
           begin
-            Character.say( 'Ok ok! Thats enough training for now.', cTalkRedColor );
-            Character.MakeNeutral( 'player' );
+            RunScript( Character, 'say(#say.Sparing#)');
+            //Character.say( 'Ok ok! Thats enough training for now.', cTalkRedColor );
+            player.CombatMode := false;
+            Character.MakeNeutral( 'party' );
             character.AIMode := aiNone;
             exit;
           end

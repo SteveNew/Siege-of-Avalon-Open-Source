@@ -71,7 +71,6 @@ uses
   Inventory,
   Converse,
   SoAOS.Graphics.GameText,
-//  Gametext,
   Statistics,
   Achievements,
   ObjInventory,
@@ -95,6 +94,7 @@ uses
   SoAOS.Animation,
   GameLibIntegration,
   Trophies,
+  Notelog,
   AddKickNPC,
   MfPlayerClass,
   MousePtr,
@@ -118,11 +118,6 @@ const
   WM_InitDDraw = WM_APP + 20;
   WM_InitGame = WM_APP + 21;
   WM_PlayClosingMovie = WM_APP + 22;
-
-// Experimental - might actually sound nice with a natural SAPI voice
-//  SVSFDefault = 0;
-//  SVSFlagsAsync = 1;
-//  SVSFPurgeBeforeSpeak= 2;
 
 var
   DlgProgress: TLoaderBox;
@@ -291,6 +286,8 @@ type
   public
     DeathScreen: string;
     DisableConsole: Boolean;
+    NotesAdd : boolean;
+    CloseCombat : boolean; //for CloseCombat setting in AddKickNPC
     SoundTimer: TTimer;
     FadeIn, FadeOut: Integer;
     XRayOn: Boolean;
@@ -310,8 +307,6 @@ type
     ScreenShot: TBitmap;
     Achievements: TAchievements;
     ChosenDisplayindex: Integer;
-    // Experimental - might actually sound nice with a natural SAPI voice - global instance due to async play
-//    voice: OLEVariant;
 
     procedure CloseAllDialogs(Sender: TObject);
     procedure DrawSpellGlyphs;
@@ -330,6 +325,7 @@ type
     procedure BeginJournal;
     procedure BeginOptions(Character: TCharacter);
     procedure BeginHelp;
+    procedure BeginNotelog;
     procedure BeginQuestLog;
     procedure BeginAdvLog;
     procedure BeginDeath;
@@ -387,14 +383,15 @@ var
   DlgStatistics: TStatistics;
   DlgShow: TShowGraphic;
   DlgTransit: TTransit;
-  DlgLoot: TLootCorpse; // Moved for KeyEvens from ForceNotReadOnly
+  DlgLoot: TLootCorpse; // Moved for KeyEvents from ForceNotReadOnly
   DlgObjInventory: TObjInventory; // Moved for KeyEvens from ForceNotReadOnly
-  DlgMerchant: TMerchant; // Moved for KeyEvens from ForceNotReadOnly
+  DlgMerchant: TMerchant; // Moved for KeyEvents from ForceNotReadOnly
   DlgTrophies: TTrophies;
   DlgIntro: TIntro;
   // Moved to public since Mainmenu.pas needs access to it. Have a look at " DlgIntro.Captions[ 8 ].Enabled := false; "
-  DlgText: TGameText;
-  // Moved to public since Keyevents needs access to it. Slowmo info in textbox
+  DlgText: TGameText; // Moved to public since Keyevents needs access to it. Slowmo info in textbox
+  DlgLoad: TLoadGame; // Moved for KeyEvents from ForceNotReadOnly
+  DlgNoteLog: TNotelog;
   Modselection: TModSelection;
   // 0=SoA, 1=DoA, 2=PoA, 3=AoA, 4=Caves, 5=RoD, 6=TsK
   Modname: string; // .ini
@@ -407,13 +404,17 @@ var
   ShowEnemyHealthBar: Boolean;
   CustomDDrawDLL: Boolean;
   // Rule is to use SoADDraw.dll or win32/ddraw.dll on win7 - this option will load ddraw.dll within appdir.
-  DDrawVersion: string; //'standard' (formerly soa), 'win7', 'winwine', 'none'
+  DDrawVersion: string; //'SoADDraw' and other
   //AMD Problems with D3DMousecursor, only windowed mode (except screenwidth = resolution)
   //because screen- and mousecursor get asynchron in stretched fullscreen
   AltCursor: boolean;
   Tutorial: boolean;
   SpellToAssign: TSpell; //For quickswitching spells when spellbar open
+  FootstepsOn: boolean;
+  CurrentEventname: string;
   Eventactive: boolean;
+  DisableEvent: boolean;
+  Eventfinished: array [0..3] of integer;
   frmMain: TfrmMain;
 
 const
@@ -440,13 +441,13 @@ uses
   Music,
   MP3,
   Engine,
-  SaveFile, System.Variants, System.Win.ComObj;
+  SaveFile;
 {$R *.DFM}
 
 var
   DlgConverse: TConverseBox;
   DlgNPC: TNPCBehavior;
-  DlgLoad: TLoadGame;
+  //DlgLoad: TLoadGame;
   DlgCreation: TCreation;
   //DlgIntro : TIntro;
   //DlgText: TGameText;
@@ -527,6 +528,8 @@ begin
       DlgQuestLog.Release;
     if DlgAdvLog.Loaded then
       DlgAdvLog.Release;
+    if DlgNoteLog.Loaded then
+      DlgNoteLog.Release;
     if DlgNPC.Loaded then
       DlgNPC.Release;
     if DlgRoster.Loaded then
@@ -599,6 +602,8 @@ begin
       DlgQuestLog.Release;
     if DlgAdvLog.Loaded then
       DlgAdvLog.Release;
+    if DlgNoteLog.Loaded then
+      DlgNoteLog.Release;
     if DlgNPC.Loaded then
       DlgNPC.Release;
     if DlgRoster.Loaded then
@@ -649,6 +654,7 @@ var
   INILanguage: TIniFile;
   S: string;
   List: TArray<string>;
+  F: Textfile;
 const
   FailName: string = 'Main.CloseCreateDialog';
 begin
@@ -794,10 +800,22 @@ begin
       Player.Property_['HeadLayer'] :=
         TCharacterResource(Player.Resource).HeadName;
 
+      //Create new Tempnote
+      AssignFile( F, Modgames + '\' + NoteTempFile );
+      Rewrite( F );
+      CloseFile( F );
+
       //StartEvent
       if Eventactive then
       begin
-        player.addtitle('CurrentEventActive');
+        player.addtitle(CurrentEventname);
+      end;
+      //Add special title for absolved Events
+      for i := 0 to 3 do
+      begin
+        if Eventfinished [ i ] > 0 then
+        player.addTitle('Eventabsolved' + inttostr(i + 1) + '-'
+        + inttostr(Eventfinished [ i ]));
       end;
 
       if hardmode then
@@ -1387,6 +1405,8 @@ begin
 
       MasterSoundVolume := INI.ReadInteger('Settings', 'SoundVolume', 50);
       MasterMusicVolume := INI.ReadInteger('Settings', 'MusicVolume', 50);
+      CloseCombat := INI.ReadBool( 'Settings', 'CloseCombatParty', false );
+      FootstepsOn := INI.ReadBool( 'Settings', 'Footsteps', true );
       PlotShadows := (INI.ReadInteger('Settings', 'Shadows', 1) <> 0);
       if PlotShadows then
       begin
@@ -1487,10 +1507,13 @@ begin
 
       Eventmonth := INI.ReadInteger('Settings', 'EvMonth', 13); //No Standardevent
       EventYear := INI.ReadInteger('Settings', 'EvYear', 2024);
+      CurrentEventname := INI.ReadString('Settings', 'EvTitle', '');
       DecodeDate(Now, Year, Month, Day);
+      DisableEvent := INI.ReadBool('Settings', 'DisableEvent', false);
       //StartEvent in CloseCreateDialog and CloseLoad
-      if (month = Eventmonth) and (Year = EventYear) then
-      //Ambassador from Aratoy in Innerbailey's Tavern active with a Quest for you
+      if (month = Eventmonth) and (Year = EventYear) and (CurrentEventname <> '')
+      and not DisableEvent then
+      //Event active with e.g. a Quest
         Eventactive := true
       else
         Eventactive := false;
@@ -1599,6 +1622,7 @@ begin
       if not LoadMapFile(False, True) then
         Exit;
       DisableConsole := False;
+      NotesAdd := false;
       NewGame := False;
       Game.ForceRefresh := True;
       CloseAllDialogs(nil);
@@ -1667,13 +1691,20 @@ begin
         begin
           CueTune('', False);
           SongCounter := -30;
+          //log.log('Next song in queue');
         end
         else if SongCounter = 0 then
         begin
           S := Themes.Values[CurrentTheme];
           CueTune(S, False);
+          //log.log('Next Song playing');
         end;
-      end;
+      end
+      else //not active, musik spielt trotzdem weiter
+        begin
+        if (SongCounter < Songduration) then
+        Inc( SongCounter );
+        end;
 
       if Assigned(MusicLib) then
       begin
@@ -2329,7 +2360,6 @@ procedure TfrmMain.FormCreate(Sender: TObject);
 var
   SiegeIni: TIniFile;
   WINEVer: string;
-//  i: Integer;
 begin
   OpeningVideoPanel.Cursor := crNone;
   ClosingVideoPanel.Cursor := crNone;
@@ -2341,7 +2371,7 @@ begin
   try
     CustomDDrawDLL := SiegeIni.ReadString('Settings', 'CustomDDrawDLL', 'false')
       .ToLower = 'true';
-    DDrawVersion := SiegeIni.ReadString('Settings', 'DDrawVersion', 'standard');
+    DDrawVersion := SiegeIni.ReadString('Settings', 'DDrawVersion', 'SoADDraw');
     FOpeningMovie := SiegeIni.ReadString('Settings', 'MoviePath',
       ExtractFilePath(Application.ExeName) + 'Movies') + '\' +
       SiegeIni.ReadString('Settings', 'OpeningMovie', 'SiegeOpening.wmv');
@@ -2368,12 +2398,6 @@ begin
     SiegeIni.Free;
   end;
   Application.OnException := AppException;
-// Experimental - might actually sound nice with a natural SAPI voice
-//  voice := CreateOLEObject('SAPI.SpVoice');
-//  i := voice.GetVoices.count;
-//  voice.Voice := voice.GetVoices.Item(i-1);
-//  voice.volume := 100;
-//  voice.rate := 2;
 end;
 
 procedure TfrmMain.WMInitDDraw(var Message: TWMNoParams);
@@ -2393,7 +2417,7 @@ begin
     if (DDrawVersion = 'None') or (DDrawVersion = 'none') then
     ddrawpath := GetSystem32 + '\ddraw.dll'
     else
-    ddrawpath := DDrawVersion +'ddraw.dll';
+    ddrawpath := DDrawVersion +'.dll';
   end;
   DirectX.LoadDDraw(ddrawpath);
 
@@ -2488,7 +2512,7 @@ end;
 
 procedure TfrmMain.BeginInventory(Character: TCharacter);
 var
-  List: TList<TAniFigure>;
+  List: TList;
   i: Integer;
 const
   FailName: string = 'Main.BeginInventory';
@@ -2513,7 +2537,7 @@ begin
             begin
               if TItem(List.Items[i]).Enabled then
               begin
-                DlgInventory.GroundList.Add(TItem(List.Items[i]));
+                DlgInventory.GroundList.Add(List.Items[i]);
               end;
             end;
           end;
@@ -2533,7 +2557,7 @@ end;
 
 procedure TfrmMain.BeginMerchant(Character: TCharacter);
 var
-  List: TList<TAniFigure>;
+  List: TList;
   i: Integer;
 const
   FailName: string = 'Main.BeginMerchant';
@@ -2559,7 +2583,7 @@ begin
             begin
               if TItem(List.Items[i]).Enabled then
               begin
-                DlgMerchant.GroundList.Add(TItem(List.Items[i]));
+                DlgMerchant.GroundList.Add(List.Items[i]);
               end;
             end;
           end;
@@ -2580,7 +2604,7 @@ end;
 procedure TfrmMain.BeginObjInventory(Character: TCharacter;
   OtherObj: TSpriteObject);
 var
-  List: TList<TAniFigure>;
+  List: TList;
   i: Integer;
 const
   FailName: string = 'Main.BeginObjInventory';
@@ -2601,11 +2625,11 @@ begin
         begin
           for i := 0 to List.Count - 1 do
           begin
-            if List.Items[i] is TItem then
+            if TAniFigure(List.Items[i]) is TItem then
             begin
               if TItem(List.Items[i]).Enabled then
               begin
-                DlgObjInventory.GroundList.Add(TItem(List.Items[i]));
+                DlgObjInventory.GroundList.Add(List.Items[i]);
               end;
             end;
           end;
@@ -2625,7 +2649,7 @@ end;
 
 procedure TfrmMain.BeginLoot(Character: TCharacter; OtherObj: TSpriteObject);
 var
-  List: TList<TAniFigure>;
+  List: TList;
   i: Integer;
   Money: Integer;
 const
@@ -2660,11 +2684,11 @@ begin
         begin
           for i := 0 to List.Count - 1 do
           begin
-            if List.Items[i] is TItem then
+            if TAniFigure(List.Items[i]) is TItem then
             begin
               if TItem(List.Items[i]).Enabled then
               begin
-                DlgLoot.GroundList.Add(TItem(List.Items[i]));
+                DlgLoot.GroundList.Add(List.Items[i]);
               end;
             end;
           end;
@@ -2913,6 +2937,9 @@ begin
     // Log.Log('a17');
     DlgAdvLog.Free;
     DlgAdvLog := nil;
+    //log.log('a17,5');
+    DlgNoteLog.Free;
+    DlgNoteLog := nil;
     // Log.Log('a18');
     DlgRoster.Free;
     DlgRoster := nil;
@@ -3219,6 +3246,17 @@ begin
             DoNotRestartTimer := True;
             CloseAllDialogs(DlgQuestLog);
             BeginQuestLog;
+          end;
+        end
+        else if ScreenMetrics.popNoteLogRect.Contains(Point(X, Y)) then
+        begin
+          if DlgNoteLog.Loaded then
+            CloseAllDialogs(DlgNoteLog)
+          else
+          begin
+            DoNotRestartTimer := True;
+            CloseAllDialogs(DlgNoteLog);
+            BeginNotelog;
           end;
         end
         else if ScreenMetrics.popAwardsRect.Contains(Point(X, Y)) then
@@ -3817,6 +3855,7 @@ begin
       DlgStatistics := TStatistics.Create;
       DlgQuestLog := TQuestLog.Create;
       DlgAdvLog := TAdvLog.Create;
+      DlgNoteLog := TNotelog.Create;
       DlgRoster := TAddKickNPC.Create;
       DlgTransit := TTransit.Create;
 
@@ -5276,13 +5315,14 @@ var
   SongParser: TStringList;
   i: Integer;
   S: string;
+  F: Textfile;
 const
   FailName: string = 'Main.CueTune';
 begin
   Log.DebugLog(FailName);
   try
 
-    SongDuration := 36000;
+    SongDuration := 3600; //6min instead of 60 min for midi
 
     if Assigned(MusicLib) then
     begin
@@ -5317,7 +5357,14 @@ begin
           S := SoundPath + NextSong + '.mp3';
           if TFile.Exists(S) then
           begin
-            SongDuration := 2400;
+            SongDuration := 3300; //330s=5,5min for mp3
+            if FileExists( SoundPath + NextSong + '.txt' ) then
+            begin //Songduration extern eingetragen in sek * 10
+              AssignFile( F, SoundPath + NextSong + '.txt' );
+              Reset( F );
+              Readln( F, SongDuration );
+              CloseFile( F );
+            end;
           end;
 
           { //Prevent play of MP3
@@ -5505,6 +5552,7 @@ begin
   INI.WriteInteger('Settings', 'Brightness', GlobalBrightness);
   MasterSoundVolume := INI.ReadInteger('Settings', 'SoundVolume', 50);
   MasterMusicVolume := INI.ReadInteger('Settings', 'MusicVolume', 50);
+  CloseCombat := INI.ReadBool( 'Settings', 'CloseCombatParty', false );
   if modselection <> TModselection.SoA then
   begin
     AdjustedPartyHitPoints := true; //in mods always true
@@ -5585,6 +5633,7 @@ begin
   CreateGlobals; // ItemDB, XRefDB, TitlesDB und reinitialize
   DlgQuestLog := TQuestLog.Create;
   DlgAdvLog := TAdvLog.Create;
+  DlgNoteLog := TNotelog.Create;
   DlgOptions := TOptions.Create;
   DlgTrophies := TTrophies.Create; //Other Mods, other trophies
   DlgCreation := TCreation.Create; // Reinitialisation
@@ -5819,6 +5868,7 @@ begin
      OnKeyDown := nil;
      DlgTrophies.pText := DlgText;
      DlgTrophies.OnClose := CloseTrophies;
+     DlgTrophies.MusicFileName := 'creditsfull.mp3';
      MouseCursor.SetFrame( 37 );
      PrevTriggerID := -1;
      DlgTrophies.Init;
@@ -5831,6 +5881,7 @@ end;
 procedure TfrmMain.CloseLoad(Sender: TObject);
 var
   S1, S2: string;
+  i: integer;
 const
   FailName: string = 'Main.CloseLoad';
 begin
@@ -5917,13 +5968,16 @@ begin
         //StartEvent
         if Eventactive then
         begin
-          if not player.titleExists('CurrentEventActive') then
-          player.addtitle('CurrentEventActive');
+          if not player.titleExists(CurrentEventname) then
+          player.addtitle(CurrentEventname);
         end
-        else
+        else //Clear all Events
         begin
-          if player.titleExists('CurrentEventActive') then
-          player.RemoveTitle('CurrentEventActive');
+          for i := 1 to 4 do
+          begin
+            if player.titleExists('Event' + inttostr(i) + 'Active') then
+            player.RemoveTitle('Event' + inttostr(i) + 'Active');
+          end;
         end;
         CloseAllDialogs(Sender);
       end;
@@ -6332,6 +6386,7 @@ begin
       DlgShow.BMPFileName := 'CreditsScreen_001.bmp';
       DlgShow.BMPFileName := 'CreditsScreen_002.bmp';
       DlgShow.BMPFileName := 'CreditsScreen_003.bmp';
+      DlgShow.BMPFileName := 'CreditsScreenPatch.bmp';
     end
     else
       DlgShow.BMPFileName := 'CreditsScreen.bmp';
@@ -6373,17 +6428,16 @@ var
   pr: TRect;
 begin
   Log.DebugLog(FailName);
-  if not ScreenMetrics.Windowed then
-  begin
-    FormStyle := fsStayOnTop;
-  end;
-
-  if not ScreenMetrics.Windowed then
-  begin
-    if not ScreenMetrics.ForceD3DFullscreen then
+  try
+    Log.Log('App Activate');
+    if not ScreenMetrics.Windowed then
     begin
-      try
-        Log.Log('App Activate');
+      FormStyle := fsStayOnTop;
+    end;
+    if not ScreenMetrics.Windowed then
+    begin
+      if not ScreenMetrics.ForceD3DFullscreen then
+      begin
         if Initialized then
         begin
           WindowState := wsNormal;
@@ -6396,40 +6450,39 @@ begin
         begin
           Initialized := True;
         end;
-      except
-        on E: Exception do
-          Log.Log(FailName, E.Message, []);
+      end
+      else
+      begin
+        Game.Enabled := True;
+        Application.Restore;
+        // D3D11Renderer.EnableFullscreen(True);
+        pr := TRect.Create(0, 0, ScreenMetrics.ScreenWidth,
+          ScreenMetrics.ScreenHeight);
+        pr.TopLeft := ClientToScreen(pr.TopLeft);
+        pr.BottomRight := ClientToScreen(pr.BottomRight);
+        ClipCursor(@pr);
       end;
     end
-    else
-    begin
-      Game.Enabled := True;
-      Application.Restore;
-      // D3D11Renderer.EnableFullscreen(True);
-      pr := TRect.Create(0, 0, ScreenMetrics.ScreenWidth,
-        ScreenMetrics.ScreenHeight);
-      pr.TopLeft := ClientToScreen(pr.TopLeft);
-      pr.BottomRight := ClientToScreen(pr.BottomRight);
-      ClipCursor(@pr);
-    end;
-  end
-  else if Paused then
-    TKeyEvent.TogglePause;
+    else if Paused then
+      TKeyEvent.TogglePause;
+  except
+    on E: Exception do
+    Log.Log(FailName, E.Message, []);
+  end;
 end;
 
 procedure TfrmMain.AppDeactivate(Sender: TObject);
 const
   FailName: string = 'Main.AppDeactivate';
 begin
-  FormStyle := fsNormal;
-
   Log.DebugLog(FailName);
-  if not ScreenMetrics.Windowed then
-  begin
-    if not ScreenMetrics.ForceD3DFullscreen then
+  try
+    Log.Log('App Deactivate');
+    FormStyle := fsNormal;
+    if not ScreenMetrics.Windowed then
     begin
-      try
-        Log.Log('App Deactivate');
+      if not ScreenMetrics.ForceD3DFullscreen then
+      begin
         if Active then
         begin
           Active := False;
@@ -6442,29 +6495,30 @@ begin
         begin
           NeedToReload := False;
         end;
-
         Game.OnMouseDown := AniView1MouseDown;
         Game.OnMouseMove := nil;
         Game.OnMouseUp := nil;
         OnKeyDown := TKeyEvent.FormKeyDown;
         OnMouseDown := FormMouseDown;
         OnMouseMove := FormMouseMove;
+        FFirstShow := true;
+        WindowState := wsminimized;
         FreeAll;
-      except
-        on E: Exception do
-          Log.Log(FailName, E.Message, []);
+      end
+      else
+      begin
+        Game.Enabled := False;
+        Application.Minimize;
+        // D3D11Renderer.EnableFullscreen(True);
+        ClipCursor(nil);
       end;
     end
-    else
-    begin
-      Game.Enabled := False;
-      Application.Minimize;
-      // D3D11Renderer.EnableFullscreen(True);
-      ClipCursor(nil);
-    end;
-  end
-  else if not Paused then
-    TKeyEvent.TogglePause;
+    else if not Paused then
+      TKeyEvent.TogglePause;
+  except
+    on E: Exception do
+    Log.Log(FailName, E.Message, []);
+  end;
 end;
 
 procedure TfrmMain.BeginDeath;
@@ -6599,18 +6653,35 @@ end;
 function TfrmMain.ShouldRun(X, Y: Longint): Boolean;
 var
   D2: Double;
+  factor: Double; //ratio to original, but a bit reduced then
 begin
   if Assigned(Current) then
   begin
     try
       D2 := sqr(Current.X - X) + sqr(2 * (Current.Y - Y));
-      Result := (D2 > 30000);
+      factor := ScreenMetrics.Screenwidth / 800 * 0.75;
+      if factor < 1 then //when 800x600
+      factor := 1;
+      Result := (D2 > 30000 * factor);
     except
       Result := False;
     end;
   end
   else
     Result := False;
+end;
+
+procedure TfrmMain.BeginNoteLog;
+const
+  FailName: string = 'Main.BeginNoteLog';
+begin
+  Log.DebugLog(FailName);
+  try
+    OpenDialog( DlgNoteLog, CloseAllDialogs );
+  except
+    on E : Exception do
+      Log.log( FailName, E.Message, [ ] );
+  end;
 end;
 
 procedure TfrmMain.BeginAdvLog;
@@ -7037,6 +7108,8 @@ begin
           end;
         except
         end;
+        dlgload.Notefile := Gamename + '.txt';
+        dlgload.Savenotes( true );
         ShowQuickMessage(SaveMsg, 100);
       end;
     end;

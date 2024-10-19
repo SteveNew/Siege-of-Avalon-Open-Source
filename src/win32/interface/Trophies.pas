@@ -64,12 +64,19 @@ uses
   SoAOS.Graphics.GameText,
   SoAOS.Animation,
   Logfile,
-  engine;
+  engine,
+  resource, //for soundpath
+  music;
 
 type
   TTrophiesRect = record
   name : string;
   enabled : integer; //0 or 1
+  end;
+  TEventTrophiesRect = record
+  name1 : string;
+  name2 : string;
+  enabled : integer; //0, 1, 2 or 3 (unfinished, finished, betrayal, both)
   end;
   TTrophies = class( TDialog )
   private
@@ -77,8 +84,13 @@ type
     DXBlack :  IDirectDrawSurface;
     DXExit :  IDirectDrawSurface;
     DXProgress : IDirectDrawSurface;
-    trCount : integer; //Count of trophies
+    DXEvTrophy : array [0..4] of IDirectDrawSurface;
+    DXTrophy : array [0..25] of IDirectDrawSurface;
+    trCount : integer; //Count of Trophies
     txtMessage : array[ 0..25 ] of string; //trcount 26
+    txtEventMessage : array [ 0..4 ] of string; //evtrcount 5
+    evtrCount : integer; //Count of Eventtrophies
+    procedure SetMusicFileName(const Value: string);
   protected
     procedure MouseDown( Sender : TObject; Button : TMouseButton;
       Shift : TShiftState; X, Y : Integer; GridX, GridY : integer ); override;
@@ -86,12 +98,16 @@ type
       Shift : TShiftState; X, Y : Integer; GridX, GridY : integer ); override;
   public
     ExitRect : Trect;
-    Trophy : array [ 0..25 ] of TTrophiesRect; //trcount 26
+    Trophy : array [ 0..25 ] of TTrophiesRect; //trcount max 26
+    EventTrophy : array [ 0..4 ] of TEventTrophiesRect; //evtrcount max 5
+    pmusic : TMusic;
+    FMusicFileName : string;
     constructor Create;
     destructor Destroy; override;
     procedure Init; override;
     procedure Release; override;
     procedure SetTrophy( t : string ); //character.pas addtitle, Titel = Trophy
+    property MusicFileName : string write SetMusicFileName;
   end;
 implementation
 uses
@@ -129,21 +145,65 @@ begin
        //Set count of trophies
        trcount := i;
      end;
-     if FileExists( InterfacePath + 'trophies.dat' ) then
+     if FileExists( Modgames + '\trophies.dat' ) then
      begin
-       AssignFile( F, InterfacePath + 'trophies.dat' );
+       AssignFile( F, Modgames + '\trophies.dat' );
        Reset( F );
        for i := 0 to trcount - 1 do
        begin
          Readln( F, Trophy[ i ].enabled );
        end;
        CloseFile( F );
-     end;
-     (*for i := 0 to trcount - 1 do
+     end
+     else //e.g. new installation
      begin
-       log.log('Trophäenname: ' + Trophy[i].name);
-       log.log('Trophäe freigeschaltet: ' + inttostr(Trophy[i].enabled));
-     end;*)
+       for i := 0 to trcount - 1 do
+       begin
+         Trophy[ i ].enabled := 0;
+       end;
+     end;
+     //now for Eventtrophies
+     if FileExists( InterfacePath + 'trophieseventname.dat' ) then
+     begin
+       AssignFile( F, InterfacePath + 'trophieseventname.dat' );
+       Reset( F );
+       i := 0;
+       while not EoF(F) do
+       begin
+         Readln( F, EventTrophy[ i ].name1 );
+         Readln( F, EventTrophy[ i ].name2 );
+         Inc(i);
+       end;
+       evtrcount := i;
+       CloseFile( F );
+     end
+     else
+     evtrcount := 0;
+     if FileExists( Modgames + '\trophiesevent.dat' ) then
+     begin
+       AssignFile( F, Modgames + '\trophiesevent.dat' );
+       Reset( F );
+       for i := 0 to evtrcount - 1 do
+       begin
+         Readln( F, EventTrophy[ i ].enabled );
+       end;
+       CloseFile( F );
+     end
+     else
+     begin
+       for i := 0 to evtrcount - 1 do
+       begin
+         EventTrophy[ i ].enabled := 0;
+       end;
+     end;
+     if evtrcount > 0 then
+     begin
+       for i := 0 to evtrcount - 1 do
+       begin
+         if EventTrophy[ i ].enabled > 0 then
+         Eventfinished[ i ] := EventTrophy[ i ].enabled;//newgame title ...1,2,3
+       end;
+     end;
      inherited;
   except
     on E : Exception do
@@ -169,8 +229,9 @@ end; //Destroy
 
 procedure TTrophies.Init;
 var
-  i, j, ProgressX: integer;
+  i, j, ProgressX, EVProgressX: integer;
   pr: TRect;
+  EvProgresstext: string;
 const
   FailName : string = 'TTrophies.init';
 begin
@@ -191,37 +252,107 @@ begin
     ExText.Open( 'Trophies' ); //Text.ini [trophies]
     for i := 0 to trcount - 1 do
       txtMessage[ i ] := ExText.GetText( 'Message' + inttostr( i ) );
-      //array above 0-25
-
+      //array 0-25
+    if evtrcount > 0 then
+    begin
+    ExText.Open( 'EvTrophies' ); //Text.ini [evtrophies]
+    for i := 0 to evtrcount - 1 do
+      txtEventMessage[ i ] := ExText.GetText( 'Message' + inttostr( i ) );
+      //array 0-4
+      EvProgresstext := ExText.GetText( 'Messageprogress');
+    end;
     pText.Fonts.LoadFontGraphic( 'createchar' ); //Load Goldfont
-//    if UseSmallFont then
-//      pText.LoadGoldFontGraphic;
 
     DXTroph := SoAOS_DX_LoadBMP( InterfaceLanguagePath + 'trophies.bmp', cInvisColor, DlgWidth, DlgHeight );
     DXExit :=  SoAOS_DX_LoadBMP( InterfaceLanguagePath + 'trexit.bmp', $00FF00FF );
     DXBlack := SoAOS_DX_LoadBMP( InterfacePath + 'chablack.bmp', cInvisColor );
     DXProgress := SoAOS_DX_LoadBMP( InterfacePath + 'opyellow.bmp', cInvisColor );
 
+    if not DisableEvent and (evtrcount > 0) then
+    begin //initialize eventtrophies
+     for i := 0 to evtrCount - 1 do
+     begin
+      DXEvTrophy[i] := SoAOS_DX_LoadBMP( InterfacePath + 'TrophyEv' + inttostr(i) + '.bmp', cInvisColor );
+     end;
+    end;
+
+    if trcount > 0 then
+    begin //initialize and paint trophies
+     for i := 0 to trcount - 1 do
+     begin
+      pr := Rect( 0, 0, 75, 75 );
+      DXTrophy[i] := SoAOS_DX_LoadBMP( InterfacePath + 'Trophy' + inttostr(i) + '.bmp', cInvisColor );
+      DXTroph.BltFast(110 + 80 * (i mod 7), 170 + 80 * (i div 7), DXTrophy[i], @pr, DDBLTFAST_SRCCOLORKEY or DDBLTFAST_WAIT);
+     end;
+    end;
+
     if ScreenMetrics.borderFile<>'' then
       lpDDSBack.BltFast( 0, 0, frmMain.FillBorder, nil, DDBLTFAST_SRCCOLORKEY or DDBLTFAST_WAIT );
     j := 0; //Count of available trophies
+    //Dim not available throphies
     for i := 0 to trCount - 1 do
     begin
-    //Dim not available throphies
-    if Trophy[ i ].enabled = 0 then
-    DrawAlpha(DXTroph, rect( 110 + 80 * (i mod 7), 170 + 80 * (i div 7), 185 + 80 * (i mod 7), 245 + 80 * (i div 7) ), rect( 0, 0, 25, 25 ), DXBlack, True, 235 )
-    else
-    inc(j); //Calculate the number of available trophies
+     if Trophy[ i ].enabled = 0 then
+     DrawAlpha(DXTroph, rect( 110 + 80 * (i mod 7), 170 + 80 * (i div 7), 185 + 80 * (i mod 7), 245 + 80 * (i div 7) ), rect( 0, 0, 25, 25 ), DXBlack, True, 235 )
+     else
+     inc(j); //Calculate the number of available trophies
     end;
     //Progressbar background
-    Drawalpha(DXTroph, rect(108, 68, 342, 92), rect( 0, 0, 25, 25), DXBlack, true, 255);
+    Drawalpha(DXTroph, rect(108, 61, 342, 75), rect( 0, 0, 25, 25), DXBlack, true, 192);
     ProgressX := 100 * j div trcount;
     //Progressbar, 230x20
-    Drawalpha(DXTroph, rect(110, 70, 110 + round(230 * ProgressX/100), 90), rect( 0, 0, 12, 12), DxProgress, True, 255);
+    Drawalpha(DXTroph, rect(110, 63, 110 + round(230 * ProgressX/100), 73), rect( 0, 0, 12, 12), DxProgress, True, 255);
+
+    EVProgressX := 0; //just an initialization to prevent compiler warning
+    if not DisableEvent and (evtrcount > 0) then
+    begin
+     j := 0;
+     for i := 0 to evtrCount - 1 do
+     begin //Eventtrophies
+      pr := Rect( 0, 0, 40, 40 );
+      DXTroph.BltFast(110 + 45 * (i mod 5), 125 + 45 * (i div 5), DXEvTrophy[i], @pr, DDBLTFAST_SRCCOLORKEY or DDBLTFAST_WAIT);
+      if EventTrophy[ i ].enabled = 0 then //dim not available Eventthrophies
+      begin
+       DrawAlpha(DXTroph, rect( 110 + 45 * (i mod 5), 125 + 45 * (i div 5), 150 + 45 * (i mod 5), 165 + 45 * (i div 5) ), rect( 0, 0, 25, 25 ), DXBlack, True, 235 );
+      end
+      else if EventTrophy[ i ].enabled = 1 then //first half free
+      begin
+       DrawAlpha(DXTroph, rect( 130 + 45 * (i mod 5), 125 + 45 * (i div 5), 150 + 45 * (i mod 5), 165 + 45 * (i div 5) ), rect( 0, 0, 25, 25 ), DXBlack, True, 235 );
+       j := j + 1;
+      end
+      else if EventTrophy[ i ].enabled = 2 then //second half free
+      begin
+       DrawAlpha(DXTroph, rect( 110 + 45 * (i mod 5), 125 + 45 * (i div 5), 130 + 45 * (i mod 5), 165 + 45 * (i div 5) ), rect( 0, 0, 25, 25 ), DXBlack, True, 235 );
+       j := j + 1;
+      end
+      else
+       j := j + 2;
+     end;
+     //Progressbar for evtrophies
+     Drawalpha(DXTroph, rect(108, 92, 342, 106), rect( 0, 0, 25, 25), DXBlack, true, 192);
+     EVProgressX := 100 * j div (evtrcount * 2);
+     Drawalpha(DXTroph, rect(110, 94, 110 + round(230 * EVProgressX/100), 104), rect( 0, 0, 12, 12), DxProgress, True, 255);
+    end;
+
     pr := Rect( 0, 0, DlgWidth, DlgHeight );
     lpDDSBack.BltFast( Offset.X, Offset.Y, DXTroph, @pr, DDBLTFAST_SRCCOLORKEY or DDBLTFAST_WAIT );
-    //% of progress
-    pText.PlotTextBlock( inttostr(ProgressX) + '%', Offset.X + 210, Offset.X + 240, Offset.Y + 90, 255);
+
+    //% of progressbar, EventTrophies not included
+    pText.PlotTextBlock( inttostr(ProgressX) + '%', Offset.X + 210, Offset.X + 240, Offset.Y + 73, 255);
+
+    if not DisableEvent and (evtrcount > 0) then //% of progressbar evtrophies
+      pText.PlotTextBlock( EvProgresstext + ': ' + inttostr(EVProgressX) + '%',
+      Offset.X + 170, Offset.X + 310, Offset.Y + 104, 255);
+
+    if assigned( pMusic ) then
+    begin
+      if FileExists( SoundPath + 'Theme\' + FMusicFileName ) then
+      begin
+        pMusic.OpenThisSong(AnsiString( SoundPath + 'Theme\' + FMusicFileName ));
+        pMusic.PlayThisSong;
+        pMusic.SetSongVolume( 50 );
+      end;
+    end;
   except
     on E : Exception do
       Log.log( FailName + E.Message );
@@ -257,6 +388,18 @@ begin
          end;
        end;
      end;
+     //Eventtrophy info
+     if PtinRect( ApplyOffset(rect( 110, 120, 285, 160) ), point( X, Y ) ) and not DisableEvent then
+     begin
+       for i := 0 to evtrCount - 1 do
+       begin
+         if PtinRect( ApplyOffset(rect( 110 + 45 * (i mod 5), 120 + 45 * (i div 5), 150 + 45 * (i mod 5), 160 + 45 * (i div 5)) ), point( X, Y ) ) then
+         begin //Trophy info, Textblock X1, X2, Y, Alpha
+              pText.PlotTextBlock( txtEventMessage[ i ], Offset.X + 357 + 3, Offset.X + 683 - 3, Offset.Y + 31 + 3, 255);
+              break;
+         end;
+       end;
+     end;
      pr := rect( 0, 0, 155, 44 );
      //Highlight Exit
      if PtinRect( ApplyOffset(rect( ExitRect.Left, ExitRect.Top, ExitRect.Right, ExitRect.Bottom )), point( X, Y ) ) then
@@ -279,7 +422,11 @@ begin
 {$ENDIF}
   try
      if ptInRect( ApplyOffset(rect( ExitRect.Left, ExitRect.Top, ExitRect.Right, ExitRect.Bottom )), point( X, Y ) ) then
-     close;
+     begin
+      close;
+      if assigned( pMusic ) then
+      pMusic.PauseThisSong;
+     end;
   except
     on E : Exception do
       Log.log( FailName + E.Message );
@@ -290,24 +437,80 @@ procedure TTrophies.SetTrophy ( t : string );
 var
    i : integer;
    F : Textfile;
+   UpdateTrophies : boolean;
 const
   FailName : string = 'TTrophies.SetTrophy';
 begin
   try
-     if FileExists( InterfacePath + 'Trophies.dat' ) then
+     UpdateTrophies := false; //Reset, if no trophy has to be set
+     if Fileexists (Interfacepath + 'trophiesname.dat') then
      begin
-          AssignFile( F, InterfacePath + 'Trophies.dat' );
-          Rewrite( F );
-          for i := 0 to trcount - 1 do
-          begin
-               if (lowercase(t) = lowercase(Trophy[ i ].name)) and (Trophy[ i ]. enabled = 0) then
-               begin
-                 Trophy[ i ]. enabled := 1;
-                 Runscript( player, '#Showmessage.trophy#');
-               end;
-               WriteLn( F, Trophy[ i ].enabled );
-          end;
-          CloseFile(F);
+       for i := 0 to trcount - 1 do
+       begin
+         if (lowercase(t) = lowercase(Trophy[ i ].name)) and (Trophy[ i ].enabled = 0) then
+         begin
+           Trophy[ i ].enabled := 1;
+           Runscript( player, '#Showmessage.trophy#');
+           UpdateTrophies := true;
+         end;
+       end;
+       if UpdateTrophies then
+       begin
+            AssignFile( F, Modgames + '\Trophies.dat' );
+            Rewrite( F );
+            for i := 0 to trcount - 1 do
+            begin
+                 WriteLn( F, Trophy[ i ].enabled );
+            end;
+            CloseFile(F);
+       end;
+       UpdateTrophies := false; //Reset again for Eventtrophies
+     end;
+     if Fileexists (Interfacepath + 'trophieseventname.dat') then
+     begin
+       for i := 0 to evtrcount - 1 do
+       begin
+         if (lowercase(t) = lowercase(EventTrophy[ i ].name1)) then
+         begin
+           if (EventTrophy[ i ].enabled = 0) then
+           begin
+             EventTrophy[ i ].enabled := 1;
+             Runscript( player, '#Showmessage.trophy#');
+             UpdateTrophies := true;
+           end
+           else if (EventTrophy[ i ].enabled = 2) then
+           begin
+             EventTrophy[ i ].enabled := 3;
+             Runscript( player, '#Showmessage.trophy#');
+             UpdateTrophies := true;
+           end;
+         end;
+         if (lowercase(t) = lowercase(EventTrophy[ i ].name2)) then
+         begin
+           if (EventTrophy[ i ].enabled = 0) then
+           begin
+             EventTrophy[ i ].enabled := 2;
+             Runscript( player, '#Showmessage.trophy#');
+             UpdateTrophies := true;
+           end
+           else if (EventTrophy[ i ].enabled = 1) then
+           begin
+             EventTrophy[ i ].enabled := 3;
+             Runscript( player, '#Showmessage.trophy#');
+             UpdateTrophies := true;
+           end;
+         end;
+       end;
+       if UpdateTrophies then
+       begin
+            AssignFile( F, Modgames + '\Trophiesevent.dat' );
+            Rewrite( F );
+            for i := 0 to evtrcount - 1 do
+            begin
+                 WriteLn( F, EventTrophy[ i ].enabled );
+            end;
+            CloseFile(F);
+       end;
      end;
   except
     on E : Exception do
@@ -316,6 +519,8 @@ begin
 end;
 
 procedure TTrophies.Release;
+var
+   i : integer;
 const
   FailName : string = 'TTrophies.Release';
 begin
@@ -329,10 +534,31 @@ begin
      DXTroph := nil;
      DXBlack := nil;
      DXExit := nil;
+     DXProgress := nil;
+     if not DisableEvent and (evtrcount > 0) then
+     begin
+       for i := 0 to evtrcount -1 do
+          DXEvTrophy[i] := nil;
+     end;
+     if trcount > 0 then
+     begin
+       for i := 0 to trcount -1 do
+          DXTrophy[i] := nil;
+     end;
      inherited;
   except
     on E : Exception do
       Log.log( FailName + E.Message );
   end;
 end;
+
+procedure TTrophies.SetMusicFileName(const Value: string);
+begin
+  FMusicFileName := Value;
+  if Value='' then
+    pMusic := nil
+  else
+    pMusic := MusicLib;
+end;
+
 end.

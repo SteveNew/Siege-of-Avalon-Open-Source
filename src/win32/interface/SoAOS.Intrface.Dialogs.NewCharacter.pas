@@ -127,7 +127,7 @@ type
     BoxOpen: TBoxEnum;
     LoopCounter, Spinner: Integer;
     DoAStart: boolean; // Days of Ahoul, Check if Race and Training is OK
-    txtMessage: array [0 .. 110] of string; // was 105
+    txtMessage: array [0 .. 111] of string; // was 105
     rLeftArrow, rRightArrow: TRect;
     rGenderNote: TRect;
 
@@ -179,6 +179,10 @@ type
     SelectedTattoo: TItem; // Days of Ahoul, used instead of haircolor
     AhoulRace: Integer;
     // Days of Ahoul 1 = Shaman (Mage), 2 = Ahoul (normally no mage), 3 = Halfbreed
+    AR1: Integer;
+    AR2: Integer;
+    ARPrev1: Integer;
+    ARPrev2: Integer;
     SelectRect: array [0 .. 20] of TSelectionRect;
     // collision rects for selectable text
 
@@ -241,7 +245,7 @@ begin
     FOnDraw := CharCreationDraw;
 
     ExText.Open('CharCreation');
-    for i := 0 to 110 do // was 105
+    for i := 0 to 111 do // was 105
       txtMessage[i] := ExText.GetText('Message' + inttostr(i));
 
     ChosenTraining := -1; // initialize training to nothing
@@ -269,6 +273,10 @@ begin
       ixSelectedHair := 0; // 8
       ixSelectedHairStyle := 0; // 12
       AhoulRace := 0; // Zero, since no DoA (just in case)
+      AR1 := 0; // also just in case
+      AR2 := 0;
+      ARPrev1 := 0;
+      ARPrev2 := 0;
     end
     else
     begin
@@ -278,7 +286,11 @@ begin
       ixSelectedTattoo := 0;
       // 0 oder 8 = blue, 1 oder 9 = yellow, 2 oder 10 = no one
       ixselectedDoAHair := 0; // 13
-      AhoulRace := 3; // =ixselectedbase := 2
+      AhoulRace := 3; // Halfbreed standard =ixselectedbase := 2
+      AR1 := 0;
+      AR2 := 0;
+      ARPrev1 := 0;
+      ARPrev2 := 0;
     end;
     ixSelectedBeard := 1;
     if modselection = TModSelection.Caves then // Caves - Mage
@@ -583,10 +595,23 @@ end;
 
 procedure TCreation.selectBase(const val: Integer); // Doa
 begin
-  if val = 1 then
-    Player.Resource := LoadArtResource(ChangeFileExt('players\playerahoul.pox', '.gif'))
-  else
-    Player.Resource := LoadArtResource(ChangeFileExt('players\player.pox', '.gif'));
+  case val of
+    0: begin
+      Player.Resource := LoadArtResource(ChangeFileExt('players\player.pox', '.gif'));
+      AR1 := -1;
+      AR2 := 1;
+    end;
+    1: begin
+      Player.Resource := LoadArtResource(ChangeFileExt('players\playerahoul.pox', '.gif'));
+      AR1 := 1;
+      AR2 := -1;
+    end;
+    2: begin
+      Player.Resource := LoadArtResource(ChangeFileExt('players\player.pox', '.gif'));
+      AR1 := 0;
+      AR2 := 0;
+    end;
+  end;
   ixSelectedBase := val;
   AhoulRace := val + 1; // AhoulRace but 1-3 and not 0-2
   DoAStart := false; // New Training to choose
@@ -780,54 +805,114 @@ begin
             begin
               if ChosenTraining = 0 then
               begin
-                if modselection = TModSelection.AoA then
-                  Character.Strength := Character.BaseStrength - 4
-                else
-                  Character.Strength := Character.BaseStrength - 5;
-                Character.Coordination := Character.BaseCoordination - 2;
-                if modselection = TModSelection.AoA then
-                  Character.Constitution := Character.BaseConstitution - 2
-                else
+                case modselection of
+                TModSelection.DoA:
+                begin
+                  Character.Strength := Character.BaseStrength - (5 + ARPrev1);
+                  Character.Coordination := Character.BaseCoordination - (2 + ARPrev1);
                   Character.Constitution := Character.BaseConstitution - 3;
-                Character.Perception := Character.BasePerception + 3;
-                if modselection = TModSelection.AoA then
-                  Character.Charm := Character.BaseCharm + 1
-                else
+                  Character.Perception := Character.BasePerception + (3 - ARPrev2);
                   Character.Charm := Character.BaseCharm + 3;
-                Character.Mysticism := Character.BaseMysticism + 3;
-                Character.Combat := Character.BaseCombat - 10;
-                Character.Stealth := Character.BaseStealth - 0;
-                if modselection = TModSelection.DoA then
+                  Character.Mysticism := Character.BaseMysticism + (3 - ARPrev2);
+                  Character.Combat := Character.BaseCombat - 10;
+                  Character.Stealth := Character.BaseStealth - 0;
                   DoAStart := True;
+                end;
+                TModSelection.AoA:
+                begin
+                  Character.Strength := Character.BaseStrength - 4;
+                  Character.Coordination := Character.BaseCoordination - 2;
+                  Character.Constitution := Character.BaseConstitution - 2;
+                  Character.Perception := Character.BasePerception + 3;
+                  Character.Charm := Character.BaseCharm + 1;
+                  Character.Mysticism := Character.BaseMysticism + 3;
+                  Character.Combat := Character.BaseCombat - 10;
+                  Character.Stealth := Character.BaseStealth - 0;
+                end;
+                TModSelection.RoD:
+                begin
+                  Character.Strength := Character.BaseStrength - 5;
+                  Character.Coordination := Character.BaseCoordination - 2;
+                  Character.Constitution := Character.BaseConstitution - 9;
+                  Character.Perception := Character.BasePerception + 3;
+                  Character.Charm := Character.BaseCharm + 3;
+                  Character.Mysticism := Character.BaseMysticism - 5;
+                  Character.Combat := Character.BaseCombat - 10;
+                  Character.Stealth := Character.BaseStealth - 0;
+                end
+                else
+                begin
+                   Character.Strength := Character.BaseStrength - 5;
+                   Character.Coordination := Character.BaseCoordination - 2;
+                   Character.Constitution := Character.BaseConstitution - 3;
+                   Character.Perception := Character.BasePerception + 3;
+                   Character.Charm := Character.BaseCharm + 3;
+                   Character.Mysticism := Character.BaseMysticism + 3;
+                   Character.Combat := Character.BaseCombat - 10;
+                   Character.Stealth := Character.BaseStealth - 0;
+                end;
+              end; //end case
               end
               else if ChosenTraining = 1 then
               begin
-                Character.Strength := Character.BaseStrength - 2;
-                Character.Coordination := Character.BaseCoordination - 5;
-                Character.Constitution := Character.BaseConstitution - 0;
-                Character.Perception := Character.BasePerception - 0;
-                Character.Charm := Character.BaseCharm + 3;
-                Character.Mysticism := Character.BaseMysticism + 3;
-                Character.Combat := Character.BaseCombat - 0;
-                Character.Stealth := Character.BaseStealth - 10;
-                if modselection = TModSelection.DoA then
+                case modselection of
+                TModSelection.DoA:
+                begin
+                  Character.Strength := Character.BaseStrength - (2 + ARPrev1);
+                  Character.Coordination := Character.BaseCoordination - (5 + ARPrev1);
+                  Character.Constitution := Character.BaseConstitution - 0;
+                  Character.Perception := Character.BasePerception - (0 + ARPrev2);
+                  Character.Charm := Character.BaseCharm + 3;
+                  Character.Mysticism := Character.BaseMysticism + (3 - ARPrev2);
+                  Character.Combat := Character.BaseCombat - 0;
+                  Character.Stealth := Character.BaseStealth - 10;
                   DoAStart := True;
+                end
+                else
+                begin
+                  Character.Strength := Character.BaseStrength - 2;
+                  Character.Coordination := Character.BaseCoordination - 5;
+                  Character.Constitution := Character.BaseConstitution - 0;
+                  Character.Perception := Character.BasePerception - 0;
+                  Character.Charm := Character.BaseCharm + 3;
+                  Character.Mysticism := Character.BaseMysticism + 3;
+                  Character.Combat := Character.BaseCombat - 0;
+                  Character.Stealth := Character.BaseStealth - 10;
+                end;
+              end; //end case
               end
               else if ChosenTraining = 2 then
               begin
-                Character.Strength := Character.BaseStrength - 0;
-                Character.Coordination := Character.BaseCoordination - 3;
-                Character.Constitution := Character.BaseConstitution - 2;
-                Character.Perception := Character.BasePerception - 2;
-                Character.Charm := Character.BaseCharm + 3;
-                Character.Mysticism := Character.BaseMysticism - 10;
-                Character.Combat := Character.BaseCombat - 0;
-                Character.Stealth := Character.BaseStealth + 3;
-                if modselection = TModSelection.DoA then
+                case modselection of
+                TModSelection.DoA:
+                begin
+                  Character.Strength := Character.BaseStrength - (0 + ARPrev1);
+                  Character.Coordination := Character.BaseCoordination - (3 + ARPrev1);
+                  Character.Constitution := Character.BaseConstitution - 2;
+                  Character.Perception := Character.BasePerception - (2 + ARPrev2);
+                  Character.Charm := Character.BaseCharm + 3;
+                  Character.Mysticism := Character.BaseMysticism - (10 + ARPrev2);
+                  Character.Combat := Character.BaseCombat - 0;
+                  Character.Stealth := Character.BaseStealth + 3;
                   DoAStart := True;
+                end
+                else
+                begin
+                  Character.Strength := Character.BaseStrength - 0;
+                  Character.Coordination := Character.BaseCoordination - 3;
+                  Character.Constitution := Character.BaseConstitution - 2;
+                  Character.Perception := Character.BasePerception - 2;
+                  Character.Charm := Character.BaseCharm + 3;
+                  Character.Mysticism := Character.BaseMysticism - 10;
+                  Character.Combat := Character.BaseCombat - 0;
+                  Character.Stealth := Character.BaseStealth + 3;
+                end;
+              end; //end case
               end;
               SelectedTraining := i - 18;
               ChosenTraining := i - 18;
+              ARPrev1 := AR1;
+            ARPrev2 := AR2;
               // why do this twice? Because SelectedTraining must be initalized for drawing the select box,
               // yet we must know if the picked a class or not- we dont let them leave without selecting a class.
               // This is a change, so a bit kludgy, but it's the 11th hour here at Digital Tome 6/11/00
@@ -836,53 +921,111 @@ begin
               if i = 18 then
               begin
                 PlotTextCentered(txtMessage[5], 300 + Offset.X, 448 + Offset.X, 135 + Offset.y, UseSmallFont, 250);
-                if modselection = TModSelection.AoA then
-                  Character.Strength := Character.BaseStrength + 4
-                else
-                  Character.Strength := Character.BaseStrength + 5;
-                Character.Coordination := Character.BaseCoordination + 2;
-                if modselection = TModSelection.AoA then
-                  Character.Constitution := Character.BaseConstitution + 2
-                else
+                case modselection of
+                TModSelection.DoA:
+                begin
+                  Character.Strength := Character.BaseStrength + (5 + AR1);
+                  Character.Coordination := Character.BaseCoordination + (2 + AR1);
                   Character.Constitution := Character.BaseConstitution + 3;
-                Character.Perception := Character.BasePerception - 3;
-                if modselection = TModSelection.AoA then
-                  Character.Charm := Character.BaseCharm - 1
-                else
+                  Character.Perception := Character.BasePerception - (3 - AR2);
                   Character.Charm := Character.BaseCharm - 3;
-                Character.Mysticism := Character.BaseMysticism - 3;
-                Character.Combat := Character.BaseCombat + 10;
-                Character.Stealth := Character.BaseStealth + 0;
-                if modselection = TModSelection.DoA then
+                  Character.Mysticism := Character.BaseMysticism - (3 - AR2);
+                  Character.Combat := Character.BaseCombat + 10;
+                  Character.Stealth := Character.BaseStealth + 0;
                   DoAStart := True;
+                end;
+                TModSelection.AoA:
+                begin
+                  Character.Strength := Character.BaseStrength + 4;
+                  Character.Coordination := Character.BaseCoordination + 2;
+                  Character.Constitution := Character.BaseConstitution + 2;
+                  Character.Perception := Character.BasePerception - 3;
+                  Character.Charm := Character.BaseCharm - 1;
+                  Character.Mysticism := Character.BaseMysticism - 3;
+                  Character.Combat := Character.BaseCombat + 10;
+                  Character.Stealth := Character.BaseStealth + 0;
+                end;
+                TModSelection.RoD:
+                begin
+                  Character.Strength := Character.BaseStrength + 5;
+                  Character.Coordination := Character.BaseCoordination + 2;
+                  Character.Constitution := Character.BaseConstitution + 9;
+                  Character.Perception := Character.BasePerception - 3;
+                  Character.Charm := Character.BaseCharm - 3;
+                  Character.Mysticism := Character.BaseMysticism + 5;
+                  Character.Combat := Character.BaseCombat + 10;
+                  Character.Stealth := Character.BaseStealth + 0;
+                end
+                else
+                begin
+                  Character.Strength := Character.BaseStrength + 5;
+                  Character.Coordination := Character.BaseCoordination + 2;
+                  Character.Constitution := Character.BaseConstitution + 3;
+                  Character.Perception := Character.BasePerception - 3;
+                  Character.Charm := Character.BaseCharm - 3;
+                  Character.Mysticism := Character.BaseMysticism - 3;
+                  Character.Combat := Character.BaseCombat + 10;
+                  Character.Stealth := Character.BaseStealth + 0;
+                end;
+              end; //end case
               end
               else if i = 19 then
               begin
                 PlotTextCentered(txtMessage[6], 300 + Offset.X, 448 + Offset.X, 135 + Offset.y, UseSmallFont, 250);
-                Character.Strength := Character.BaseStrength + 2;
-                Character.Coordination := Character.BaseCoordination + 5;
-                Character.Constitution := Character.BaseConstitution + 0;
-                Character.Perception := Character.BasePerception + 0;
-                Character.Charm := Character.BaseCharm - 3;
-                Character.Mysticism := Character.BaseMysticism - 3;
-                Character.Combat := Character.BaseCombat + 0;
-                Character.Stealth := Character.BaseStealth + 10;
-                if modselection = TModSelection.DoA then
+                case modselection of
+                TModSelection.DoA:
+                begin
+                  Character.Strength := Character.BaseStrength + (2 + AR1);
+                  Character.Coordination := Character.BaseCoordination + (5 + AR1);
+                  Character.Constitution := Character.BaseConstitution + 0;
+                  Character.Perception := Character.BasePerception + (0 + AR2);
+                  Character.Charm := Character.BaseCharm - 3;
+                  Character.Mysticism := Character.BaseMysticism - (3 - AR2);
+                  Character.Combat := Character.BaseCombat + 0;
+                  Character.Stealth := Character.BaseStealth + 10;
                   DoAStart := True;
+                end
+                else
+                begin
+                  Character.Strength := Character.BaseStrength + 2;
+                  Character.Coordination := Character.BaseCoordination + 5;
+                  Character.Constitution := Character.BaseConstitution + 0;
+                  Character.Perception := Character.BasePerception + 0;
+                  Character.Charm := Character.BaseCharm - 3;
+                  Character.Mysticism := Character.BaseMysticism - 3;
+                  Character.Combat := Character.BaseCombat + 0;
+                  Character.Stealth := Character.BaseStealth + 10;
+                end;
+              end; //end case
               end
               else if i = 20 then
               begin
                 PlotTextCentered(txtMessage[7], 300 + Offset.X, 448 + Offset.X, 135 + Offset.y, UseSmallFont, 250);
-                Character.Strength := Character.BaseStrength + 0;
-                Character.Coordination := Character.BaseCoordination + 3;
-                Character.Constitution := Character.BaseConstitution + 2;
-                Character.Perception := Character.BasePerception + 2;
-                Character.Charm := Character.BaseCharm - 3;
-                Character.Mysticism := Character.BaseMysticism + 10;
-                Character.Combat := Character.BaseCombat + 0;
-                Character.Stealth := Character.BaseStealth - 3;
-                if modselection = TModSelection.DoA then
+                case modselection of
+                TModSelection.DoA:
+                begin
+                  Character.Strength := Character.BaseStrength + (0 + AR1);
+                  Character.Coordination := Character.BaseCoordination + (3 + AR1);
+                  Character.Constitution := Character.BaseConstitution + 2;
+                  Character.Perception := Character.BasePerception + (2 + AR2);
+                  Character.Charm := Character.BaseCharm - 3;
+                  Character.Mysticism := Character.BaseMysticism + (10 + AR2);
+                  Character.Combat := Character.BaseCombat + 0;
+                  Character.Stealth := Character.BaseStealth - 3;
                   DoAStart := True;
+                end
+                else
+                begin
+                  Character.Strength := Character.BaseStrength + 0;
+                  Character.Coordination := Character.BaseCoordination + 3;
+                  Character.Constitution := Character.BaseConstitution + 2;
+                  Character.Perception := Character.BasePerception + 2;
+                  Character.Charm := Character.BaseCharm - 3;
+                  Character.Mysticism := Character.BaseMysticism + 10;
+                  Character.Combat := Character.BaseCombat + 0;
+                  Character.Stealth := Character.BaseStealth - 3;
+                end;
+              end; //end case
               end;
               Paint;
             end;
@@ -1051,6 +1194,9 @@ begin
           lpDDSBack.BltFast(pr.Left + Offset.X, pr.Top + Offset.y, DXBack, @pr, DDBLTFAST_SRCCOLORKEY or DDBLTFAST_WAIT);
         end;
       end;
+      //Hardmodeinfo
+      if (ptInRect(ApplyOffset(Rect(410, 35, 422, 47)), point(X, Y))) or (ptInRect(ApplyOffset(Rect(450, 35, 462, 47)), point(X, Y))) then
+        pText.PlotTextBlock(txtMessage[111], 500 + Offset.X, 682 + Offset.X, 239 + Offset.y, 240, UseSmallFont, True);
 
       if rLeftArrow.Contains(point(X, y)) then
       begin

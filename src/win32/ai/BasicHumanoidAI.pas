@@ -1063,7 +1063,7 @@ var
   List : TStringList;
   FriendList : TStringList;
   J : integer;
-  iStealth : single; //war integer, brauchen aber reelle Zahlen
+  iStealth : double; //war integer, brauchen aber reelle Zahlen
 const
   FailName : string = 'THumanoidIdle.FindTarget';
 begin
@@ -2009,7 +2009,7 @@ end;
 procedure THumanoidIdle.WasAttacked( Source : TAniFigure; Damage : Single );
 var
   FriendList : TStringList;
-  istealth : single;
+  istealth : double;
   J : integer;
   x : longint;
   y : longint;
@@ -2089,11 +2089,11 @@ begin
       end;
     end
     else
-    begin
-      X := random( 100 ) + 50;
-      Y := random( 100 ) + 50;
+    begin //Center added and deviance changed, why going to the topleft corner?
+      X := Character.X + random( 150 ) - 75;
+      Y := Character.Y + random( 150 ) - 75;
       Walking := True;
-      Character.walkTo( X, Y, 16 );
+      Character.RunTo( X, Y, 16 ); //running instead of walking
     end;
 
 
@@ -2146,7 +2146,7 @@ end;
 procedure THumanoidIdle.WasKilled( Source : TAniFigure );
 var
   FriendList : TStringList;
-  iStealth : single;
+  iStealth : double;
   J : integer;
   Effect : TEffect;
   s : TTokenString;
@@ -2890,10 +2890,10 @@ begin
       character.Face( TCharacter( Source ).x, TCharacter( Source ).y )
     else
     begin
-      X := random( 100 ) + 50;
-      Y := random( 100 ) + 50;
+      X := Character.X + random( 150 ) - 75;
+      Y := Character.Y + random( 150 ) - 75;
       Walking := True;
-      Character.walkTo( X, Y, 128 );
+      Character.RunTo( X, Y, 128 );
           // Character.walkTo(X, Y, 16);
     end;
 
@@ -3480,7 +3480,7 @@ begin
     bTakeOrders := StrToBoolDef( Character.Property_[ 'TakeOrders' ], True );
     bMove := StrToBoolDef( Character.Property_[ 'Moveable' ], True );
     AllowRun := StrToBoolDef( Character.Property_[ 'AllowRun' ], True );
-    iDistance := StrToIntDef( Character.Property_[ 'Distance' ], 175 );
+    iDistance := StrToIntDef( Character.Property_[ 'Distance' ], ScreenMetrics.CharacterDistance );
 
     PartyTotal := 1;
     if character.GroupName <> '' then
@@ -3676,10 +3676,10 @@ begin
       character.Face( TCharacter( Source ).x, TCharacter( Source ).y )
     else
     begin
-      X := random( 100 ) + 50;
-      Y := random( 100 ) + 50;
+      X := Character.X + random( 150 ) - 75;
+      Y := Character.Y + random( 150 ) - 75;
       Walking := True;
-      Character.walkTo( X, Y, 16 );
+      Character.RunTo( X, Y, 16 );
     end;
 
     try
@@ -4258,7 +4258,7 @@ begin
     begin
       NukeCounter := 0;
       inc( CirclePoint, 45 );
-      r := iDistance; //300
+      r := random(idistance div 2) + idistance div 2; //300
       T := c2PI * CirclePoint / 360;
       X := round( r * cos( T ) ) + TCharacter( Character.Track ).X;
       Y := round( r * sin( T ) / 2 ) + TCharacter( Character.Track ).Y;
@@ -4892,8 +4892,10 @@ begin
           end;
           if player.TitleExists( 'Hunter' ) then
           begin
-            if player.Stealth > 70 then //limit set to 70
-              Character.Mysticism := 53 + i //( ( 70 * 3 ) div 4 ) + i
+            if player.Stealth > 70 then //Limit set to 70
+              Character.Mysticism := 53 + i //70 * 3 div 3
+            else if (player.Stealth > 50) and (character.titleexists('nerfmystic')) then
+              Character.Mysticism := 38 + i //50 * 3 div 4
             else
               Character.Mysticism := ( ( player.Stealth * 3 ) div 4 ) + i;
             Character.perception := ( ( player.Coordination * 3 ) div 4 ) + i;
@@ -4902,8 +4904,10 @@ begin
           end;
           if player.TitleExists( 'Squire' ) then
           begin
-            if player.Combat > 70 then //limit set to 70
-              Character.Mysticism := 53 + i
+            if player.Combat > 70 then //Limit set to 70
+              Character.Mysticism := 53 + i //70 * 3 div 4
+            else if (player.Combat > 50) and (character.titleexists('nerfmystic')) then
+              character.Mysticism := 38 + i //50 * 3 div 4
             else
               Character.Mysticism := ( ( player.Combat * 3 ) div 4 ) + i;
             Character.perception := ( ( player.Strength * 3 ) div 4 ) + i;
@@ -5219,10 +5223,10 @@ begin
       character.Face( TCharacter( Source ).x, TCharacter( Source ).y )
     else
     begin
-      X := random( 100 ) + 50;
-      Y := random( 100 ) + 50;
+      X := Character.X + random( 150 ) - 75;
+      Y := Character.Y + random( 150 ) - 75;
       Walking := True;
-      Character.walkTo( X, Y, 16 );
+      Character.RunTo( X, Y, 16 );
     end;
 
     try

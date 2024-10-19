@@ -36,7 +36,7 @@ uses
   Anidemo, //for Modname
   Winapi.URLMon, //for Update Check, SoAmigos
   Winapi.Windows, Winapi.Messages, System.SysUtils, System.Variants,
-  System.Classes, System.UITypes,
+  System.Classes, System.UITypes, System.Zip,
   Vcl.Graphics, Vcl.Controls, Vcl.Forms, Vcl.Dialogs, Vcl.StdCtrls,
   Vcl.ExtCtrls,
   Vcl.Imaging.pngimage;
@@ -89,6 +89,9 @@ type
     imgCheckingUpdates: TImage;
     CheckUpdateTimer: TTimer;
     lblUpdateText: TStaticText;
+    imgCheckDisableEvent: TImage;
+    UpdateY: TImage;
+    UpdateN: TImage;
     procedure FormCreate(Sender: TObject);
     procedure tmrScrollTimer(Sender: TObject);
     procedure tmrCheckUpdateTimer(Sender: TObject);
@@ -106,7 +109,11 @@ type
     procedure SetScaleJournal;
     procedure MoviesOnOff;
     procedure UpdateBrightness;
+    procedure EnableUpdateCheck;
     procedure CheckforUpdates;
+    procedure UpdateYClick(Sender: TObject);
+    procedure UpdateNClick(Sender: TObject);
+    procedure UpdateGame;
     procedure LaunchyMouseMove(Sender: TObject; Shift: TShiftState; X, Y: Integer);
     procedure imgPlayMouseDown(Sender: TObject; Button: TMouseButton;
       Shift: TShiftState; X, Y: Integer);
@@ -120,6 +127,7 @@ type
     procedure SetCustomDDraw;
     procedure ImgCheckCursorClick(Sender: TObject);
     procedure SetCursor;
+    procedure DisableEvent;
     procedure WriteKeystoAltSiegeINI;
     procedure imgRebindKeysClick(Sender: TObject);
     procedure BringKeysToFront;
@@ -128,6 +136,7 @@ type
     function TranslateKey(key: word): string; //e.g. 32 ->string Space
     procedure AssignKeyReturn;
     procedure FormKeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);
+    procedure imgCheckDisableEventClick(Sender: TObject);
     property OnMouseMove;
   private
     { Private declarations }
@@ -151,6 +160,8 @@ type
     FBrightness: integer;
     FCustomDDrawDLL: string;
     FDDrawVersion: string;
+    DDrawList: Tstringlist; //standard, win7, winwine, none
+    FDDrawIdx: integer;
     FCursor: string;
 
     FScrollDirLeft: Boolean;
@@ -168,10 +179,16 @@ type
     KeySpellbar, KeyStatistics, KeyTitles, KeyXRay, KeyManapotion,
     KeyHealthpotion: word;
 
+    sttmodallowed: boolean;
     VersionCheckURL: string;
+    PatchURL: string;
     CheckMonth: integer; //= month 1-12
     AutoCheck: boolean;
-    UpdateTimerSwitchOn: Boolean; //two states: Show check image, then check
+    AsktoUpdate: boolean;
+    UpdateTimerSwitchOn: Boolean;
+    UpdateTimerState: integer; //three states: Show check image, check, update
+
+    FDisableEvent: Boolean;
 
     function AppHookFunc(var Message: TMessage): Boolean;
     procedure SetResolutionSupport(lpszDeviceName: LPCWSTR);
@@ -235,7 +252,7 @@ begin
     imgCloseX.visible := true
   else
     imgCloseX.visible := false;
-  if not imgkeyback.visible and not imgCheckingUpdates.visible then
+  if not imgkeyback.visible and not UpdateTimerSwitchOn then
   begin
     if Rect(400, 320, 520, 385).Contains(imgBack.ScreenToClient(Mouse.cursorpos))
     then
@@ -243,7 +260,7 @@ begin
     else
       imgPlay.visible := false;
     if Rect(416, 263, 516, 318).Contains(imgBack.ScreenToClient(Mouse.cursorpos))
-    and fileexists('SoAStarter.exe') then
+    and fileexists('SoAMods.exe') then
       imgPlayAlt.visible := true
     else
       imgPlayAlt.visible := false;
@@ -265,17 +282,13 @@ var
   INI, DaysINI, PillarsINI, AshesINI, CavesINI, RiseINI, KingdomsINI: TIniFile;
 begin
   // Mods, for synchronizing language
-  DaysINI := TIniFile.Create(ExtractFilePath(Application.ExeName) + 'days.ini');
-  PillarsINI := TIniFile.Create(ExtractFilePath(Application.ExeName) +
-    'pillars.ini');
-  AshesINI := TIniFile.Create(ExtractFilePath(Application.ExeName) +
-    'ashes.ini');
-  CavesINI := TIniFile.Create(ExtractFilePath(Application.ExeName) +
-    'caves.ini');
-  RiseINI := TIniFile.Create(ExtractFilePath(Application.ExeName) + 'rise.ini');
-  KingdomsINI := TIniFile.Create(ExtractFilePath(Application.ExeName) +
-    'kingdoms.ini');
-  INI := TIniFile.Create(ExtractFilePath(Application.ExeName) + 'siege.ini');
+  DaysINI:= TIniFile.Create(ExtractFilePath(Application.ExeName) +'days.ini');
+  PillarsINI:= TIniFile.Create(ExtractFilePath(Application.ExeName) +'pillars.ini');
+  AshesINI:= TIniFile.Create(ExtractFilePath(Application.ExeName) +'ashes.ini');
+  CavesINI:= TIniFile.Create(ExtractFilePath(Application.ExeName) +'caves.ini');
+  RiseINI:= TIniFile.Create(ExtractFilePath(Application.ExeName) +'rise.ini');
+  KingdomsINI:= TIniFile.Create(ExtractFilePath(Application.ExeName) +'kingdoms.ini');
+  INI:= TIniFile.Create(ExtractFilePath(Application.ExeName) +'siege.ini');
   try
     try
       if (FCurrentLanguage <> cNoLanguage) then
@@ -302,6 +315,7 @@ begin
       INI.WriteString('Settings', 'CustomDDrawDLL', FCustomDDrawDLL);
       INI.WriteString('Settings', 'DDrawVersion', FDDrawVersion);
       INI.WriteString('Settings', 'AltCursor', FCursor);
+      INI.WriteBool('Settings', 'DisableEvent', FDisableEvent);
       //set the assigned keys
       INI.WriteInteger('keyboard', 'adventure', KeyAdventure);
       INI.WriteInteger('keyboard', 'battlecry', KeyBattleCry);
@@ -322,65 +336,59 @@ begin
       INI.WriteInteger('keyboard', 'Manapotion', KeyManapotion);
       INI.WriteInteger('keyboard', 'Healthpotion', KeyHealthpotion);
       // Mods only have 2 localizations (English und german)
-      if (FCurrentLanguage <> 'German') then
-      begin
-        if fileexists('days.ini') then
-          DaysINI.WriteString('Settings', 'LanguagePath', 'english');
-        if fileexists('pillars.ini') then
-          PillarsINI.WriteString('Settings', 'LanguagePath', 'english');
-        if fileexists('ashes.ini') then
-          AshesINI.WriteString('Settings', 'LanguagePath', 'english');
-        if fileexists('caves.ini') then
-          CavesINI.WriteString('Settings', 'LanguagePath', 'english');
-        if fileexists('rise.ini') then
-          RiseINI.WriteString('Settings', 'LanguagePath', 'english');
-        if fileexists('kingdoms.ini') then
-          KingdomsINI.WriteString('Settings', 'LanguagePath', 'english');
-      end
-      else
-      begin
-        if fileexists('days.ini') then
-          DaysINI.WriteString('Settings', 'LanguagePath', 'german');
-        if fileexists('pillars.ini') then
-          PillarsINI.WriteString('Settings', 'LanguagePath', 'german');
-        if fileexists('ashes.ini') then
-          AshesINI.WriteString('Settings', 'LanguagePath', 'german');
-        if fileexists('caves.ini') then
-          CavesINI.WriteString('Settings', 'LanguagePath', 'german');
-        if fileexists('rise.ini') then
-          RiseINI.WriteString('Settings', 'LanguagePath', 'german');
-        if fileexists('kingdoms.ini') then
-          KingdomsINI.WriteString('Settings', 'LanguagePath', 'german');
-      end;
       if fileexists('days.ini') then
       begin
         DaysINI.WriteString('Settings', 'UseSmallFont', FUseSmallFont);
         DaysINI.WriteInteger('Settings', 'Brightness', FBrightness);
+        if (FCurrentLanguage <> 'German') then
+        DaysINI.WriteString('Settings', 'LanguagePath', 'english')
+        else
+        DaysINI.WriteString('Settings', 'LanguagePath', 'german');
       end;
       if fileexists('pillars.ini') then
       begin
         PillarsINI.WriteString('Settings', 'UseSmallFont', FUseSmallFont);
         PillarsINI.WriteInteger('Settings', 'Brightness', FBrightness);
+        if (FCurrentLanguage <> 'German') then
+        PillarsINI.WriteString('Settings', 'LanguagePath', 'english')
+        else
+        PillarsINI.WriteString('Settings', 'LanguagePath', 'german');
       end;
       if fileexists('ashes.ini') then
       begin
         AshesINI.WriteString('Settings', 'UseSmallFont', FUseSmallFont);
         AshesINI.WriteInteger('Settings', 'Brightness', FBrightness);
+        if (FCurrentLanguage <> 'German') then
+        AshesINI.WriteString('Settings', 'LanguagePath', 'english')
+        else
+        AshesINI.WriteString('Settings', 'LanguagePath', 'german');
       end;
       if fileexists('caves.ini') then
       begin
         CavesINI.WriteString('Settings', 'UseSmallFont', FUseSmallFont);
         CavesINI.WriteInteger('Settings', 'Brightness', FBrightness);
+        if (FCurrentLanguage <> 'German') then
+        CavesINI.WriteString('Settings', 'LanguagePath', 'english')
+        else
+        CavesINI.WriteString('Settings', 'LanguagePath', 'german');
       end;
       if fileexists('rise.ini') then
       begin
         RiseINI.WriteString('Settings', 'UseSmallFont', FUseSmallFont);
         RiseINI.WriteInteger('Settings', 'Brightness', FBrightness);
+        if (FCurrentLanguage <> 'German') then
+        RiseINI.WriteString('Settings', 'LanguagePath', 'english')
+        else
+        RiseINI.WriteString('Settings', 'LanguagePath', 'german');
       end;
       if fileexists('kingdoms.ini') then
       begin
         KingdomsINI.WriteString('Settings', 'UseSmallFont', FUseSmallFont);
         KingdomsINI.WriteInteger('Settings', 'Brightness', FBrightness);
+        if (FCurrentLanguage <> 'German') then
+        KingdomsINI.WriteString('Settings', 'LanguagePath', 'english')
+        else
+        KingdomsINI.WriteString('Settings', 'LanguagePath', 'german');
       end;
       INI.UpdateFile;
     except
@@ -393,6 +401,7 @@ begin
   finally
     INI.Free;
   end;
+  DDrawList.Free; //free ddrawlist created in formcreate
   ModalResult := mrOk;
 end;
 
@@ -543,11 +552,50 @@ begin
     lblDDrawVersion.visible := true
     else
     lblDDrawVersion.visible := false;
-    FDDrawVersion := INI.ReadString('Settings', 'DDrawVersion', 'standard');
-    if not fileexists(FDDrawVersion + 'Ddraw.dll') then
+    FDDrawVersion := INI.ReadString('Settings', 'DDrawVersion', 'SoADDraw');
+    if not fileexists(FDDrawVersion + '.dll') then
     FDDrawVersion := 'None';
+
+    //create stringlist for ddrawfiles
+    DDrawList := TStringList.Create;
+    if fileexists ('SoADDraw.dll') then
+    begin
+      DDrawList.Add('Standard'); //caption
+      DDrawList.Add('SoADDraw'); //filename
+    end;
+    if fileexists ('ddraw_nichtWin10.dll') then
+    begin
+      DDrawList.Add('Win7');
+      DDrawList.Add('ddraw_nichtWin10');
+    end;
+    if fileexists ('ddraw_allg.dll') then
+    begin
+      DDrawList.Add('WinWine');
+      DDrawList.Add('ddraw_allg');
+    end;
+    if fileexists ('ddraw_Win10.dll') then
+    begin
+      DDrawList.Add('BPF1');
+      DDrawList.Add('ddraw_Win10');
+    end;
+    if fileexists ('ddraw_Win10neu.dll') then
+    begin
+      DDrawList.Add('BPF2');
+      DDrawList.Add('ddraw_Win10neu');
+    end;
+    if fileexists ('W10BPFDdraw.dll') then
+    begin
+      DDrawList.Add('BPF3');
+      DDrawList.Add('W10BPFDdraw');
+    end;
+    DDrawList.Add('Nothing');
+    DDrawList.Add('None');
+    FDDrawIdx := DDrawList.IndexOf(FDDrawVersion);
+
     FCursor := INI.ReadString('Settings', 'AltCursor', 'false');
     imgCheckCursor.Visible := strtobool(FCursor);
+    FDisableEvent := INI.ReadBool('Settings', 'DisableEvent', false);
+    imgCheckDisableEvent.Visible := FDisableEvent;
     //get the assigned keys
     KeyAdventure := INI.ReadInteger('keyboard', 'adventure', 76);
     KeyBattleCry := INI.ReadInteger('keyboard', 'battlecry', 66);
@@ -567,15 +615,21 @@ begin
     KeyXRay := INI.ReadInteger('keyboard', 'xray', 88);
     KeyManapotion := INI.ReadInteger('keyboard', 'Manapotion', 68);
     KeyHealthpotion := INI.ReadInteger('keyboard', 'Healthpotion', 69);
+    sttmodallowed := LowerCase(INI.ReadString('Settings', 'ModAllowed',
+      'false')) = 'true';
     VersionCheckURL := INI.ReadString('Settings', 'versionurl', '');
+    PatchURL := INI.ReadString('Settings', 'patchurl', '');
     AutoCheck := INI.ReadBool('Settings', 'Autocheck', true);
     CheckMonth := INI.ReadInteger('Settings', 'Checkmonth', 1);
     //AutoUpdate every first of a month
     DecodeDate(Now, Year, Month, Day);
-    if AutoCheck and (Month <> CheckMonth) then
+    AsktoUpdate := false;
+    UpdateTimerSwitchOn := false;
+    UpdateTimerState := 0;
+    if AutoCheck and (Month <> CheckMonth) and (VersionCheckURL <> '')
+    and (PatchURL <> '') then
     begin
-      UpdateTimerSwitchOn := true;
-      CheckUpdateTimer.Enabled := true;
+      EnableUpdateCheck;
       CheckMonth := Month;
       INI.WriteInteger('Settings', 'Checkmonth', CheckMonth);
     end;
@@ -667,7 +721,7 @@ begin
   lblBrightness.Font.Name := 'BlackChancery';
   lblBrightness.Caption := inttostr( FBrightness );
   lblDDrawVersion.Font.Name := 'BlackChancery';
-  lblDDrawVersion.Caption := FDDrawVersion;
+  lblDDrawVersion.Caption := DDrawList[FDDrawIdx - 1];//FDDrawVersion;
   lblUpdateText.Font.Name := 'BlackChancery';
   //key labels Font
   lblKeyAdventure.Font.Name:= 'BlackChancery';
@@ -695,10 +749,10 @@ end;
 procedure TfrmLaunchSetting.imgPlayAltMouseDown(Sender: TObject;
   Button: TMouseButton; Shift: TShiftState; X, Y: Integer);
 begin
-  if fileexists('SoAStarter.exe') then
-  ShellExecute(Handle, 'open', 'SoAStarter.exe', nil, nil, SW_SHOWNORMAL)
+  if fileexists('SoAMods.exe') then
+  ShellExecute(Handle, 'open', 'SoAMods.exe', nil, nil, SW_SHOWNORMAL)
   else
-  log.log('Cannot find alternate Version (SoAStarter.exe).');
+  log.log('Cannot find alternate Version (SoAMods.exe).');
   //Save keys to SoAMods.ini for alternate Version
   WriteKeystoAltSiegeINI;
   ModalResult := mrCancel;
@@ -707,50 +761,7 @@ end;
 procedure TfrmLaunchSetting.imgCheckUpdateMouseDown(Sender: TObject;
   Button: TMouseButton; Shift: TShiftState; X, Y: Integer);
 begin
-  UpdateTimerSwitchOn := true;
-  CheckUpdateTimer.Enabled := true;
-end;
-
-procedure TfrmLaunchSetting.CheckforUpdates;
-var
-  Versionfile, Destination: PChar;
-  F: Textfile;
-  VNumber: string;
-  Event, EventText: string;
-  Res: HResult;
-begin
-  Versionfile := PChar(VersionCheckURL);//'https://siege-of-avalon.org/VersionNumber.txt';
-  Destination := 'VersionNumber.txt'; //Standard App Path
-  Res := UrlDownloadToFile(nil, Versionfile, Destination, 0, nil);
-  if res <> S_OK then
-  begin
-    MessageDlg('Servers are currently not available!', mtinformation, [mbOk], 0);
-    lblUpdateText.visible := false;
-    imgCheckingUpdates.visible := false;
-  end
-  else
-  begin
-    if Fileexists('VersionNumber.txt') then
-    begin
-      AssignFile (F, 'VersionNumber.txt');
-      Reset(F);
-      ReadLN(F, VNumber);
-      ReadLN(F, Event);
-      ReadLN(F, EventText);
-      CloseFile(F);
-    end
-    else
-      VNumber := VersionLabel.Caption;
-    if (VNumber <> VersionLabel.Caption) then
-    begin
-      if (Event = 'Event') then
-        lblUpdateText.Caption := EventText
-      else
-        lblUpdateText.Caption := 'New Version available. Please download the latest patch from www.Soamigos.de!';
-    end
-    else
-      lblUpdateText.Caption := 'No new Version available!';
-  end;
+  EnableUpdateCheck;
 end;
 
 procedure TfrmLaunchSetting.imgPlayMouseDown(Sender: TObject;
@@ -761,8 +772,11 @@ end;
 
 procedure TfrmLaunchSetting.imgCheckClick(Sender: TObject);
 begin
-  imgCheck.Visible := not imgCheck.Visible;
-  SetResolutionSupport(PWideChar(FCurrentDevice));
+  if not imgCheckCursor.visible then //when BluePixelFix only fullscreen allowed
+  begin
+    imgCheck.Visible := not imgCheck.Visible;
+    SetResolutionSupport(PWideChar(FCurrentDevice));
+  end;
 end;
 
 procedure TfrmLaunchSetting.imgCheckBigFontClick(Sender: TObject);
@@ -787,6 +801,12 @@ procedure TfrmLaunchSetting.imgCheckCustomDDrawClick(Sender: TObject);
 begin
   imgCheckCustomDDraw.visible := not imgCheckCustomDDraw.visible;
   SetCustomDDraw;
+end;
+
+procedure TfrmLaunchSetting.imgCheckDisableEventClick(Sender: TObject);
+begin
+  imgCheckDisableEvent.visible := not imgCheckDisableEvent.visible;
+  DisableEvent;
 end;
 
 procedure TfrmLaunchSetting.ImgCheckCursorClick(Sender: TObject);
@@ -841,25 +861,49 @@ end;
 procedure TfrmLaunchSetting.SetCursor;
 begin
   if strtobool(FCursor) then
-  FCursor := 'false'
+  begin
+  FCursor := 'false';
+  FForceD3DFullscreen := true;
+  end
   else
   begin
     FCursor := 'true';
+    FForceD3DFullscreen := false; //minimizing works in this mode consistently
     MessageDlg('You could also "Play Alt Version"', mtinformation, [mbOk], 0);
     FCustomDDrawDLL := FCursor;
     imgCheckCustomDDraw.visible := strtobool(FCustomDDrawDLL);
     lblDDrawVersion.visible := strtobool(FCustomDDrawDLL);
+    imgCheck.Visible := strtobool(FCustomDDrawDLL); //windowed false
     //Win10
     if not (TOSVersion.Major = 6) and not (TOSVersion.Minor = 1) then
-    if fileexists ('W10BPFDdraw.dll') then
-      FDDrawVersion := 'W10BPF'
+    if fileexists ('ddraw_Win10.dll') then
+    begin
+      FDDrawVersion := 'ddraw_Win10';
+      lblDDrawVersion.caption := 'BPF1';
+    end
     else
+    begin
       FDDrawVersion := 'None';
+      lblDDrawVersion.caption := 'Nothing';
+    end;
     //Win7
     if (TOSVersion.Major = 6) and (TOSVersion.Minor = 1) then
+    if fileexists ('ddraw_allg.dll') then
+    begin
+      FDDrawVersion := 'ddraw_allg';
+      lblDDrawVersion.caption := 'WinWine';
+    end
+    else
+    begin
       FDDrawVersion := 'None';
-    lblDDrawVersion.caption := FDDrawVersion;
+      lblDDrawVersion.caption := 'Nothing';
+    end;
   end;
+end;
+
+procedure TfrmLaunchSetting.DisableEvent;
+begin
+  FDisableEvent := not FDisableEvent;
 end;
 
 procedure TfrmLaunchSetting.BringKeysToFront;
@@ -1053,21 +1097,23 @@ end;
 procedure TfrmLaunchSetting.imgBackClick(Sender: TObject);
 var
   lInterfacePath: string;
-  DDrawList: Tstringlist; //standard, win7, winwine, none
-  FDDrawIdx: integer;
 begin
- if imgCheckingUpdates.visible then
+ if AsktoUpdate then
  begin
-   lblUpdateText.visible := false;
-   imgCheckingUpdates.visible := false;
- end;
- if imgkeyback.visible then  //keyassigning
-  begin
-  if (KeyToAssign = 0) and
-  not Rect(0, 0, 400, 230).Contains(imgBack.ScreenToClient(Mouse.cursorpos))
-  then
-   BringKeysToBack;
-  end
+   //procedure picture-click instead
+ end
+ else if UpdateTimerSwitchOn and (UpdateTimerState = 0) then
+ begin
+  UpdateTimerSwitchOn := false;
+  lblUpdateText.visible := false;
+  imgCheckingUpdates.visible := false;
+ end
+ else if imgkeyback.visible then  //keyassigning
+ begin
+ if (KeyToAssign = 0) and
+ not Rect(0, 0, 400, 230).Contains(imgBack.ScreenToClient(Mouse.cursorpos)) then
+  BringKeysToBack;
+ end
  else
  begin
   lInterfacePath := FInterfacePath;
@@ -1135,29 +1181,30 @@ begin
   end;
 
   //Which DDrawVersion
-  DDrawList := TStringList.Create;
-  if fileexists ('StandardDdraw.dll') then
-  DDrawList.Add('Standard');
-  if fileexists ('Win7Ddraw.dll') then
-    DDrawList.Add('Win7');
-  if fileexists ('WinWineDdraw.dll') then
-    DDrawList.Add('WinWine');
-  if fileexists ('W10BPFDdraw.dll') then
-    DDrawList.Add('W10BPF');
-  DDrawList.Add('None');
-  FDDrawIdx := DDrawList.IndexOf(FDDrawVersion);
-  try
   if imgCheckCustomDDraw.visible then
   begin
     if Rect(375, 116, 400, 131).Contains(imgBack.ScreenToClient(Mouse.cursorpos))
-    then
-      FDDrawVersion := ScrollText(false, FDDrawIdx, DDrawList, lblDDrawVersion);
+    then //press left
+    begin
+      if FDDrawIdx = 1 then
+        FDDrawIdx := DDrawList.count - 1
+        else
+        FDDrawIdx := FDDrawIdx - 2;
+      FDDrawVersion := DDrawList[FDDrawIdx];
+      lblDDrawVersion.caption := DDrawList[FDDrawIdx - 1];
+    //FDDrawVersion := ScrollText(false, FDDrawIdx, DDrawList, lblDDrawVersion);
+    end;
     if Rect(475, 116, 500, 131).Contains(imgBack.ScreenToClient(Mouse.cursorpos))
-    then
-      FDDrawVersion := ScrollText(true, FDDrawIdx, DDrawList, lblDDrawVersion);
-  end;
-  finally
-    DDrawList.Free;
+    then //press right
+    begin
+      if FDDrawIdx = DDrawList.count - 1 then
+        FDDrawIdx := 1
+        else
+        FDDrawIdx := FDDrawIdx + 2;
+      FDDrawVersion := DDrawList[FDDrawIdx];
+      lblDDrawVersion.caption := DDrawList[FDDrawIdx - 1];
+    //FDDrawVersion := ScrollText(true, FDDrawIdx, DDrawList, lblDDrawVersion);
+    end;
   end;
 
   //BigFont
@@ -1182,6 +1229,14 @@ begin
   begin
     imgMovies.Visible := not imgMovies.Visible;
     MoviesOnOff;
+  end;
+
+  //DisableEvent
+  if Rect(178, 194, 204, 220).Contains(imgBack.ScreenToClient(Mouse.cursorpos))
+  then
+  begin
+    imgCheckDisableEvent.Visible := not imgCheckDisableEvent.Visible;
+    DisableEvent;
   end;
 
   //Brightness
@@ -1311,19 +1366,195 @@ begin
   end;
 end;
 
-procedure TfrmLaunchSetting.tmrCheckUpdateTimer(Sender: TObject);
+procedure TfrmLaunchSetting.EnableUpdateCheck;
 begin
-  if UpdateTimerSwitchOn then
+  UpdateTimerSwitchOn := true;
+  UpdateTimerState := 1;
+  CheckUpdateTimer.Enabled := true;
+end;
+
+procedure TfrmLaunchSetting.CheckforUpdates;
+var
+  SiegeINI, SoAModsINI: TINIFile;
+  Versionfile, Destination: PChar;
+  F: Textfile;
+  VNumber, PatchVNumber: string;
+  Event, EventText, UpdateText: string;
+  Eventmonth, Eventyear, Eventtitle: string;
+  Res: HResult;
+begin
+  Versionfile := PChar(VersionCheckURL);//'https://siege-of-avalon.org/VersionNumber.txt';
+  Destination := 'VersionNumber.txt'; //Standard App Path
+  res := UrlDownloadToFile(nil, Versionfile, Destination, 0, nil);
+  if res <> S_OK then
   begin
-    imgCheckingUpdates.visible := true;
-    lblUpdateText.visible:= true;
-    lblUpdateText.Caption := 'Checking for Updates...';
+    MessageDlg('Servers are currently not available!', mtinformation, [mbOk], 0);
     UpdateTimerSwitchOn := false;
+    lblUpdateText.visible := false;
+    imgCheckingUpdates.visible := false;
   end
   else
   begin
-    CheckUpdateTimer.Enabled := false;
-    CheckforUpdates;
+    if Fileexists('VersionNumber.txt') then
+    begin
+      AssignFile (F, 'VersionNumber.txt');
+      Reset(F);
+      ReadLN(F, VNumber); //Is there an Update or rather an Event
+      ReadLN(F, Event); //Event yes/no
+      ReadLN(F, EventText); //Eventinfo if yes
+      ReadLN(F, UpdateText); //Addition if old version and old Event
+      ReadLN(F, PatchVNumber); //Check if old version when old Event
+      ReadLN(F, Eventmonth); //Month of Event
+      ReadLN(F, Eventyear); //Year of Event
+      ReadLN(F, Eventtitle); //Eventtitle for CurrentEventname
+      CloseFile(F);
+    end
+    else
+    begin
+      VNumber := VersionLabel.Caption;
+      Event := 'NoEvent';
+    end;
+    if VNumber <> VersionLabel.Caption then
+    begin
+      if Event = 'Event' then
+      begin
+        if PatchVNumber = VersionLabel.Caption then //old Event
+        begin
+          lblUpdateText.Caption := EventText;
+          SiegeINI:= TIniFile.Create(ExtractFilePath(Application.ExeName) + 'siege.ini');
+          try
+          SiegeINI.WriteString('Settings', 'EvMonth', Eventmonth);
+          SiegeINI.WriteString('Settings', 'EvYear', Eventyear);
+          SiegeINI.WriteString('Settings', 'EvTitle', Eventtitle);
+          finally
+          SiegeINI.Free;
+          end;
+          SoAModsINI := TIniFile.Create(ExtractFilePath(Application.ExeName) + 'SoAMods.ini');
+          try
+          SoAModsINI.WriteString('Settings', 'EvMonth', Eventmonth);
+          SoAModsINI.WriteString('Settings', 'EvYear', Eventyear);
+          SoAModsINI.WriteString('Settings', 'EvTitle', Eventtitle);
+          finally
+          SoAModsINI.Free;
+          end;
+        end
+        else //Event, but needs latest patch
+        begin
+          lblUpdateText.Caption := EventText + ' ' + UpdateText;
+          AsktoUpdate := true;
+          if not sttmodallowed then
+          UpdateY.visible := true;
+          UpdateN.visible := true;
+        end;
+      end
+      else
+      begin
+        lblUpdateText.Caption := UpdateText;
+        AsktoUpdate := true;
+        if not sttmodallowed then
+        UpdateY.visible := true;
+        UpdateN.visible := true;
+      end;
+    end
+    else
+      lblUpdateText.Caption := 'No new Version available!';
+  end;
+end;
+
+procedure TfrmLaunchSetting.UpdateYClick(Sender: TObject);
+begin
+  if not sttmodallowed then
+  UpdateGame;
+end;
+
+procedure TfrmLaunchSetting.UpdateNClick(Sender: TObject);
+begin
+  AsktoUpdate := false;
+  UpdateY.visible := false;
+  UpdateN.visible := false;
+  UpdateTimerSwitchOn := false;
+  lblUpdateText.visible := false;
+  imgCheckingUpdates.visible := false;
+end;
+
+procedure TfrmLaunchSetting.UpdateGame;
+var
+  Patchfile, PatchDestination: PChar;
+  res: HResult;
+  ZipUpdate: TZipFile;
+  i: integer;
+begin
+  AsktoUpdate := false;
+  UpdateY.visible := false;
+  UpdateN.visible := false;
+  Patchfile := PChar(PatchURL);
+  if not DirectoryExists ('update') then
+  CreateDir ('update');
+  PatchDestination := 'update\Patch.zip';
+  lblUpdateText.Caption := 'Downloading Patch...';
+  res := UrlDownloadToFile(nil, PatchFile, PatchDestination, 0, nil);
+  if res <> S_OK then
+  begin
+    MessageDlg('Servers are currently not available!', mtinformation, [mbOk], 0);
+    UpdateTimerSwitchOn := false;
+    lblUpdateText.visible := false;
+    imgCheckingUpdates.visible := false;
+  end
+  else
+  begin
+      ZipUpdate := TZipFile.Create;
+      ZipUpdate.Open('update/Patch.zip', TZipMode.zmRead);
+      try
+        deletefile('Siege_old.exe');
+        deletefile('Siege_old2.exe');
+        renamefile('Siege.exe', 'Siege_old.exe');
+        //Use UnspezifischeVersion in general
+        renamefile('Siege_UnspezifischeVersion.exe', 'Siege_old2.exe');
+        for i := 0 to ZipUpdate.FileCount - 1 do
+        begin
+          ZipUpdate.Extract(ZipUpdate.filename[i], '', true);
+          lblUpdateText.Caption := 'Updating' + #10#13 + ZipUpdate.filename[i] +
+          #10#13 + inttostr((i + 1) * 100 div ZipUpdate.FileCount) + ' %';
+        end;
+      finally
+        ZipUpdate.Free;
+        //Revert and rename when using Steam
+        {$IFDEF STEAM}
+        renamefile('Siege.exe', 'Siege_UnspezifischeVersion.exe');
+        renamefile('SiegeSteam.exe', 'Siege.exe');
+        log.Log('Steam Version updated');
+        {$ENDIF}
+        //Revert and rename when using Gog
+        {$IFDEF GOG}
+        renamefile('Siege.exe', 'Siege_UnspezifischeVersion.exe');
+        renamefile('SiegeGog.exe', 'Siege.exe');
+        log.Log('GoG Version updated');
+        {$ENDIF}
+        deletefile('update/Patch.zip');
+        lblUpdateText.Caption := 'Update finished... Please restart the game.';
+      end;
+      //todo see if an autorestart is possible
+  end;
+end;
+
+procedure TfrmLaunchSetting.tmrCheckUpdateTimer(Sender: TObject);
+begin
+  if UpdateTimerSwitchOn then
+  case UpdateTimerState of
+    1: begin
+      imgCheckingUpdates.visible := true;
+      lblUpdateText.visible:= true;
+      lblUpdateText.Caption := 'Checking for Updates...';
+      inc(UpdateTimerState);
+    end;
+    2: begin
+      CheckforUpdates;
+      UpdateTimerState := 0;
+    end
+    else begin //turn off
+      CheckUpdateTimer.Enabled := false;
+      UpdateTimerState := 0;
+    end;
   end;
 end;
 

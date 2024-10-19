@@ -42,7 +42,7 @@ unit Statistics;
 interface
 
 uses
-  // Winapi.DirectDraw,
+//  Winapi.DirectDraw,
   DirectX,
   System.Types,
   System.Classes,
@@ -240,7 +240,8 @@ begin
 
 end; // TStatistics.Release
 
-procedure TStatistics.MouseDown(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X, Y, GridX, GridY: integer);
+procedure TStatistics.MouseDown( Sender : TObject; Button : TMouseButton;
+      Shift : TShiftState; X, Y, GridX, GridY : Integer );
 var
   B1, B2, B3, B4: boolean;
   OneLessBack: boolean;
@@ -450,38 +451,22 @@ begin
             StatAdjustments[i] := StatAdjustments[i] - 1;
           end;
           case i of
-            0:
-              Character.Strength := Character.BaseStrength - 1;
-            1:
-              Character.Coordination := Character.BaseCoordination - 1;
-            2:
-              Character.Constitution := Character.BaseConstitution - 1;
-            3:
-              Character.Perception := Character.BasePerception - 1;
-            4:
-              Character.Charm := Character.BaseCharm - 1;
-            5:
-              Character.Mysticism := Character.BaseMysticism - 1;
-            6:
-              Character.Combat := Character.BaseCombat - 1;
-            7:
-              Character.Stealth := Character.BaseStealth - 1;
-            8:
-              Character.Strength := Character.BaseStrength + 1;
-            9:
-              Character.Coordination := Character.BaseCoordination + 1;
-            10:
-              Character.Constitution := Character.BaseConstitution + 1;
-            11:
-              Character.Perception := Character.BasePerception + 1;
-            12:
-              Character.Charm := Character.BaseCharm + 1;
-            13:
-              Character.Mysticism := Character.BaseMysticism + 1;
-            14:
-              Character.Combat := Character.BaseCombat + 1;
-            15:
-              Character.Stealth := Character.BaseStealth + 1;
+            0 : Character.Strength := Character.BaseStrength - 1;
+            1 : Character.Coordination := Character.BaseCoordination - 1;
+            2 : Character.Constitution := Character.BaseConstitution - 1;
+            3 : Character.Perception := Character.BasePerception - 1;
+            4 : Character.Charm := Character.BaseCharm - 1;
+            5 : Character.Mysticism := Character.BaseMysticism - 1;
+            6 : Character.Combat := Character.BaseCombat - 1;
+            7 : Character.Stealth := Character.BaseStealth - 1;
+            8 : Character.Strength := Character.BaseStrength + 1;
+            9 : Character.Coordination := Character.BaseCoordination + 1;
+            10 : Character.Constitution := Character.BaseConstitution + 1;
+            11 : Character.Perception := Character.BasePerception + 1;
+            12 : Character.Charm := Character.BaseCharm + 1;
+            13 : Character.Mysticism := Character.BaseMysticism + 1;
+            14 : Character.Combat := Character.BaseCombat + 1;
+            15 : Character.Stealth := Character.BaseStealth + 1;
           end; // case
           i := 888; // drop out of loop
         end
@@ -514,10 +499,16 @@ begin
 
 end; // TStatistics.MouseDown
 
-procedure TStatistics.MouseMove(Sender: TObject; Shift: TShiftState; X, Y, GridX, GridY: integer);
+procedure TStatistics.MouseMove( Sender : TObject;
+      Shift : TShiftState; X, Y, GridX, GridY : Integer );
 var
   i, j: integer;
-  info, HitPointSecMsg, HitPointMinMsg, HitPointHrMsg, ManaSecMsg, ManaMinMsg, ManaHrMsg: string;
+  Info, HitPointSecMsg,
+    HitPointMinMsg,
+    HitPointHrMsg,
+    ManaSecMsg,
+    ManaMinMsg,
+    ManaHrMsg : string;
   Rate: double;
   pr: TRect;
 const
@@ -545,12 +536,10 @@ begin
         ArrowInfo(i);
         pr := rect(0, 0, 20, 15);
         if i < 8 then
-          lpDDSBack.BltFast(ArrowRect[i].rect.left + Offset.X, ArrowRect[i].rect.top + Offset.Y, DXLeftArrow, @pr,
-            DDBLTFAST_SRCCOLORKEY or DDBLTFAST_WAIT) // plot the highlight
+          lpDDSBack.BltFast( ArrowRect[ i ].rect.left + Offset.X, ArrowRect[ i ].rect.top + Offset.Y, DXLeftArrow, @pr, DDBLTFAST_SRCCOLORKEY or DDBLTFAST_WAIT ) //plot the highlight
         else
-          lpDDSBack.BltFast(ArrowRect[i].rect.left - 4 + Offset.X, ArrowRect[i].rect.top + Offset.Y, DXRightArrow, @pr,
-            DDBLTFAST_SRCCOLORKEY or DDBLTFAST_WAIT); // plot the highlight
-        pText.PlotTextBlock(ArrowRect[i].info, 10 + Offset.X, 587 + Offset.X, 376 + Offset.Y, 240, UseSmallFont); // Plot the info
+          lpDDSBack.BltFast( ArrowRect[ i ].rect.left - 4 + Offset.X, ArrowRect[ i ].rect.top + Offset.Y, DXRightArrow, @pr, DDBLTFAST_SRCCOLORKEY or DDBLTFAST_WAIT ); //plot the highlight
+        pText.PlotTextBlock( ArrowRect[ i ].Info, 10 + Offset.X, 587 + Offset.X, 376 + Offset.Y, 240, UseSmallFont ); //Plot the info
         i := 900; // drop out of the loop
       end;
       i := i + 1;
@@ -632,7 +621,8 @@ begin
 
 end; // TStatistics.MouseMove
 
-procedure TStatistics.MouseUp(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X, Y, GridX, GridY: integer);
+procedure TStatistics.MouseUp( Sender : TObject; Button : TMouseButton;
+      Shift : TShiftState; X, Y, GridX, GridY : Integer );
 const
   FailName: string = 'TStatistics.Mouseup';
 begin
@@ -856,8 +846,7 @@ begin
       InfoRect[i].rect.top := 81 + j * LineHeight;
       InfoRect[i].rect.bottom := 81 + j * LineHeight + LineHeight;
       if j > 0 then
-        InfoRect[i].info := txtMessage[56] + StatName[1][j] + txtMessage[57] + StatName[1][j] + txtMessage[58] + StatName[1][j] +
-          txtMessage[59];
+        InfoRect[ i ].info := txtMessage[ 56 ] + StatName[ 1 ][ j ] + txtMessage[ 57 ] + StatName[ 1 ][ j ] + txtMessage[ 58 ] + StatName[ 1 ][ j ] + txtMessage[ 59 ];
 
       InfoRect[i].Disabled := (j >= 9);
       i := i + 1;
@@ -1187,8 +1176,8 @@ begin
         PointAdjust := (Character.BaseStealth - TRAININGBASE) div TRAININGJUMP + 3;
     end;
 
-    ArrowRect[i].info := txtMessage[28] + StatName[0][i - 8 + 1] + txtMessage[29] + inttostr(PointAdjust) + txtMessage[30] +
-      StatName[0][i - 8 + 1] + txtMessage[31];
+    ArrowRect[ i ].info := txtMessage[ 28 ] + StatName[ 0 ][ i - 8 + 1 ] + txtMessage[ 29 ] +
+      intToStr( PointAdjust ) + txtMessage[ 30 ] + StatName[ 0 ][ i - 8 + 1 ] + txtMessage[ 31 ];
   end; // endif
 
 end; // TStartisticsArrowinfo

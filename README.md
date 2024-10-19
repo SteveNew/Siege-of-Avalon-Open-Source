@@ -4,6 +4,15 @@ _"Siege of Avalon : Open Source is an attempt to keep this great isometric RPG g
 
 ![Siege of Avalon in HD with room for party of 4.](SoAOS_HD.png)Siege of Avalon in HD with room for party of 4.
 
+## Repository now updated to the latest state - the unofficial SoAmigos 1.16 patch ##
+
+I have updated the code with the changes and additions done by Seppi, so that it feature-wise is identical to his 1.16 version.
+
+There are a few variations in the code bases:
+- GameText is refactored and is now split in SoAOS.Graphics.GameText and SoAOS.Graphics.BMPFonts. So the BMP fonts can be handled more flexible, which is used for at different project.
+- SoAOS.Data.DB has some added features that makes it more behave like a TDataSet, which also is used for a different project.
+- General refactoring to reduce the heavy redundancy of the old code. AI classes are candidates - and ongoing.
+
 ## Repository now updated to the latest state - the unofficial SoAmigos 1.11 patch ##
 
 I have pulled the changes we made for the official re-release (+150 commits by mostly me and the guys at General Arcade), but also a collective commit that covers +30 commits made by Seppi, that now brings the unofficial patch version to 1.11.
@@ -35,7 +44,7 @@ And the released versions engine source code can be found here: https://github.c
 
 And just to quote their readme:
 
-“Siege of Avalon: Anthology” Remastered : Open Source is our huge “thank you” to the community that was keeping this great isometric RPG alive from 2003 till 2021 by adding constant updates and modifications to it. Our goal is to ensure that fans can develop the game further the way they envision it and use all the work and love we’ve put into it already.
+ Siege of Avalon: Anthology  Remastered : Open Source is our huge  thank you  to the community that was keeping this great isometric RPG alive from 2003 till 2021 by adding constant updates and modifications to it. Our goal is to ensure that fans can develop the game further the way they envision it and use all the work and love we ve put into it already.
 
 Release Date: 8 April 2021
 

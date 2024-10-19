@@ -47,6 +47,7 @@ uses
   System.Types,
   System.Classes,
   Vcl.Controls,
+  IniFiles,
   Character,
   SoAOS.Intrface.Dialogs,
   SoAOS.Animation,
@@ -89,9 +90,10 @@ type
     DXBox : IDirectDrawSurface;
     DXBox2 : IDirectDrawSurface;
     SelectRect : array[ 0..20 ] of TInfoRect;
-    txtMessage : array[ 0..23 ] of string;
+    txtMessage : array[ 0..24 ] of string;
     AIBoxList : TList;
     AIImage : IDirectDrawSurface;
+    CloseCombatImage : IDirectDrawSurface;
     procedure ShowChars;
     procedure SetUpCollRects;
   protected
@@ -208,7 +210,7 @@ begin
     MouseCursor.Cleanup;
 
     ExText.Open( 'AddKickNPC' );
-    for i := 0 to 23 do
+    for i := 0 to 24 do
       txtMessage[ i ] := ExText.GetText( 'Message' + inttostr( i ) );
 
     for i := 0 to 4 do
@@ -228,10 +230,12 @@ begin
     DXBackToGame := SoAOS_DX_LoadBMP( InterfaceLanguagePath + 'obInvBackToGame.bmp', cInvisColor );
     DXLeftGeeble := SoAOS_DX_LoadBMP( InterfacePath + 'LogLeftGeeble.bmp', cTransparent );
     DXRightGeeble := SoAOS_DX_LoadBMP( InterfacePath + 'LogRightGeeble.bmp', cTransparent );
+    CloseCombatImage := SoAOS_DX_LoadBMP( InterfaceLanguagePath + 'closecombat.bmp', cTransparent );
     DXBack := SoAOS_DX_LoadBMP( InterfaceLanguagePath + 'LogScreen.bmp', cTransparent, DlgWidth, DlgHeight );
 
     DrawAlpha( DXBack, Rect( 0, 380, 213, 380 + 81 ), Rect( 0, 0, 213, 81 ), DXLeftGeeble, True, 60 );
     DrawAlpha( DXBack, Rect( 452, 0, 452 + 213, 81 ), Rect( 0, 0, 213, 81 ), DXRightGeeble, True, 60 );
+    DrawAlpha( DXBack, Rect( 5, 35, 113, 53 ), Rect( 0, 0, 108, 18 ), CloseCombatImage, True, 255 );
 
     pr := Rect( 0, 0, DlgWidth, DlgHeight );
     lpDDSBack.BltFast( Offset.X, Offset.Y, DXBack, @pr, DDBLTFAST_SRCCOLORKEY or DDBLTFAST_WAIT );
@@ -283,6 +287,7 @@ procedure TAddKickNPC.MouseDown( Sender : TObject; Button : TMouseButton;
 var
   i : integer;
   pr : TRect;
+  INI : TIniFile;
 const
   FailName : string = 'TAddKickNPC.MouseDown';
 begin
@@ -413,6 +418,31 @@ begin
       end;
     end;
 
+    if PtinRect( rect( Offset.X + 5, Offset.Y + 35, Offset.X + 30, Offset.Y + 50 ), point( X, Y ) ) then
+    begin //over CloseCombat button
+      INI := TIniFile.Create( AppPath + Modname + '.ini' );
+      pr := Rect( 0, 0, 15, 15 );
+      try
+         if frmmain.CloseCombat then
+         begin
+           frmmain.CloseCombat := false;
+           INI.Writebool( 'Settings', 'CloseCombatParty', false );
+           lpDDSBack.BltFast( Offset.X + 7, Offset.Y + 35, DXBox, @pr,
+           DDBLTFAST_SRCCOLORKEY or DDBLTFAST_WAIT );
+         end
+         else
+         begin
+           frmmain.CloseCombat := true;
+           INI.Writebool( 'Settings', 'CloseCombatParty', true );
+           lpDDSBack.BltFast( Offset.X + 7, Offset.Y + 35, DXBox2, @pr,
+           DDBLTFAST_SRCCOLORKEY or DDBLTFAST_WAIT );
+         end;
+      finally
+      INI.free;
+      end;
+      ShowChars;
+    end;
+
     if PtinRect( ApplyOffset( rect( 588, 407, 588 + 77, 412 + 54 ) ), point( X, Y ) ) then //over back button
       Close;
 
@@ -459,6 +489,9 @@ begin
       end;
     end;
 
+    if PTInRect(Rect(Offset.X + 5, Offset.Y + 35, Offset.X + 113, Offset.Y + 53), point (X, Y)) then
+      pText.PlotTextBlock( txtmessage[ 24 ], 122 + Offset.X, 580 + Offset.X, 410 + Offset.Y, 240 );
+
     ShowChars;
 
     SoAOS_DX_BltFront;
@@ -485,6 +518,7 @@ begin
     AIImage := nil;
     DXBox := nil;
     DXBox2 := nil;
+    CloseCombatImage := nil;
 //    pText.UnLoadTinyFontGraphic;
     DXBack := nil;
     DXBackToGame := nil;
@@ -514,6 +548,15 @@ begin
     vOffset := 214 - TResource( NPCList[ 0 ].resource ).FrameHeight div 2;
 
   cWidth := TResource( NPCList[ 0 ].resource ).FrameWidth;
+
+  //clear closecombat checkbox
+  pr := Rect( 5, 35, 25, 55 );
+  lpDDSBack.BltFast( Offset.X + 5, Offset.Y + 35, DXBack, @pr, DDBLTFAST_SRCCOLORKEY or DDBLTFAST_WAIT );
+  pr := Rect( 0, 0, 15, 15 );
+  if frmmain.CloseCombat then
+    lpDDSBack.BltFast( Offset.X + 7, Offset.Y + 35, DXBox2, @pr, DDBLTFAST_SRCCOLORKEY or DDBLTFAST_WAIT )
+  else
+    lpDDSBack.BltFast( Offset.X + 7, Offset.Y + 35, DXBox, @pr, DDBLTFAST_SRCCOLORKEY or DDBLTFAST_WAIT );
 
 //clear checkboxes
   if NPCList.count >3 then

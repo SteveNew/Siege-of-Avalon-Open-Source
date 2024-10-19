@@ -656,6 +656,7 @@ type
 
 function LoadSpells: Boolean;
 function FreeSpells: Boolean;
+function TranslateSummonName( Name : string ) : string;
 procedure ClearSpellResources;
 function MakeCastEffect(var CastEffect: TResource;
   const ResName: string): Boolean;
@@ -676,11 +677,24 @@ uses
   Spells1,
   System.SysUtils,
   Engine,
-  LogFile;
+  LogFile,
+  IniFiles; //TranslateSummonName from symbols.ini;
 
 var
   ProtectionResource: TResource;
   Bloodlustresource: TResource;
+
+function TranslateSummonName( Name : string ) : string;
+var
+  INI : TIniFile;
+begin
+     INI := TINIFile.create( AppPath + modmaps + '\symbols.' + language + '.ini' );
+     try
+       result := INI.ReadString('CharacterName', Name, '');
+     finally
+       INI.free;
+     end;
+end;
 
 function MakeCastEffect(var CastEffect: TResource;
   const ResName: string): Boolean;
@@ -729,10 +743,7 @@ begin
     Exit;
   if not MakeCastEffect(FrostEffect, 'Frost') then
     Exit;
-  (*if (Modselection <> TModSelection.SoA) and (Modselection <> TModSelection.Nothing)
-  and (not MakeCastEffect(FrostEffect2, 'FrostCast')) then
-    Exit; // BlizzardLvl1 (but not in SoA) und Iceblock *)
-  if not MakeCastEffect( FrostEffect2, 'FrostCast' ) then
+  if not MakeCastEffect(FrostEffect2, 'FrostCast' ) then
     exit;
   if not MakeCastEffect(LightningEffect, 'shockblu') then
     Exit;
@@ -760,12 +771,6 @@ begin
     exit;
   if not MakeCastEffect( IllusionEffect, 'WindShearCast' ) then
     exit;
-  (*if (Modselection <> TModSelection.SoA) and (Modselection <> TModSelection.Nothing)
-  and (not MakeCastEffect(PoisonAuraEffect, 'ChargeSpell4')) then
-    Exit;
-  if (Modselection <> TModSelection.SoA) and (Modselection <> TModSelection.Nothing)
-  and (not MakeCastEffect(IllusionEffect, 'WindShearCast')) then
-    Exit;  *)
   if not MakeCastEffect(BigFire, 'FireCast(LVL3)') then
     Exit;
   BigFire.SpecialEffect := seAdd;
@@ -831,21 +836,7 @@ begin
   if not MakeSpell( PoisonAura, TPoisonAura ) then
   exit;
   if not MakeSpell( Illusion, TIllusion ) then
-  exit;
-  (*if (Modselection <> TModSelection.SoA) and (Modselection <> TModSelection.Nothing)
-  and (not MakeSpell(Bloodlust, TBloodlust)) then
-    Exit;
-  if (Modselection <> TModSelection.SoA) and (Modselection <> TModSelection.Nothing)
-  and (not MakeSpell(IceBlock, TIceBlock)) then
-    Exit;
-  if (Modselection<>TModSelection.SoA) and (Modselection <> TModSelection.Nothing)
-  and (not MakeSpell(PoisonAura, TPoisonAura)) then
-    Exit;
-  if (Modselection<>TModSelection.SoA) and (Modselection <> TModSelection.Nothing)
-  and (not MakeSpell(Illusion, TIllusion)) then
-    Exit;  *)
-
-
+    exit;
   if not MakeSpell(FlameStrike, TFlameStrike) then
     Exit;
   if not MakeSpell(Blizzard, TBlizzard) then
@@ -3956,11 +3947,11 @@ begin
       begin
         Master := Source;
         Duration := ( 8 + Source.Mysticism ) * 50; //+8 for scouts and warriors
-        Name := 'Rat';
-        BaseUnArmedDamage.Piercing.Min := 1;
-        BaseUnArmedDamage.Piercing.Max := 6;
+        Name := TranslateSummonName('Rat'); //'Rat';
+        BaseUnArmedDamage.Piercing.Min := 0;
+        BaseUnArmedDamage.Piercing.Max := 2;
         BaseUnArmedDamage.Cutting.Min := 0;
-        BaseUnArmedDamage.Cutting.Max := 4;
+        BaseUnArmedDamage.Cutting.Max := 1;
         BaseResistance.Cutting.Invulnerability := 1;
         BaseResistance.Cutting.Resistance := 0.02;
         BaseResistance.Crushing.Invulnerability := 1;
@@ -4170,7 +4161,7 @@ begin
       begin
         Master := Source;
         Duration := Source.Mysticism * 50;
-        Name := 'Wolf';
+        Name := TranslateSummonName('awolf'); //'Wolf';
         // Improved, since Wolf was quite weak, especially in combat
         BaseUnArmedDamage.Piercing.Min := 2 + Source.Mysticism / 12;
         BaseUnArmedDamage.Piercing.Max := 8 + Source.Mysticism / 8;
@@ -4399,7 +4390,7 @@ begin
       begin
         Master := Source;
         Duration := (Source.Mysticism * 50) - 5;
-        Name := 'Golem';
+        Name := TranslateSummonName('rockGolem'); //'Golem';
         BaseUnArmedDamage.Piercing.Min := 0;
         BaseUnArmedDamage.Piercing.Max := 4;
         BaseUnArmedDamage.Crushing.Min := 3 + Source.Mysticism / 10;
@@ -5904,7 +5895,7 @@ begin
   Log.DebugLog(FailName);
   try
 
-    result := 3 + round(Source.Restriction / 10); // 3 statt 5
+    result := 2 + round(Source.Restriction / 5);
 
   except
     on E: Exception do
@@ -6013,7 +6004,7 @@ begin
   Log.DebugLog(FailName);
   try
 
-    result := 40 - ((Source.Constitution) div 2);
+    result := 40 - ((Source.mysticism div 4) + (Source.Constitution div 2));
     if result < 0 then
       result := 0;
 
@@ -7382,9 +7373,9 @@ begin
     Effect2.UseCustom := true;
     Effect2.ApplyColor := true;
     Effect2.Power := Source.Mysticism;
-    Effect2.StatModifier.Strength := -5;
-    Effect2.StatModifier.Constitution := -4;
-    Effect2.Duration := 5 + Source.Mysticism * 8;
+    Effect2.StatModifier.Strength := -8;
+    Effect2.StatModifier.Constitution := -6;
+    Effect2.Duration := (5 + Source.Mysticism) * 10;
     Effect2.tag := 38;
     Effect2.DoAction('Default', NewTarget.Facing);
     with NewTarget do
@@ -8103,16 +8094,10 @@ begin
   if TCharacterResource(Source.Resource).UseCastAnimation then
   begin
     Effect := TEffect.Create;
-    if modselection<>TModselection.SoA then
-	begin
-      if Source.TitleExists('Snowstorm') then
-        Effect.Resource := BigIce
-      else
+    if Source.TitleExists('Snowstorm') then
+      Effect.Resource := BigIce
+    else
 	    Effect.Resource := FrostEffect2;
-    end
-    else //modselection=SoA, has always BigIce since FrostEffect2 is a new/changed SpellResource and
-      //therefore isn't loaded then
-      Effect.Resource := BigIce;
     Effect.AnimationDuration := 10 * Effect.Resource.FrameMultiplier;
     Effect.Power := Source.Mysticism;
     Effect.DoAction('Default', Source.Facing);

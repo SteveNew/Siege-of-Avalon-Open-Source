@@ -45,6 +45,7 @@ uses
 //  Winapi.DirectDraw,
   DirectX,
   DXEffects,
+  winapi.Windows, //copyfile for notefile
   System.SysUtils,
   System.Types,
   System.Classes,
@@ -130,12 +131,16 @@ type
     SceneName : string;
     MapName : string;
     TravelBlock : AnsiString;
+    Notefile : string;
     procedure Paint; override;
     procedure Init; override;
     procedure Release; override;
+    procedure Savenotes(notloading : boolean);
     property CancelRect: TRect read GetCancelRect;
     property LoadSaveRect: TRect read GetLoadSaveRect;
   end;
+const
+   NoteTempfile = 'TempNote.txt';
 
 implementation
 
@@ -732,6 +737,8 @@ begin
           begin
                //LoadThisFile:=DefaultPath + 'Games\'+pItem(SelectRect.items[CurrentSelectedListItem]).text + '.sav';
             LoadThisFile := pItem( SelectRect.items[ CurrentSelectedListItem ] ).text;
+            NoteFile := LoadThisFile + '.txt';
+            Savenotes( false );
             Close;
           end;
         end
@@ -760,6 +767,8 @@ begin
               else
               begin
                 LoadThisFile := SavedFileName; //pItem(SelectRect.items[CurrentSelectedListItem]).text;
+                Notefile := LoadthisFile + '.txt';
+                Savenotes( true );
                 Close;
               end;
             end; //endif length
@@ -817,6 +826,8 @@ begin
              //paint;
              //LoadThisFile:=DefaultPath + 'Games\'+pItem(SelectRect.items[CurrentSelectedListItem]).text + '.sav';
           LoadThisFile := SavedFileName; //pItem(SelectRect.items[CurrentSelectedListItem]).text;
+          Notefile := LoadthisFile + '.txt';
+          Savenotes( true );
           Close;
         end
         else if PtInRect( rect( nRect.left - 10 + 187, nRect.top + 32 + 78, nRect.left - 10 + 238, nRect.top + 32 + 109 ), point( x, y ) ) then
@@ -1164,6 +1175,8 @@ begin
       if CurrentSelectedListItem > -1 then
       begin
         LoadThisFile := pItem( SelectRect.items[ CurrentSelectedListItem ] ).text;
+        NoteFile := LoadThisFile + '.txt';
+        Savenotes( false );
         Close;
       end;
     end
@@ -1206,6 +1219,8 @@ begin
         else
         begin
           LoadThisFile := SavedFileName; //pItem(SelectRect.items[CurrentSelectedListItem]).text;
+          Notefile := LoadthisFile + '.txt';
+          Savenotes( true );
           Close;
         end;
       end; //endif length
@@ -1389,6 +1404,38 @@ begin
   end //endif arrows
   else
     ScrollState := 0;
+end;
+
+procedure TLoadGame.Savenotes(notloading: Boolean);
+const
+  FailName : string = 'TLoadGame.Savenotes ';
+begin
+  Log.DebugLog( FailName );
+  try
+    if notloading then
+    begin
+      //Notiz speichern
+      if fileexists(Modgames + '\' + NoteTempfile) then
+      CopyFile(PChar(Modgames + '\' + NoteTempfile),
+      PChar(Modgames + '\' + Notefile), false)
+      //wenn keine Notizen mehr vorhanden, Datei löschen
+      else if fileexists(Modgames + '\' + Notefile) then
+      DeleteFile(PChar(Modgames + '\' + Notefile));
+    end
+    else
+    begin
+      //Temp Notiz löschen
+      if fileexists(Modgames + '\' + NoteTempfile) then
+      Deletefile(PChar(Modgames + '\' + NoteTempfile));
+      //Spielstandnotiz zuweisen
+      if fileexists(Modgames + '\' + Notefile) then
+      CopyFile(PChar(Modgames + '\' + Notefile),
+      PChar(Modgames + '\' + NoteTempfile), false);
+    end;
+  except
+    on E : Exception do
+        Log.log( FailName, E.Message, [ ] );
+  end;
 end;
 
 end.

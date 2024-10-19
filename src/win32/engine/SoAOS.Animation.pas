@@ -455,7 +455,7 @@ type
     procedure UncreateMap;
     function FindPath(Figure: TAniFigure; X2, Y2, Deviance: Longint;
       var Path: HGLOBAL): Integer;
-    function FindInRadius(X, Y: Longint; Radius: single): TList<TAniFigure>;
+    function FindInRadius(X, Y: Longint; Radius: single): TList;
     function LineOfSight(X1, Y1, X2, Y2: Longint): Boolean;
     function LineOfCollision(X1, Y1, X2, Y2: Longint): Boolean;
     function ClearShot(SrcX, SrcY, DstX, DstY, Radius: Longint;
@@ -4902,7 +4902,7 @@ begin
   end;
 end;
 
-function TAniView.FindInRadius(X, Y: Longint; Radius: single): TList<TAniFigure>;
+function TAniView.FindInRadius(X, Y: Longint; Radius: single): TList;
 var
   i: Integer;
   Dx, dy: Longint;
@@ -4925,7 +4925,7 @@ begin
           if FigureList[i].Distance <= R then
           begin
             if not Assigned(Result) then
-              Result := TList<TAniFigure>.Create;
+              Result := TList.Create;
             Result.Add(FigureList[i])
           end;
         end;
@@ -5765,8 +5765,7 @@ begin
     MsgImage := SoAOS_DX_SurfaceFromBMP(BM, clBlack);
     BM.free;
     SayList.Insert(0, Self);
-    // Experimental - might actually sound nice with a natural SAPI voice
-    // frmMain.voice.Speak(msg, SVSFlagsAsync or SVSFPurgeBeforeSpeak);
+
   except
     on E: Exception do
       log.log(FailName, E.Message, []);

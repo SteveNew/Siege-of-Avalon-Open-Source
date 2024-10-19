@@ -64,7 +64,6 @@ type
     class procedure SpellHotKeyPlus(key: Word);
     class procedure AssignSpellHotKey(key: Word);
     class procedure TravelFast;  //SoA and AoA
-//    class procedure DemoOrDeath; // Testcode needs to go
   public
     class procedure TogglePause;
     class procedure FormKeyDown(Sender: TObject; var Key: Word;
@@ -100,6 +99,7 @@ uses
   SoAOS.Effects,
   SoAOS.Intrface.Text,
   SoAOS.Graphics.GameText, // just for fonttypes
+  SoAOS.Intrface.Dialogs.LoadSaveGame, //for NoteTempFile
   DirectX,
   DXEffects;
 
@@ -127,38 +127,6 @@ begin
   end;
 end;
 
-//class procedure TKeyEvent.DemoOrDeath;
-////var
-////  i, n: Integer;
-//begin
-////  n := 0;
-////  for i:=0 to FigureInstances.count-1 do
-////  begin
-////    if (FigureInstances.Objects[i] is TCharacter) and (FigureInstances.Objects[i]<>Player) and
-////      Player.isAlly( TCharacter( FigureInstances.Objects[i] ) ) and not TCharacter( FigureInstances.Objects[i] ).Dead then
-////    begin
-////      frmMain.AddToParty(TAniFigure(FigureInstances.Objects[i]));
-////      inc(n);
-////      if n >= MaxPartyMembers then
-////        break;
-////    end;
-////  end;
-//
-////  player.hitpoints := -1;
-////  player.trainingpoints := 10000;
-////  player.money := 10000;
-////  player.mana := 100;
-////
-////  Adventures.Add('ch4-531');
-////  RunScript(Player, 'player.additem(MagicalMask)');
-////  RunScript(Player, 'addtitle(04maskgiven)');
-//                                                                    ;
-////     AddAdventure('a');
-////     AddQuest('a');
-////     AddLogEntry('a');
-////     end
-//end;
-
 class procedure TKeyEvent.FormKeyDown(Sender: TObject; var Key: Word;
   Shift: TShiftState);
 const
@@ -166,6 +134,8 @@ const
 begin
   Log.DebugLog(FailName);
   try
+    if frmmain.NotesAdd then
+      Exit;
     if frmMain.DisableConsole then
       Exit;
 
@@ -290,53 +260,6 @@ begin
   end;
 end;
 
-//class procedure TKeyEvent.LforWhat;
-//var
-//  i: Integer;
-//begin //L
-//  player.hitpoints := -1;
-//
-//  for i := 0 to  Npclist.Count -1 do
-//    NPCList[i].hitpoints := -1;
-//
-//  Player.AddTitle('Firefly');
-//  Player.Frozen:=false;
-//  frmMain.ShowQuickMessage('EmHmImKmXmYm0123456789',8000);
-//  frmMain.ShowQuickMessage('AÄOÖUÜBßaäoöuüO',8000);
-//  frmMain.ShowQuickMessage('Ab Kb Lb Qb Rb Xb Yb',8000);
-//  frmMain.ShowQuickMessage('m0m1m2m3m4m5m6m78m9m',8000);
-//  Player.Mysticism:=100;
-//  Player.AddEffect(TBodyRotEffect.create);
-//  frmMain.BeginTransit('Spawn','','Group1','','|ob1,,group2|spawn,,test');
-//  DlgTransit.frmMain:= frmMain;
-////  OpenDialog(DlgTransit,CloseTransit);
-//  Player.Mysticism:=1000;
-//
-//  RunScript(Player,'player.additem(AhoulArmGuards,1234)');
-//  RunScript(Player,'Targetable200008110049155730.doaction(death)');
-//  RunScript(Player,'Lich200008250075954760.doaction(death)');
-//  RunScript(Player,'SaveGame(baba)');
-//  Player.AddEffect(GetNamedEffect('deathpulse'));
-//  Player.AddEffect(TBurningRam.create);
-//
-//  RunScript(Player,'doaction(death);doeffect(spirit)');
-//  frmMain.ShowQuickmessage( 'Suizid ist auch eine Lösung',300);
-//
-//  for i:=0 to FigureInstances.count-1 do
-//  begin
-//    if FigureInstances.objects[i] is tcharacter then
-//    begin
-//      if pos('88620',tcharacter(FigureInstances.objects[i]).guid)>0 then
-//      begin
-//        frmMain.AddToParty(tcharacter(FigureInstances.objects[i]));
-//        frmMain.ShowQuickMessage('Found him!',600);
-//      end;
-//    end;
-//  end;
-//
-//  RunScript(Current,'journalentry(A);adventure(B);AddQuest(quest1)');
-//end;
-
 class procedure TKeyEvent.QuickSave;
 var
   TempName: string;
@@ -361,6 +284,8 @@ begin
           end;
         except
         end;
+        dlgload.Notefile := Gamename + '.txt';
+        dlgload.Savenotes( true );
         frmMain.ShowQuickMessage(SaveMsg, 100);
       end;
     finally
@@ -421,6 +346,8 @@ begin
     frmMain.CloseAllDialogs( DlgQuestLog )
   else if DlgAdvLog.Loaded then
     frmMain.CloseAllDialogs( DlgAdvLog )
+  else if DlgNoteLog.Loaded then
+      frmMain.CloseAllDialogs( DlgNoteLog )
   else if DlgTitles.Loaded then
     frmMain.CloseAllDialogs( Dlgtitles )
   else if DlgRoster.Loaded then
@@ -672,46 +599,31 @@ end;
 
 class procedure TKeyEvent.TravelFast;
 begin
-// NoTransit
-// LoadNewMap( const NewFile(lvl), SceneName, StartingPoint, Transition(bmp) : string );
-  if (not NoTransit) and (not Current.Frozen) and ( current.Ready ) then //nicht FReady wenn Lähmzauber
+  if (not NoTransit) and (not Current.Frozen) and ( current.Ready ) then
+  //fasttravel to forest in SoA removed and added to map directly
   begin
-    if modselection = TModSelection.SoA then  //SoA
-    begin
-//after speaking to Holden (forest 5), because now we know where the outpost is located
-    if player.titleexists('03knowholden') and not player.titleexists('04Chapter4') then
-      RunScript(player, 'Loadmap(forest05,default,f05b02,ForestChpt3|#FastTransit.Default#)');
-      // Better spot when having party members
-//    if player.titleexists('02Chapter2') then
-//      RunScript(player, 'Loadmap(southgate1b,default,Levelpoint4,VillagetoSouthGate|#FastTransit.Default#)')
-//    else
-//      RunScript(player, 'Loadmap(okeepl2,default,Start|#FastTransit.Default#)')
-    end;
     if modselection = TModSelection.AoA then //AoA
     begin
-      if current.Ready then  //Otherwise possible to escape from the hold spell by pressing t
+      if not player.titleexists('Schnellerwechselaus') then //Titel für spezielle Situationen im Spiel.
       begin
-        if not player.titleexists('Schnellerwechselaus') then //Titel für spezielle Situationen im Spiel.
+        if player.titleexists('chapter06') then
+        runscript(player,'Loadmap(southgate1b,default,Levelpoint4|#Schnellreise.Fall5#)')
+        else if player.titleexists('chapter05') then
+        runscript(player,'Loadmap(southgate1b,default,Levelpoint4|#Schnellreise.Fall4#)')
+        else if player.titleexists('chapter04') then
+        runscript(player,'Loadmap(southgate1b,default,Levelpoint4|#Schnellreise.Fall3#)')
+        else if player.titleexists('chapter03') then
+        runscript(player,'Loadmap(03Wald1,default,forst,Wald|#Schnellreise.Fall2#)')
+        else if player.titleexists('chapter02') then
         begin
-          if player.titleexists('chapter06') then
-          runscript(player,'Loadmap(southgate1b,default,Levelpoint4|#Schnellreise.Fall5#)')
-          else if player.titleexists('chapter05') then
-          runscript(player,'Loadmap(southgate1b,default,Levelpoint4|#Schnellreise.Fall4#)')
-          else if player.titleexists('chapter04') then
-          runscript(player,'Loadmap(southgate1b,default,Levelpoint4|#Schnellreise.Fall3#)')
-          else if player.titleexists('chapter03') then
-          runscript(player,'Loadmap(03Wald1,default,forst,Wald|#Schnellreise.Fall2#)')
-          else if player.titleexists('chapter02') then
-          begin
-              if player.titleexists('ImForst') then
-              runscript(player,'Loadmap(Wald1,default,forst,Wald|#Schnellreise.Fall1#)')
-              else
-              runscript(player,'Loadmap(southgate1b,default,Levelpoint4|#Schnellreise.Fall1#)');
-          end
-          else if not player.titleexists('chapter02') then
+          if player.titleexists('ImForst') then
+          runscript(player,'Loadmap(Wald1,default,forst,Wald|#Schnellreise.Fall1#)')
+          else
           runscript(player,'Loadmap(southgate1b,default,Levelpoint4|#Schnellreise.Fall1#)');
-        end;
-      end;//end FReady
+          end
+        else if not player.titleexists('chapter02') then
+        runscript(player,'Loadmap(southgate1b,default,Levelpoint4|#Schnellreise.Fall1#)');
+      end;
     end;//end modselection -AoA
   end;
 end;

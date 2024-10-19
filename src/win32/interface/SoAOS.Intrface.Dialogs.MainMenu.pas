@@ -72,6 +72,7 @@ type
     AreYouSureBoxVisible: boolean;
     SelectModBoxNewVisible: boolean; // Mod selection box, Newgame
     SelectModBoxLoadVisible: boolean; // Mod selection box, Loadgame
+    DXAlph: IDirectDrawSurface;
     DXBack: IDirectDrawSurface;
     DXModSelect: IDirectDrawSurface; // Mod selection box
     DXModRand: IDirectDrawSurface; // Mod selection, rectangle
@@ -242,6 +243,8 @@ begin
 
     BM := TBitmap.Create;
     try
+      DXAlph := SoAOS_DX_LoadBMP(InterfacePath + 'chablack.bmp',
+        cInvisColor, DlgWidth, DlgHeight);
       DXBack := SoAOS_DX_LoadBMP(InterfaceLanguagePath + 'gMainMenuBlank.bmp',
         cInvisColor, DlgWidth, DlgHeight);
       BM.LoadFromFile(InterfaceLanguagePath + 'gMainMenuText.bmp');
@@ -253,6 +256,14 @@ begin
           BitBlt(DC, 106, 41, 582, 416, BM.Canvas.handle, 0, 0, SRCCOPY);
       finally
         DXBack.ReleaseDC(DC);
+      end;
+
+      if modselection = TModselection.Nothing then
+      begin
+        if Language = 'russian' then
+        DrawAlpha(DXBack, rect(97, 470, 234, 495), rect(0, 0, 25, 25), DXAlph, true, 128)
+        else
+        DrawAlpha(DXBack, rect(97, 464, 234, 495), rect(0, 0, 25, 25), DXAlph, true, 128);
       end;
 
       if ScreenMetrics.borderFile <> '' then
@@ -305,10 +316,9 @@ procedure TIntro.KeyDown(Sender: TObject; var key: Word; Shift: TShiftState);
 var
   pr: TRect;
 begin
-  if HelpscreenShow then
-  begin
-    if key = 27 then //esc
-      HelpscreenShow := false;
+  if HelpscreenShow and (key = 27) then
+  begin //esc
+    HelpscreenShow := false;
     pr := Rect(0, 0, DlgWidth, DlgHeight);
     lpDDSBack.BltFast(Offset.X, Offset.Y, DXBack, @pr, DDBLTFAST_WAIT);
     // clear screen

@@ -321,8 +321,6 @@ type
     property Info: string read GetInfo;
   end;
 
-  TItemList = class(TList<TItem>);
-
   TWeapon = class(TItem)
   private
     FAttackSound: string;
@@ -960,7 +958,7 @@ var
   i: Integer;
   A, B, C, Q, D, T: Double;
   dx, dy: Double;
-  List: TList<TAniFigure>;
+  List: TList;
   Test: TAniFigure;
 begin
   result := false;
@@ -3476,18 +3474,21 @@ begin
       OldDelay := 0;
     PlayScript(MoveMode + Facing.ToString, ScriptFrame, smRepeat);
     Delay := OldDelay;
-    if (FrameCount mod 8 = 0) then
+    if FootstepsOn then
     begin
-      if stealth < 1 then
-      volume := 100
-      else if stealth > 100 then
-      volume := 0
-      else
-      volume := 100 - stealth;
-      if MoveMode = 'Walk' then
-      PlayRWSound(WalkSounds, Self.X, Self.Y, volume);
-      if MoveMode = 'Run' then
-      PlayRWSound(RunSounds, Self.X, Self.Y, volume);
+      if (FrameCount mod 8 = 0) then
+      begin
+        if stealth < 1 then
+        volume := 100
+        else if stealth > 100 then
+        volume := 0
+        else
+        volume := round( (100 - stealth) * (MasterSoundVolume/100) );
+        if MoveMode = 'Walk' then
+        PlayRWSound(WalkSounds, Self.X, Self.Y, volume);
+        if MoveMode = 'Run' then
+        PlayRWSound(RunSounds, Self.X, Self.Y, volume);
+      end;
     end;
 
   except
@@ -10787,6 +10788,12 @@ begin
   try
 
     F := MinStrength / 10;
+    //min Strength malus added
+    if ( Character.Strength < MinStrength ) and ( MinStrength > 0 ) then
+    begin
+      D := Character.Strength / MinStrength;
+      F := F * D;
+    end;
     if (Character.Coordination < MinCoordination) and (MinCoordination > 0) then
     begin
       D := Character.Coordination / MinCoordination;
@@ -11767,7 +11774,7 @@ end;
 function GetNearbyCharacter(Source: TCharacter; Limit: Double): TStringList;
 var
   i, j: Integer;
-  List: TList<TAniFigure>;
+  List: TList;
 const
   FailName: string = 'Character.GetNearbyCharacter';
 begin
@@ -11782,7 +11789,7 @@ begin
       begin
         for i := 0 to List.Count - 1 do
         begin
-          if List.items[i] is TCharacter then
+          if TAniFigure(List.items[i]) is TCharacter then
           begin
             if (List.items[i] <> Source) and not TCharacter(List.items[i]).Dead
             then
@@ -11935,7 +11942,7 @@ end;
 function GetPerceptibleEnemies(Source: TCharacter; Factor: Single): TStringList;
 var
   i, j: Integer;
-  List: TList<TAniFigure>;
+  List: TList;
   Limit: Double;
   lVision, Hearing, Smell, F: Double;
 const
@@ -11963,7 +11970,7 @@ begin
       begin
         for i := 0 to List.Count - 1 do
         begin
-          if List.items[i] is TCharacter then
+          if TAniFigure(List.items[i]) is TCharacter then
           begin
             if not TCharacter(List.items[i]).Dead and
               Source.IsEnemy(TCharacter(List.items[i])) then
@@ -11993,7 +12000,7 @@ end;
 function GetNearbyEnemies(Source: TCharacter; Limit: Double): TStringList;
 var
   i, j: Integer;
-  List: TList<TAniFigure>;
+  List: TList;
 const
   FailName: string = 'Character.GetNearbyEnemies';
 begin
@@ -12008,7 +12015,7 @@ begin
       begin
         for i := 0 to List.Count - 1 do
         begin
-          if List.items[i] is TCharacter then
+          if TAniFigure(List.items[i]) is TCharacter then
           begin
             if not TCharacter(List.items[i]).Dead and
               (Source.IsEnemy(TCharacter(List.items[i])) or
@@ -12035,7 +12042,7 @@ end;
 function GetPerceptibleAllies(Source: TCharacter; Factor: Single): TStringList;
 var
   i, j: Integer;
-  List: TList<TAniFigure>;
+  List: TList;
   Limit: Double;
   lVision, Hearing, Smell, F: Double;
 const
@@ -12064,7 +12071,7 @@ begin
       begin
         for i := 0 to List.Count - 1 do
         begin
-          if List.items[i] is TCharacter then
+          if TAniFigure(List.items[i]) is TCharacter then
           begin
             if (List.items[i] <> Source) and not TCharacter(List.items[i])
               .Dead and Source.IsAlly(TCharacter(List.items[i])) then
@@ -12094,7 +12101,7 @@ end;
 function GetNearbyAllies(Source: TCharacter; Limit: Double): TStringList;
 var
   i, j: Integer;
-  List: TList<TAniFigure>;
+  List: TList;
 const
   FailName: string = 'Character.GetNearbyAllies';
 begin
@@ -12109,7 +12116,7 @@ begin
       begin
         for i := 0 to List.Count - 1 do
         begin
-          if List.items[i] is TCharacter then
+          if TAniFigure(List.items[i]) is TCharacter then
           begin
             if (List.items[i] <> Source) and not TCharacter(List.items[i])
               .Dead and (Source.IsAlly(TCharacter(List.items[i])) or
@@ -12136,7 +12143,7 @@ end;
 function GetPerceptibleDead(Source: TCharacter; Factor: Single): TStringList;
 var
   i, j: Integer;
-  List: TList<TAniFigure>;
+  List: TList;
   Limit: Double;
   lVision, Hearing, Smell, F: Double;
 const
@@ -12165,7 +12172,7 @@ begin
       begin
         for i := 0 to List.Count - 1 do
         begin
-          if List.items[i] is TCharacter then
+          if TAniFigure(List.items[i]) is TCharacter then
           begin
             if TCharacter(List.items[i]).Dead then
             begin
@@ -12195,7 +12202,7 @@ function GetPerceptibleContainers(Source: TCharacter; Factor: Single)
   : TStringList;
 var
   i, j: Integer;
-  List: TList<TAniFigure>;
+  List: TList;
   Limit: Double;
   lVision, Hearing, Smell, F: Double;
 const
@@ -12224,7 +12231,7 @@ begin
       begin
         for i := 0 to List.Count - 1 do
         begin
-          if List.items[i] is TContainer then
+          if TAniFigure(List.items[i]) is TContainer then
           begin
             if Perceptible(Source, TSpriteObject(List.items[i]), lVision,
               Hearing, Smell, Source.MysticVision) then

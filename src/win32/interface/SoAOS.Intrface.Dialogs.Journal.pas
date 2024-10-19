@@ -400,7 +400,7 @@ begin
           BM.Free;
         end;
 
-        pr := Rect( 0, 0, BM.width, BM.Height );
+        pr := Rect( 0, 0, PicWidth, PicHeight );
         //Scale 50%
         if ( ScreenMetrics.IniIdent = 'FullHD' ) and ScaleJournal then
         DrawAlpha(lpDDSBack, rect( PicXY.X + Offset.X - 200, PicXY.Y - 150 + Offset.Y, PicXY.X + 1000 + Offset.X, PicXY.Y + 750 + Offset.Y ), Rect( 0, 0, BM.width, BM.height ), DXPic, true, 255 )

@@ -1028,9 +1028,10 @@ begin
         if not checkStat(TTokenString(strTmp), 'mysticism', Current.mysticism) then Exit(False);
         if not checkStat(TTokenString(strTmp), 'perception', Current.perception) then Exit(False);
         if not checkStat(TTokenString(strTmp), 'stealth', Current.stealth) then Exit(False);
-        if not checkStat(TTokenString(strTmp), 'strenght', Current.strength) then Exit(False);
+        if not checkStat(TTokenString(strTmp), 'strength', Current.strength) then Exit(False);
         if not checkStat(TTokenString(strTmp), 'wounds', Current.wounds) then Exit(False);
         if not checkStat(TTokenString(strTmp), 'trainingpoints', Current.TrainingPoints) then Exit(False);
+        if not checkStat(TTokenString(strTmp), 'money', Current.money) then Exit(False);
       except
       end;
     end;
@@ -1263,7 +1264,8 @@ begin
         if checkStat1(TTokenString(strTmp), 'mysticism', Current.mysticism) then bTmp := True;
         if checkStat1(TTokenString(strTmp), 'perception', Current.perception) then bTmp := True;
         if checkStat1(TTokenString(strTmp), 'stealth', Current.stealth) then bTmp := True;
-        if checkStat1(TTokenString(strTmp), 'strenght', Current.strength) then bTmp := True;
+        if checkStat1(TTokenString(strTmp), 'strength', Current.strength) then bTmp := True;
+        if checkStat1(TTokenString(strTmp), 'money', Current.money) then bTmp := True;
       except
       end;
       if bTmp then

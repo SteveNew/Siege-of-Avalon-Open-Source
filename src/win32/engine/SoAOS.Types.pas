@@ -50,7 +50,7 @@ const
   cManaColor       = $00B09730;
   cTalkRedColor    = TColors.Red;  // Angry
   cTalkWhiteColor  = TColors.White;
-  cTalkYellowColor = TColors.Yellow;
+  cTalkYellowColor = TColors.Yellow; // Felious Ritual
   cTalkBlackColor  = TColors.Black; // Clear text
   cTalkBlueColor   = TColors.Blue;  // Undead
   cBlackBackground = TColors.Black;
@@ -116,6 +116,7 @@ type
     popMapRect: TRect;
     popQuestRect: TRect;
     popAdventureRect: TRect;
+    popNoteLogRect: TRect;
     popJournalRect: TRect;
     popAwardsRect: TRect;
     popMessageRect: TRect;
@@ -182,6 +183,7 @@ const
      popMapRect: ( Left: 732; Top: 511; Right: 781; Bottom: 555 );
      popQuestRect: ( Left: 666; Top: 511; Right: 715; Bottom: 531 );
      popAdventureRect: ( Left: 660; Top: 535; Right: 725; Bottom: 556 );
+     popNoteLogRect: ( Left: 600; Top: 512; Right: 657; Bottom: 529 );
      popJournalRect: ( Left: 663; Top: 560; Right: 722; Bottom: 578 );
      popAwardsRect: ( Left: 609; Top: 543; Right: 647; Bottom: 583 );
      popMessageRect: ( Left: 392; Top: 517; Right: 591; Bottom: 582 );
@@ -220,11 +222,11 @@ const
    	 LifeEmptyX : 1189;
 	   LogX : 1139; // ??
      VisibilityFactor : 41/30; // Visibility factor used on Vision property 410/300
-     CharacterMysticVision: 800;
-     CharacterDistance: 375;
-     CharacterRange: 650;
+     CharacterMysticVision: 650;
+     CharacterDistance: 235;
+     CharacterRange: 400;
      CharacterReach: 180;
-     CompanionRange: 650;
+     CompanionRange: 400;
      PartyMemberSlots: 4;
      spellbarFile: 'spellbarHD';
      sidebarFile: 'sidebarHD';
@@ -236,6 +238,7 @@ const
      popMapRect: ( Left: 1212; Top: 631; Right: 1263; Bottom: 675 );
      popQuestRect: ( Left: 1148; Top: 631; Right: 1196; Bottom: 651 );
      popAdventureRect: ( Left: 1139; Top: 655; Right: 1205; Bottom: 676 );
+     popNoteLogRect: ( Left: 1076; Top: 632; Right: 1133; Bottom: 649 );
      popJournalRect: ( Left: 1142; Top: 680; Right: 1206; Bottom: 698 );
      popAwardsRect: ( Left: 1088; Top: 663; Right: 1127; Bottom: 703 );
      popMessageRect: ( Left: 561; Top: 637; Right: 1072; Bottom: 702 );
@@ -274,11 +277,11 @@ const
 	   LifeEmptyX : 1829;
 	   LogX : 1139;
      VisibilityFactor : 9/4; // Visibility factor used on Vision property 675/300
-     CharacterMysticVision: 1000;
-     CharacterDistance: 775;
-     CharacterRange: 950;
+     CharacterMysticVision: 900;
+     CharacterDistance: 375;
+     CharacterRange: 750;
      CharacterReach: 200;
-     CompanionRange: 900;
+     CompanionRange: 750;
      PartyMemberSlots: 4;
      spellbarFile: 'spellbarFullHD';
      sidebarFile: 'sidebarFullHD';
@@ -290,6 +293,7 @@ const
      popMapRect: ( Left: 1852; Top: 991; Right: 1903; Bottom: 1035 );
      popQuestRect: ( Left: 1148; Top: 991; Right: 1196; Bottom: 1011 );
      popAdventureRect: ( Left: 1139; Top: 1015; Right: 1205; Bottom: 1036 );
+     popNoteLogRect: ( Left: 1076; Top: 992; Right: 1133; Bottom: 1009 );
      popJournalRect: ( Left: 1142; Top: 1040; Right: 1206; Bottom: 1058 );
      popAwardsRect: ( Left: 1088; Top: 1023; Right: 1127; Bottom: 1063 );
      popMessageRect: ( Left: 561; Top: 997; Right: 1072; Bottom: 1062 );

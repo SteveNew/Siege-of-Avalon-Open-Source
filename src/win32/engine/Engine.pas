@@ -128,6 +128,7 @@ uses
   SoAOS.Types,
   SoAOS.AI,
   SoAOS.AI.Helper,
+  SoAOS.AI.Types,
   SoAOS.Intrface.Text,
   AniDemo,
   Character,
@@ -229,7 +230,7 @@ end;
 function GetCharactersInRadius( X, Y : longint; Radius : single ) : TStringList;
 var
   i, j : integer;
-  List : TList<TAniFigure>;
+  List : TList;
 const
   FailName : string = 'Engine.GetCharactersInRadius';
 begin
@@ -243,7 +244,7 @@ begin
     begin
       for i := 0 to List.count - 1 do
       begin
-        if List.items[ i ] is TCharacter then
+        if TAniFigure( List.items[ i ] ) is TCharacter then
         begin
           if not assigned( result ) then
             Result := TStringList.create;
@@ -854,12 +855,15 @@ begin
         end
         else if Token = 'say' then
         begin
-          if assigned( ObjectRef ) then
+          if assigned( ObjectRef ) and (ObjectRef is TSpriteObject) then
           begin
-            if ObjectRef is TSpriteObject then
-            begin
-              TSpriteObject( ObjectRef ).Say( Parms, cTalkWhiteColor );
-            end;
+            if (TCharacter( ObjectRef ).combatAI = 'ritual')
+            and (TCharacter( ObjectRef ).AIMode = aiCombat) then
+            TSpriteObject( ObjectRef ).Say( Parms, cTalkYellowColor ) //Felious Ritual
+            else if (TCharacter( ObjectRef ).IdleAI = 'HumanoidMeleeSparing') then
+            TSpriteObject( ObjectRef ).Say( Parms, cTalkRedColor ) //Mulduc Training
+            else
+            TSpriteObject( ObjectRef ).Say( Parms, cTalkWhiteColor );
           end;
         end
         else if Token = 'converse' then
