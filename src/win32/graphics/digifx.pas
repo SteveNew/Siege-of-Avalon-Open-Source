@@ -159,7 +159,6 @@ function digifxCreateRLE( hDFX : DFXHND; SrcBitsPtr : PBITPLANE; KeyColor : DWOR
 function digifxConvertRLE( hDFX : DFXHND; RLEHDRPtr : PRLEHDR ) : BOOL;
 function digifxDrawRLE( hDFX : DFXHND; RLEHDRPtr : PRLEHDR; XPos : integer; YPos : integer; FXPtr : PBLITFX; DstBitsPtr : PBITPLANE ) : BOOL;
 function digifxDrawBitplane( hDFX : DFXHND; SrcBitsPtr : PBITPLANE; XPos : integer; YPos : integer; KeyColor : DWORD; FXPtr : PBLITFX; DstBitsPtr : PBITPLANE ) : BOOL;
-function digifxConvertColor( hDFX : DFXHND; R : BYTE; G : BYTE; B : BYTE ) : DWORD;
 
 implementation
 
@@ -185,7 +184,7 @@ const
   DLL_DrawBitplane = 9;
   DLL_DrawRect = 10;
 //  DLL_DrawLine = 11;
-  DLL_ConvertColor = 12;
+//  DLL_ConvertColor = 12;
 //  DLL_CheckSupport = 13;
 
 type
@@ -427,24 +426,6 @@ end;
 function digifxDrawBitplane( hDFX : DFXHND; SrcBitsPtr : PBITPLANE; XPos : integer; YPos : integer; KeyColor : DWORD; FXPtr : PBLITFX; DstBitsPtr : PBITPLANE ) : BOOL;
 begin
   result := CallDFX( hDFX, DLL_DrawBitplane, DWORD( SrcBitsPtr ), DWORD( XPos ), DWORD( YPos ), KeyColor, DWORD( DstBitsPtr ), DWORD( FXPtr ) );
-end;
-
-function digifxConvertColor( hDFX : DFXHND; R : BYTE; G : BYTE; B : BYTE ) : DWORD;
-var
-  Color : DWORD;
-begin
-  asm
-		mov al, R
-		shl eax, 8
-		mov al, G
-		shl eax, 8
-		mov al, B
-		mov Color, eax
-  end;
-  if ( CallDFX( hDFX, DLL_ConvertColor, Color, 0, 0, 0, 0, 0 ) ) then
-    result := RegEAX
-  else
-    result := NOKEYCOLOR;
 end;
 
 end.

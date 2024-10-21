@@ -49,7 +49,7 @@ uses
   Vcl.Graphics,
   SoAOS.Graphics.Types,
   SoAOS.Graphics.Draw,
-  digifx;
+  digifx, System.UITypes;
 
 const
   pixelformats : array[ 0..2 ] of DWORD = ( PIXFMT_555, PIXFMT_565, PIXFMT_888 );
@@ -95,7 +95,6 @@ type
   private
     FKeyColor : TColor;
     FKeyIndex : LongWord;
-    R, G, B : Byte;
     function GetBits : PBITPLANE;
     function GetHeight : LongWord;
     function GetWidth : LongWord;
@@ -123,6 +122,7 @@ type
 function DFXInit( Path : string ) : BOOL;
 procedure DFXShutdown;
 procedure DFXClearBitPlane( Plane : BITPLANE; Color : DWORD );
+function ColorToBGR565( color: TColor ): DWORD; inline;
 
 implementation
 
@@ -131,6 +131,14 @@ uses
   SoAOS.Animation,
   DXUtil,
   LogFile;
+
+function ColorToBGR565(color: TColor): DWORD; inline;
+var
+  c: Integer;
+begin
+  c := color and $FFFFFF; // ignore alpha channel
+  Result := (c shr 10) shl 11 + (c shr 5) shl 5 + (c shr 3);
+end;
 
 procedure DFXClearBitPlane( Plane : BITPLANE; Color : DWORD );
 begin
@@ -250,7 +258,6 @@ var
   ImageSize : Cardinal;
   p : ^Byte;
   C : LongWord;
-  R, G, B : Byte;
   Sizes, PSize : ^LongWord;
 begin
   if Assigned( lpSpr ) then
@@ -269,11 +276,7 @@ begin
   lpRLE := lpSpr;
   GetMem( Sizes, PicCnt * SizeOf( LongWord ) );
 
-  C := ColorToRGB( Color );
-  R := ( C and $FF );
-  G := ( C and $FF00 ) shr 8;
-  B := ( C and $FF0000 ) shr 16;
-  C := digiFXConvertColor( dfx_hnd, R, G, B );
+  C := ColorToBGR565( Color );
 
   PSize := Sizes;
   FMemSize := 0;
@@ -574,7 +577,7 @@ end;
 
 procedure TRLESprite.LoadFromBitPlaneBits( Bits : PBITPLANE; Color : TColor );
 var
-  C, R, G, B, KeyIndex : integer;
+  KeyIndex : integer;
 begin
   if Assigned( lpSpr ) then
   begin
@@ -587,11 +590,7 @@ begin
   GetMem( lpSpr, SizeOf( RLEHDR ) );
   ZeroMemory( lpSpr, SizeOf( RLEHDR ) );
 
-  C := ColorToRGB( Color );
-  R := ( C and $FF );
-  G := ( C and $FF00 ) shr 8;
-  B := ( C and $FF0000 ) shr 16;
-  KeyIndex := digiFXConvertColor( dfx_hnd, R, G, B );
+  KeyIndex := ColorToBGR565( Color );
 
   FMemSize := digifxCreateRLE( dfx_hnd, Bits, KeyIndex, lpSpr, nil, lpSpr );
   GetMem( lpSpr.DataPtr, FMemSize );
@@ -610,13 +609,8 @@ end;
 procedure TBitPlane.Fill( Color : TColor );
 var
   C : LongWord;
-  R, G, B : Byte;
 begin
-  C := ColorToRGB( Color );
-  R := ( C and $FF );
-  G := ( C and $FF00 ) shr 8;
-  B := ( C and $FF0000 ) shr 16;
-  C := digiFXConvertColor( dfx_hnd, R, G, B );
+  C := ColorToBGR565( Color );
   DFXClearBitPlane( FBits, C );
 end;
 
@@ -699,15 +693,9 @@ begin
 end;
 
 procedure TBitPlane.SetKeyColor( const Value : TColor );
-var
-  C : LongWord;
 begin
   FKeyColor := Value;
-  C := ColorToRGB( Value );
-  R := ( C and $FF );
-  G := ( C and $FF00 ) shr 8;
-  B := ( C and $FF0000 ) shr 16;
-  FKeyIndex := digiFXConvertColor( dfx_hnd, R, G, B );
+  FKeyIndex := ColorToBGR565( Value );
 end;
 
 procedure TBitPlane.DrawMono( X, Y : Integer; Bits : PBITPLANE; Color : TColor );
