@@ -49,7 +49,7 @@ uses
   Vcl.Graphics,
   SoAOS.Graphics.Types,
   SoAOS.Graphics.Draw,
-  digifx, System.UITypes;
+  digifx;
 
 const
   pixelformats : array[ 0..2 ] of DWORD = ( PIXFMT_555, PIXFMT_565, PIXFMT_888 );
@@ -135,9 +135,14 @@ uses
 function ColorToBGR565(color: TColor): DWORD; inline;
 var
   c: Integer;
+  R, G, B: Byte;
 begin
-  c := color and $FFFFFF; // ignore alpha channel
-  Result := (c shr 10) shl 11 + (c shr 5) shl 5 + (c shr 3);
+  c := ColorToRGB( color );
+  R := ( c and $FF );
+  G := ( c and $FF00 ) shr 8;
+  B := ( c and $FF0000 ) shr 16;
+
+  Result := ((r shr 3) shl 11) or ((g shr 2) shl 5) or (b shr 3);
 end;
 
 procedure DFXClearBitPlane( Plane : BITPLANE; Color : DWORD );
