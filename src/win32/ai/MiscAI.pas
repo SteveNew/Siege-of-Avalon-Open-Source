@@ -2043,30 +2043,40 @@ begin
 
     end;
 
-
     if ReadyToAttack then
     begin //hit him then
       try
-        if (Character.wounds >= (Character.Hitpoints * 0.75)) and
-        (Character.TitleExists('Heal')) then
-        begin //if low health, heal first
-          if Character.CurrentSpell <> TSpell( Spells.Objects[ Spells.IndexOf( 'Heal' ) ] ) then
-          Character.CurrentSpell := TSpell( Spells.Objects[ Spells.IndexOf( 'Heal' ) ] );
-          if ( character.Mana - character.Drain ) >= Character.CurrentSpell.Drain( Character ) then
-          character.Cast(character);
-        end
-      else
-      begin
-        Character.Attack( Character.Track );
-        ReadyToAttack := False;
-        Walking := False;
-      end;
+        if (Character.wounds >= (Character.Hitpoints * 0.7)) then
+        begin
+          if Character.TitleExists('Heal') then
+          begin //if low health, heal first
+            if Character.CurrentSpell <> TSpell( Spells.Objects[ Spells.IndexOf( 'Heal' ) ] ) then
+              Character.CurrentSpell := TSpell( Spells.Objects[ Spells.IndexOf( 'Heal' ) ] );
+            if ( Character.Mana - Character.Drain ) >= Character.CurrentSpell.Drain( Character ) then
+              Character.Cast(Character)
+            else
+            begin
+              if Character.Ready then
+                Character.UseHealPotion;
+            end;
+          end
+          else
+          begin
+            if Character.Ready then
+              Character.UseHealPotion;
+          end;
+          end
+        else
+        begin
+          Character.Attack( Character.Track );
+          ReadyToAttack := False;
+          Walking := False;
+        end;
       except
         on E : Exception do
           Log.log( 'Error Companion AttackMelee2: ' + E.Message );
       end;
     end;
-
 
     if not ( Walking ) and not ( ReadyToAttack ) then
     begin

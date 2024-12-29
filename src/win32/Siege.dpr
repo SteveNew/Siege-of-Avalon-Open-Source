@@ -164,7 +164,8 @@ uses
   SoAOS.SysUtils in 'engine\SoAOS.SysUtils.pas',
   SoAOS.Graphics.BMPFonts in 'graphics\SoAOS.Graphics.BMPFonts.pas',
   SoAOS.Graphics.GameText in 'graphics\SoAOS.Graphics.GameText.pas',
-  DirectX in 'graphics\DirectX.pas';
+  DirectX in 'graphics\DirectX.pas',
+  NoteLog in 'interface\NoteLog.pas';
 
 {$R *.RES}
 
